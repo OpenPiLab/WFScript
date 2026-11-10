@@ -1,0 +1,281 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Set and enable independent programmable supplies and inspect status.",
+  "scriptName": "PowerSupplies.js",
+  "activePageId": "ad3_supplies",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "ad3_supplies",
+      "name": "Supplies",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "psTitle",
+          "type": "label",
+          "text": "AD3 PROGRAMMABLE POWER SUPPLIES  /  V+ AND V−",
+          "x": 24,
+          "y": 14,
+          "width": 1110,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 11
+          }
+        },
+        {
+          "id": "psIntro",
+          "type": "label",
+          "text": "Two independent DC rails. Set voltages and enable rails, then select POWER ON.\nSimulation mode never energizes hardware. Always verify connections before applying power.",
+          "x": 24,
+          "y": 70,
+          "width": 1110,
+          "height": 69,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 11
+          }
+        },
+        {
+          "id": "psVPlus",
+          "type": "numeric_stepper",
+          "text": "V+ SETPOINT",
+          "x": 24,
+          "y": 174,
+          "width": 328,
+          "height": 139,
+          "value": 3.3,
+          "min": 0.5,
+          "max": 5,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "step": 0.1,
+            "decimals": 2,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "psVMinus",
+          "type": "numeric_stepper",
+          "text": "V− SETPOINT",
+          "x": 374,
+          "y": 174,
+          "width": 328,
+          "height": 139,
+          "value": -3.3,
+          "min": -5,
+          "max": -0.5,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "step": 0.1,
+            "decimals": 2,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "psEnablePlus",
+          "type": "switch_button",
+          "text": "POSITIVE OUTPUT",
+          "x": 24,
+          "y": 338,
+          "width": 328,
+          "height": 119,
+          "value": 0,
+          "min": 0,
+          "max": 1,
+          "events": {},
+          "properties": {
+            "onText": "V+ ENABLED",
+            "offText": "V+ DISABLED",
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "psEnableMinus",
+          "type": "switch_button",
+          "text": "NEGATIVE OUTPUT",
+          "x": 374,
+          "y": 338,
+          "width": 328,
+          "height": 119,
+          "value": 0,
+          "min": 0,
+          "max": 1,
+          "events": {},
+          "properties": {
+            "onText": "V- ENABLED",
+            "offText": "V- DISABLED",
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "psPowerOn",
+          "type": "button",
+          "text": "POWER ON",
+          "x": 738,
+          "y": 172,
+          "width": 188,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "psPowerOff",
+          "type": "button",
+          "text": "POWER OFF",
+          "x": 946,
+          "y": 172,
+          "width": 188,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "psRefresh",
+          "type": "button",
+          "text": "READ STATUS",
+          "x": 738,
+          "y": 264,
+          "width": 396,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "psMaster",
+          "type": "status_beacon",
+          "text": "SUPPLY MASTER",
+          "x": 740,
+          "y": 351,
+          "width": 394,
+          "height": 130,
+          "value": 0,
+          "min": 0,
+          "max": 1,
+          "events": {},
+          "properties": {
+            "onText": "POWER ENABLED",
+            "offText": "MASTER OFF",
+            "activeColor": "green",
+            "showGlow": true
+          }
+        },
+        {
+          "id": "psPlusReadout",
+          "type": "digital_display",
+          "text": "V+ OUTPUT",
+          "x": 24,
+          "y": 495,
+          "width": 328,
+          "height": 158,
+          "value": 0,
+          "min": 0,
+          "max": 5,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "accent": "cyan",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "psMinusReadout",
+          "type": "digital_display",
+          "text": "V− OUTPUT",
+          "x": 374,
+          "y": 495,
+          "width": 328,
+          "height": 158,
+          "value": 0,
+          "min": -5,
+          "max": 0,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "accent": "amber",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "psState",
+          "type": "status_banner",
+          "text": "SUPPLIES",
+          "x": 740,
+          "y": 512,
+          "width": 394,
+          "height": 141,
+          "value": 0,
+          "min": 0,
+          "max": 2,
+          "events": {},
+          "properties": {
+            "okText": "MASTER OFF",
+            "warningText": "NO READBACK",
+            "alarmText": "OUTPUT ACTIVE"
+          }
+        },
+        {
+          "id": "psNote",
+          "type": "label",
+          "text": "SAFE-START: Both rails and master start OFF. Setpoints are staged until POWER ON; editing while active applies settings.\nPOWER OFF or Stop Panel disables the AD3 supply master. Real readback is shown only when available.",
+          "x": 24,
+          "y": 677,
+          "width": 1110,
+          "height": 70,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 11
+          }
+        },
+        {
+          "id": "psStatus",
+          "type": "label",
+          "text": "READY — Both rails disabled. Change setpoints, select rails, then POWER ON.",
+          "x": 24,
+          "y": 753,
+          "width": 1110,
+          "height": 32,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 11
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: V+ / V− Power Supplies\n * Set and enable independent programmable supplies and inspect status.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: Measure V+/V− relative to AD3 GND; verify the circuit and safe load.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 11 SUPPLIES — INDEPENDENT AD3 V+ / V- PROGRAMMABLE POWER\n// ============================================================================\n// The documented WaveForms nested property names are used below. WFScript\n// deliberately stages values until Supplies.run()/config() is called. POWER ON\n// is the explicit authorization to energize physical outputs. Hardware status\n// is read from AnalogIO; simulation status is clearly labeled as an ideal model.\nlet psIsOn = false;\nfunction psSettings() {\n  const vp=Number(ui.get('psVPlus'));\n  const vn=Number(ui.get('psVMinus'));\n  const ep=!!ui.get('psEnablePlus');\n  const en=!!ui.get('psEnableMinus');\n  if(!isFinite(vp) || vp<0.5 || vp>5 || !isFinite(vn) || vn<-5 || vn>-0.5)\n    throw Error('AD3 range V+ 0.5..5 V, V- -5..-0.5 V');\n  Supplies.Output.PositiveSupply.Voltage.value=vp;\n  Supplies.Output.NegativeSupply.Voltage.value=vn;\n  Supplies.Output.PositiveSupply.Enable.value=ep?1:0;\n  Supplies.Output.NegativeSupply.Enable.value=en?1:0;\n  return {vp,vn,ep,en};\n}\nfunction psShowStatus(prefix) {\n  const s=Supplies.status();\n  // Use the bridge state, not just the last button click. An SDK stop failure\n  // must never be presented as a confirmed power-off.\n  const live=!!s.running;\n  psIsOn=live;\n  ui.set('psMaster',live?1:0);\n  ui.set('psState',live?2:(!s.simulation && !s.measuredAvailable ? 1:0));\n  // Do not present an unverified physical value as an actual measurement.\n  ui.set('psPlusReadout',s.positiveVoltage==null?0:s.positiveVoltage);\n  ui.set('psMinusReadout',s.negativeVoltage==null?0:s.negativeVoltage);\n  const readback=s.simulation ? 'SIMULATED ideal voltage' :\n      (s.measuredAvailable?'AD3 voltage readback':'AD3 readback unavailable');\n  ui.set('psStatus',prefix+' | '+readback+' | V+ '+s.positiveSetpoint.toFixed(2)+\n      ' V / V- '+s.negativeSetpoint.toFixed(2)+' V | master '+(live?'ON':'OFF'));\n}\nfunction psStart() {\n  try {\n    const s=psSettings();\n    if(!s.ep && !s.en) throw Error('Enable at least one V+ or V- rail before POWER ON');\n    if(!Supplies.run()) throw Error(Supplies.lastError);\n    psIsOn=true;\n    psShowStatus('POWER ON');\n  } catch(e) {\n    const stopped=Supplies.stop();\n    psShowStatus((stopped?'POWER OFF / ERROR: ':'STOP NOT CONFIRMED / ERROR: ')+String(e));\n    print('Supplies: '+e);\n  }\n}\nfunction psStop() {\n  const ok=Supplies.stop();\n  psShowStatus(ok?'POWER OFF':'STOP NOT CONFIRMED — CHECK HARDWARE: '+Supplies.lastError);\n}\nfunction psChanged() {\n  try {\n    psSettings();\n    if(psIsOn) {\n      if(!Supplies.config())throw Error(Supplies.lastError);\n      psIsOn=Supplies.running;\n      psShowStatus('LIVE APPLIED');\n    } else psShowStatus('STAGED / POWER OFF');\n  } catch(e) {\n    if(psIsOn && !Supplies.stop())\n      print('WARNING: Supply shutdown not confirmed: '+Supplies.lastError);\n    psShowStatus('SETTINGS ERROR: '+String(e));\n  }\n}\nui.on('psPowerOn','clicked',psStart);\nui.on('psPowerOff','clicked',psStop);\nui.on('psRefresh','clicked',function(){psShowStatus('STATUS REFRESH');});\nui.on('psVPlus','valueChanged',psChanged);\nui.on('psVMinus','valueChanged',psChanged);\nui.on('psEnablePlus','toggled',psChanged);\nui.on('psEnableMinus','toggled',psChanged);\n// Initialization is strictly software-only; no physical supply output commands.\npsShowStatus('READY / POWER OFF');\n"
+}

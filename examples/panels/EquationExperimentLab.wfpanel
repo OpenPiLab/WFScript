@@ -1,0 +1,325 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "v5.6.70 Equation & Experiment Table example: local equation renderer, editable experiment data, right-click CSV, no hardware output.",
+  "scriptName": "EquationExperimentLab.js",
+  "script": "/**\n * Equation & Experiment Tables — hardware-safe, self-contained demonstration.\n * No AD3 output or external modules are used.\n * Equation source is a SUPPORTED LaTeX-style subset, NOT a complete TeX engine.\n * Right-click an Experiment Data Table to export its contents to CSV.\n */\nconst R=10000;\nconst C=10e-9;\nconst sweep=[100,500,1000,1592,2000,5000];\nfunction format(n,d) { return Number(n).toFixed(d); }\nfunction gainAt(f) { return 1/Math.sqrt(1+Math.pow(2*Math.PI*f*R*C,2)); }\nfunction rowsFor(freq) {\n    return sweep.map(function(f){\n        const predicted=gainAt(f);\n        // The measured column is left blank until a real instrument or student supplies a value.\n        return [String(f),format(predicted,4),'',''];\n    });\n}\nfunction populateLab() {\n    const f=Number(ui.get('frequencyInput'));\n    if (!isFinite(f)) throw new Error('Invalid frequency');\n    const omega=2*Math.PI*f;\n    const predicted=gainAt(f);\n    ui.set('selectedFrequency',f);\n    ui.set('selectedGain',predicted);\n    ui.set('liveEquation','|H(j\\\\omega)|=\\\\frac{1}{\\\\sqrt{1+(\\\\omega RC)^2}}');\n    ui.set('predictionTable',rowsFor(f));\n    ui.set('studentTable',rowsFor(f));\n    print('RC lab simulation: '+f+' Hz, predicted gain='+format(predicted,4));\n}\nui.on('frequencyInput','valueChanged',populateLab);\nui.on('fillTable','clicked',populateLab);\nui.on('clearTable','clicked',function(){ui.set('predictionTable',[]);ui.set('studentTable',[]);});\nui.on('studentTable','valueChanged',function(rows){\n    print('Student edited an observation: '+rows.length+' data rows; edits are runtime values, not saved design defaults.');\n});\npopulateLab();\n",
+  "activePageId": "equations",
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "equations",
+      "name": "00 Equations & Theory",
+      "width": 1260,
+      "height": 790,
+      "controls": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Mathematical Equations + Experiment Data Tables",
+          "x": 30,
+          "y": 15,
+          "width": 1185,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "overview",
+          "type": "instruction_card",
+          "text": "How to use this example",
+          "x": 30,
+          "y": 76,
+          "width": 1190,
+          "height": 140,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Stop/Design → select an Equation → Properties → edit LaTeX source.\nA live preview appears in Properties. Table columns/initial rows are configured there too.\nRun Panel → move Frequency and watch calculations. No hardware output is enabled.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "cutoffEquation",
+          "type": "equation",
+          "text": "Cutoff frequency",
+          "x": 30,
+          "y": 230,
+          "width": 560,
+          "height": 148,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "f_c=\\frac{1}{2\\pi RC}",
+            "pointSize": 27,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "transferEquation",
+          "type": "equation",
+          "text": "Transfer function",
+          "x": 608,
+          "y": 230,
+          "width": 610,
+          "height": 148,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "H(j\\omega)=\\frac{1}{1+j\\omega RC}",
+            "pointSize": 25,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "timeEquation",
+          "type": "equation",
+          "text": "Time constant",
+          "x": 30,
+          "y": 390,
+          "width": 560,
+          "height": 125,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\tau=RC=100\\,\\mu s",
+            "pointSize": 26,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "liveEquation",
+          "type": "equation",
+          "text": "Magnitude response",
+          "x": 608,
+          "y": 390,
+          "width": 610,
+          "height": 125,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "|H(j\\omega)|=\\frac{1}{\\sqrt{1+(\\omega RC)^2}}",
+            "pointSize": 26,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "mathHelp",
+          "type": "instruction_card",
+          "text": "Equation entry (subset)",
+          "x": 30,
+          "y": 530,
+          "width": 1190,
+          "height": 155,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Enter LaTeX-like source such as f_c=\\frac{1}{2\\pi RC}. Use braces for arguments: x_{out}, x^{2}, \\sqrt{x}, \\tau. The renderer is intentionally limited and runs entirely within Qt.",
+            "tone": "Information"
+          }
+        }
+      ]
+    },
+    {
+      "id": "observations",
+      "name": "01 Experiment Tables",
+      "width": 1260,
+      "height": 820,
+      "controls": [
+        {
+          "id": "labTitle",
+          "type": "label",
+          "text": "RC Experiment Data — All values below are SIMULATED predictions",
+          "x": 30,
+          "y": 20,
+          "width": 1190,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "labNote",
+          "type": "instruction_card",
+          "text": "Experiment workflow",
+          "x": 30,
+          "y": 78,
+          "width": 1190,
+          "height": 110,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Try the slider, then edit a cell in the student table. Export either table as CSV using the right-click menu. The \"Measured\" column is intentionally blank — fill it from a real Scope acquisition or by hand. No test PASS/FAIL is implied.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "frequencyInput",
+          "type": "slider",
+          "text": "Frequency (Hz)",
+          "x": 30,
+          "y": 207,
+          "width": 600,
+          "height": 45,
+          "value": 1000,
+          "min": 100,
+          "max": 5000,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "selectedFrequency",
+          "type": "digital_display",
+          "text": "FREQUENCY",
+          "x": 650,
+          "y": 202,
+          "width": 260,
+          "height": 85,
+          "value": 1000,
+          "min": 0,
+          "max": 10000,
+          "events": {},
+          "properties": {
+            "unit": "Hz",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "selectedGain",
+          "type": "digital_display",
+          "text": "PREDICTED GAIN",
+          "x": 929,
+          "y": 202,
+          "width": 290,
+          "height": 85,
+          "value": 0.847,
+          "min": 0,
+          "max": 2,
+          "events": {},
+          "properties": {
+            "decimals": 4,
+            "unit": ""
+          }
+        },
+        {
+          "id": "predictionTable",
+          "type": "experiment_table",
+          "text": "Experiment Data Table",
+          "x": 30,
+          "y": 318,
+          "width": 575,
+          "height": 322,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Frequency (Hz)|Predicted Gain|Measured Gain|Error (%)",
+            "initialRows": "100|0.998||\n500|0.954||\n1000|0.847||\n1592|0.707||\n5000|0.303||",
+            "maxRows": 250,
+            "editable": false
+          }
+        },
+        {
+          "id": "studentTable",
+          "type": "experiment_table",
+          "text": "Experiment Data Table",
+          "x": 625,
+          "y": 318,
+          "width": 595,
+          "height": 322,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Frequency (Hz)|Predicted Gain|Measured Gain|Error (%)",
+            "initialRows": "100|0.998||\n500|0.954||\n1000|0.847||\n1592|0.707||\n5000|0.303||",
+            "maxRows": 250,
+            "editable": true
+          }
+        },
+        {
+          "id": "fillTable",
+          "type": "button",
+          "text": "POPULATE PREDICTIONS",
+          "x": 30,
+          "y": 675,
+          "width": 350,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "clearTable",
+          "type": "button",
+          "text": "CLEAR BOTH TABLES",
+          "x": 400,
+          "y": 675,
+          "width": 350,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "tableNotes",
+          "type": "instruction_card",
+          "text": "Editable and read-only tables",
+          "x": 773,
+          "y": 661,
+          "width": 445,
+          "height": 120,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The left table is read-only. The right table allows student-entered observations and emits valueChanged(rows). Both can be updated with ui.set(tableId, [[...], ...]). Right-click to export CSV.",
+            "tone": "Information"
+          }
+        }
+      ]
+    }
+  ]
+}

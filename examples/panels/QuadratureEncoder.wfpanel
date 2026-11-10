@@ -1,0 +1,280 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Generate synchronized A/B/index and verify RPM and phase.",
+  "scriptName": "QuadratureEncoder.js",
+  "activePageId": "encoder_simulator",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "encoder_simulator",
+      "name": "Encoder",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "encTitle",
+          "type": "label",
+          "text": "QUADRATURE ENCODER + INDEX  /  HARDWARE-TIMED 3-CHANNEL DIGITALOUT",
+          "x": 24,
+          "y": 12,
+          "width": 1110,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "encHelp",
+          "type": "label",
+          "text": "A=DIO0, B=DIO1, Index=DIO2. Connect DIO0→DIO3, DIO1→DIO4, DIO2→DIO5 through three separate 1 kΩ resistors.\nForward: A leads B; Reverse: B leads A. Index high for one quadrature state per revolution. Outputs are OFF until START or VERIFY.",
+          "x": 24,
+          "y": 66,
+          "width": 1110,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "encPpr",
+          "type": "option_selector",
+          "text": "PULSES PER REVOLUTION (PPR)",
+          "x": 24,
+          "y": 147,
+          "width": 252,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "4|8|16|32|64",
+            "defaultIndex": 2,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "encRpm",
+          "type": "option_selector",
+          "text": "SPEED (RPM)",
+          "x": 292,
+          "y": 147,
+          "width": 252,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "120|300|600|1200|3000",
+            "defaultIndex": 2,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "encDirection",
+          "type": "option_selector",
+          "text": "DIRECTION",
+          "x": 560,
+          "y": 147,
+          "width": 252,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Forward|Reverse",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "encPins",
+          "type": "label",
+          "text": "OUTPUT PINS\nA: 0  B: 1  INDEX: 2",
+          "x": 828,
+          "y": 147,
+          "width": 306,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "encInfo",
+          "type": "label",
+          "text": "CAPTURE",
+          "x": 24,
+          "y": 236,
+          "width": 1110,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "encStart",
+          "type": "button",
+          "text": "START ENCODER",
+          "x": 24,
+          "y": 302,
+          "width": 209,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "encStop",
+          "type": "button",
+          "text": "STOP / RELEASE",
+          "x": 249,
+          "y": 302,
+          "width": 209,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "encCapture",
+          "type": "button",
+          "text": "CAPTURE RUNNING",
+          "x": 474,
+          "y": 302,
+          "width": 209,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "encVerify",
+          "type": "button",
+          "text": "VERIFY 3× LOOPBACK",
+          "x": 699,
+          "y": 302,
+          "width": 209,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "encPreview",
+          "type": "button",
+          "text": "PREVIEW (MATH)",
+          "x": 924,
+          "y": 302,
+          "width": 210,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "encStatus",
+          "type": "label",
+          "text": "READY — no digital outputs enabled. VERIFY performs a physical 3-pair loopback then releases all outputs.",
+          "x": 24,
+          "y": 365,
+          "width": 1110,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "encChart",
+          "type": "digital_plot",
+          "text": "ENCODER A / B / INDEX — Captured digital input levels",
+          "x": 24,
+          "y": 431,
+          "width": 1110,
+          "height": 293,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Digital",
+            "xLabel": "Time (ms)",
+            "yLabel": "Encoder lanes",
+            "showGrid": true,
+            "showLegend": false,
+            "xAuto": true,
+            "yAuto": true,
+            "lineWidth": 2.0,
+            "xLog": false,
+            "showCursors": true,
+            "cursorA": 1.0,
+            "cursorB": 2.0
+          }
+        },
+        {
+          "id": "encFooter",
+          "type": "label",
+          "text": "HARDWARE TEST: three 1 kΩ connections from outputs DIO0/1/2 to input DIO3/4/5. No external driven circuits.\nVERIFY checks Gray transitions, direction, index period, RPM and 3-pair agreement; stops all outputs.",
+          "x": 24,
+          "y": 732,
+          "width": 1110,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Quadrature Encoder + Index\n * Generate synchronized A/B/index and verify RPM and phase.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: DIO0 → 1 kΩ → DIO3, DIO1 → 1 kΩ → DIO4, DIO2 → 1 kΩ → DIO5.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 15 ENCODER — HARDWARE SYNCHRONIZED A/B/INDEX\n// WFScript v5.6.49.2 — full 16-bit DigitalIn transfer and encoder continuity diagnostics.\n// Three simultaneous Custom DigitalOut buffers run from one device clock.\n// NEVER starts on panel load. Wire DIO0 -> DIO3, DIO1 -> DIO4,\n// DIO2 -> DIO5 through separate 1k series resistors before VERIFY.\n// DIO0=A, DIO1=B, DIO2=INDEX. DIO3/4/5 are read-only inputs.\nfunction encSettings() {\n  const ppr=Number(ui.get('encPpr'));\n  const rpm=Number(ui.get('encRpm'));\n  const reverse=String(ui.get('encDirection'))==='Reverse';\n  if(!Number.isInteger(ppr)||ppr<1||ppr>1024||!isFinite(rpm)||rpm<1||rpm>10000)\n    throw Error('Invalid encoder PPR or RPM');\n  return {ppr,rpm,reverse};\n}\nfunction encInfo() {\n  const s=encSettings();\n  const rate=Math.round(4096*s.rpm/144); // target approx 2.4 mechanical revolutions\n  ui.set('encInfo','A/B '+(s.ppr*s.rpm/60).toFixed(1)+' Hz  |  Index '+\n    (s.rpm/60).toFixed(1)+' Hz  |  x4 '+(4*s.ppr*s.rpm/60).toFixed(1)+' edges/s\\n'+\n    'CAPTURE '+(rate/1000).toFixed(1)+' kS/s × 4096 (~2.4 rev)');\n}\nfunction encStop() {\n  const stopped=Patterns1.stop();\n  ui.set('encStatus',stopped?'STOPPED — ALL THREE PATTERN OUTPUTS RELEASED (Z)':\n    'DANGER: THREE-CHANNEL SHUTDOWN NOT CONFIRMED: '+Patterns1.lastError);\n  print('Encoder stop: '+(stopped?'OUTPUTS RELEASED':'FAILED: '+Patterns1.lastError));\n  return stopped;\n}\nfunction encStart() {\n  try {\n    const s=encSettings();\n    if(Patterns1.running && !Patterns1.stop()) throw Error('Cannot stop prior Pattern: '+Patterns1.lastError);\n    if(!StaticIO.stop()) throw Error('StaticIO release failed: '+StaticIO.lastError);\n    if(!Patterns1.runEncoder(0,1,2,s.ppr,s.rpm,s.reverse)) throw Error(Patterns1.lastError);\n    const st=Patterns1.status();\n    ui.set('encStatus',(st.simulation?'SIMULATION ONLY':'RUNNING HARDWARE')+' / A=DIO0 B=DIO1 Z=DIO2 / '+\n      st.encoderActualRpm.toFixed(3)+' RPM / '+s.ppr+' PPR / '+(s.reverse?'REVERSE':'FORWARD'));\n    print('Encoder started: '+st.encoderActualRpm.toFixed(4)+' RPM, '+s.ppr+' PPR, '+\n          (s.reverse?'reverse':'forward')+' / '+(st.simulation?'SIMULATION':'PHYSICAL'));\n  } catch(e) {\n    const stopped=Patterns1.stop();\n    ui.set('encStatus','ENCODER START ERROR: '+String(e)+(stopped?' / released':' / DANGER: '+Patterns1.lastError));\n    print('Encoder start failed: '+String(e));\n  }\n}\nfunction encPreview() {\n  const s=encSettings(), rate=Math.max(1000,s.ppr*s.rpm/60*40),t=[],a=[],b=[],z=[];\n  const forward=[[0,0],[1,0],[1,1],[0,1]];\n  const reverse=[[0,0],[0,1],[1,1],[1,0]];\n  for(let i=0;i<4096;i++) {\n    const secs=i/rate;\n    const quarter=Math.floor(secs*s.rpm/60*s.ppr*4);\n    const state=(s.reverse?reverse:forward)[quarter%4];\n    t.push(secs*1000);a.push(state[0]);b.push(state[1]);z.push((quarter%(4*s.ppr))===0?1:0);\n  }\n  plots.setSeries('encChart','A (ideal simulation)',t,a);\n  plots.setSeries('encChart','B (ideal simulation)',t,b);\n  plots.setSeries('encChart','INDEX (ideal simulation)',t,z);\n  ui.set('encStatus','IDEAL PREVIEW — no SDK output, timing or physical measurement');\n}\n// Process captured PHYSICAL bits 3,4,5 (not the driving pins) and require:\n// - matching driven pin and physical readback for all three channels\n// - Gray-code transitions in the chosen direction\n// - repeated index pulse at the expected once-per-revolution spacing\nfunction encSdkSummary(st) {\n  if(!st.sdkStatusAvailable)return 'DigitalOut state unavailable (cached '+(st.running?'running':'stopped')+')';\n  const rep=st.sdkRepeatAvailable?st.sdkRepeatCount:'unknown';\n  return 'DigitalOut='+st.sdkStateName+'('+st.sdkStateCode+') / repeat='+rep+\n         ' (diagnostic; Run=0 continuous) / cached='+st.running;\n}\nfunction encCaptureSummary(d) {\n  return 'DigitalIn transfer: '+d.samplesReturned+'/'+d.requestedSamples+\n    ' words, '+d.bytesRequested+' requested bytes / SDK valid='+\n    (d.sdkValidSamples<0?'unavailable':d.sdkValidSamples)+\n    ' / DigitalIn state='+d.sdkStateCode+\n    ' / changes first/second half='+d.firstHalfChanges+'/'+d.secondHalfChanges+\n    ' / nonzero first/second half='+d.firstHalfHighWords+'/'+d.secondHalfHighWords;\n}\nfunction encAnalyze(words,rate,s,actualRpm) {\n  if(words.length<100 || !isFinite(rate) || rate<=0)throw Error('Missing DigitalIn samples');\n  const time=[],a=[],b=[],z=[];let matches=0;\n  for(let i=0;i<words.length;i++) {\n    const w=Number(words[i]);\n    const abit=(w>>>3)&1,bbit=(w>>>4)&1,zbit=(w>>>5)&1;\n    a.push(abit);b.push(bbit);z.push(zbit);time.push(i*1000/rate);\n    for(let n=0;n<3;n++)if(((w>>>n)&1)===((w>>>(n+3))&1))matches++;\n  }\n  plots.setSeries('encChart','A / DIO3',time,a);\n  plots.setSeries('encChart','B / DIO4',time,b);\n  plots.setSeries('encChart','INDEX / DIO5',time,z);\n  const states=[0,1,3,2],rises=[];\n  let forward=0,reverse=0,invalid=0,indexBad=0;\n  let prev=states.indexOf(a[0]+2*b[0]);\n  for(let i=1;i<words.length;i++) {\n    if(z[i]&&!z[i-1]){\n      rises.push(i);\n      if(a[i]!==0 || b[i]!==0)indexBad++;\n    }\n    const state=states.indexOf(a[i]+2*b[i]);\n    if(state!==prev){\n      if(state===(prev+1)%4)forward++;\n      else if(state===(prev+3)%4)reverse++;\n      else invalid++;\n      prev=state;\n    }\n  }\n  const agreement=100*matches/(3*words.length);\n  const good=s.reverse?reverse:forward,bad=s.reverse?forward:reverse;\n  const rpm=rises.length>=2?60*rate*(rises.length-1)/(rises[rises.length-1]-rises[0]):NaN;\n  const validRpm=isFinite(rpm)&&Math.abs(rpm-actualRpm)/actualRpm<=0.05;\n  // A full ~2.4 revolution capture must contain ~2.4*4*PPR Gray changes.\n  // Require >=80% to detect future half-transferred DigitalIn frames, while\n  // tolerating the capture starting/ending between encoder state boundaries.\n  const expectedSteps=(words.length-1)/rate*(actualRpm/60)*4*s.ppr;\n  const pass=rises.length>=2 && validRpm && indexBad===0 && invalid===0 &&\n             good>=expectedSteps*0.80 && bad===0 && agreement>=97;\n  const result=(pass?'PASS':'CHECK')+' | '+rises.length+' index pulses | '+\n    (isFinite(rpm)?rpm.toFixed(2):'n/a')+' RPM (expected '+actualRpm.toFixed(2)+') | '+\n    (s.reverse?'reverse':'forward')+' steps '+good+' (opposite '+bad+', invalid '+invalid+') | '+\n    'index phase errors '+indexBad+' | 3-pair pin agreement '+agreement.toFixed(1)+'%';\n  print('Encoder: '+result);\n  return result;\n}\nfunction encCapture(verify) {\n  if(Patterns1.simulation){encPreview();print('Encoder: SIMULATION ONLY — no physical loopback test');return;}\n  let result='';\n  try {\n    const selected=encSettings();\n    if(verify){\n      if(Patterns1.running && !Patterns1.stop())throw Error('Previous Pattern stop failed: '+Patterns1.lastError);\n      if(!StaticIO.stop())throw Error('StaticIO release failed: '+StaticIO.lastError);\n      if(!Patterns1.runEncoder(0,1,2,selected.ppr,selected.rpm,selected.reverse))throw Error(Patterns1.lastError);\n    } else if(!Patterns1.running || Patterns1.status().mode!=='Encoder')\n      throw Error('Press START ENCODER first');\n    const st=Patterns1.status();\n    print('Encoder SDK BEFORE: '+encSdkSummary(st));\n    if(st.sdkStatusAvailable && !st.sdkRunning)\n      throw Error('DigitalOut is '+st.sdkStateName+' instead of Running; restart encoder');\n    // Capture-only measures the RUNNING configuration, not un-applied\n    // changes in selector widgets.\n    const s=verify?selected:{ppr:st.encoderPpr,rpm:st.encoderActualRpm,reverse:st.encoderReverse};\n    const rpm=st.encoderActualRpm;\n    // 4096 samples spanning about 2.4 rev gives index repetitions without\n    // undersampling the quadrature states (at most 64 PPR on this Page).\n    const rate=Math.round(4096*rpm/144);\n    if(4096/(2.4*4*s.ppr)<6)\n      throw Error('More than 64 PPR needs a longer DigitalIn buffer or fewer revs');\n    Logic1.Time.Rate.value=rate;\n    Logic1.Time.Samples.value=4096;\n    if(!Logic1.single())throw Error('DigitalIn arm failed: '+Logic1.lastError);\n    if(!Logic1.wait(6))throw Error('DigitalIn wait failed: '+Logic1.lastError);\n    const diag=Logic1.captureDiagnostics();\n    print('Encoder '+encCaptureSummary(diag));\n    const after=Patterns1.status();\n    print('Encoder SDK AFTER: '+encSdkSummary(after));\n    result=encAnalyze(Logic1.samples(),Logic1.sampleRateHz,s,rpm);\n    // The generator's actual state must remain Running through acquisition.\n    if(after.sdkStatusAvailable && !after.sdkRunning)\n      result='CHECK: DigitalOut stopped during capture ('+after.sdkStateName+') | '+result;\n  } catch(e){\n    Logic1.stop();\n    result='ERROR: '+String(e);\n    print('Encoder capture error: '+String(e));\n  } finally {\n    if(verify){\n      const stopped=Patterns1.stop();\n      result+=stopped?' / ALL OUTPUTS RELEASED':' / DANGER: OUTPUT STOP NOT CONFIRMED: '+Patterns1.lastError;\n    }\n    ui.set('encStatus',result);\n    print('Encoder test: '+result);\n  }\n}\nui.on('encStart','clicked',encStart);\nui.on('encStop','clicked',encStop);\nui.on('encCapture','clicked',function(){encCapture(false);});\nui.on('encVerify','clicked',function(){encCapture(true);});\nui.on('encPreview','clicked',encPreview);\nui.on('encPpr','selectionChanged',encInfo);\nui.on('encRpm','selectionChanged',encInfo);\nui.on('encDirection','selectionChanged',encInfo);\nencInfo();\n\n\n// ============================================================================\n"
+}

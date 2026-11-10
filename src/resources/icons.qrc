@@ -1,0 +1,29 @@
+<RCC>
+  <qresource prefix="/wfscript/icons">
+    <file alias="app_icon.png">icons/app_icon.png</file>
+    <file alias="new.png">icons/new.png</file>
+    <file alias="open.png">icons/open.png</file>
+    <file alias="save.png">icons/save.png</file>
+    <file alias="run.png">icons/run.png</file>
+    <file alias="stop.png">icons/stop.png</file>
+    <file alias="code.png">icons/code.png</file>
+    <file alias="libraries.png">icons/libraries.png</file>
+    <file alias="settings.png">icons/settings.png</file>
+    <file alias="size.png">icons/size.png</file>
+    <file alias="toolbox.png">icons/toolbox.png</file>
+    <file alias="properties.png">icons/properties.png</file>
+    <file alias="focus.png">icons/focus.png</file>
+    <file alias="undo.png">icons/undo.png</file>
+    <file alias="redo.png">icons/redo.png</file>
+    <file alias="copy.png">icons/copy.png</file>
+    <file alias="paste.png">icons/paste.png</file>
+    <file alias="duplicate.png">icons/duplicate.png</file>
+    <file alias="align.png">icons/align.png</file>
+    <file alias="arrange.png">icons/arrange.png</file>
+    <file alias="grid.png">icons/grid.png</file>
+    <file alias="detect.png">icons/detect.png</file>
+    <file alias="fit.png">icons/fit.png</file>
+    <file alias="export.png">icons/export.png</file>
+    <file alias="single.png">icons/single.png</file>
+  </qresource>
+</RCC>

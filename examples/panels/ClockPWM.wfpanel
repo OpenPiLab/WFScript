@@ -1,0 +1,244 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Generate hardware-timed DigitalOut clock and verify duty/frequency.",
+  "scriptName": "ClockPWM.js",
+  "activePageId": "digital_patterns",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "digital_patterns",
+      "name": "Patterns",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "pgTitle",
+          "type": "label",
+          "text": "DIGITAL PATTERN GENERATOR  /  HARDWARE-TIMED CLOCK + PWM",
+          "x": 24,
+          "y": 12,
+          "width": 1110,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "pgHelp",
+          "type": "label",
+          "text": "Patterns1 uses the AD3 DigitalOut hardware clock, not Windows JavaScript timing. START enables DIO0 only.\nConnect DIO0 — 1 kΩ — DIO1 for the LOOPBACK measurement. STOP returns DIO0 to high impedance.",
+          "x": 24,
+          "y": 67,
+          "width": 1110,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "pgFreq",
+          "type": "option_selector",
+          "text": "OUTPUT FREQUENCY",
+          "x": 24,
+          "y": 147,
+          "width": 270,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "100|250|500|1000|2000|5000|10000",
+            "defaultIndex": 3,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "pgDuty",
+          "type": "option_selector",
+          "text": "PWM DUTY (%)",
+          "x": 310,
+          "y": 147,
+          "width": 270,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "10|25|50|75|90",
+            "defaultIndex": 2,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "pgPin",
+          "type": "label",
+          "text": "OUTPUT  DIO0  /  PP  /  IDLE Z\n1–10,000 Hz panel presets",
+          "x": 596,
+          "y": 147,
+          "width": 252,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "pgInfo",
+          "type": "label",
+          "text": "AUTO CAPTURE RATE / WINDOW\nDerived from selected clock",
+          "x": 864,
+          "y": 147,
+          "width": 270,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "pgStart",
+          "type": "button",
+          "text": "START CLOCK / PWM",
+          "x": 24,
+          "y": 232,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "pgStop",
+          "type": "button",
+          "text": "STOP / OUTPUT Z",
+          "x": 307,
+          "y": 232,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "pgCapture",
+          "type": "button",
+          "text": "CAPTURE RUNNING CLOCK",
+          "x": 590,
+          "y": 232,
+          "width": 270,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "pgTest",
+          "type": "button",
+          "text": "DIO0 → DIO1 TEST",
+          "x": 878,
+          "y": 232,
+          "width": 256,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "pgStatus",
+          "type": "label",
+          "text": "READY — Pattern Generator is OFF. Opening the Panel does not drive digital pins.",
+          "x": 24,
+          "y": 299,
+          "width": 1110,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "pgChart",
+          "type": "digital_plot",
+          "text": "AD3 DigitalOut clock / DigitalIn DIO0 + DIO1 capture",
+          "x": 24,
+          "y": 367,
+          "width": 1110,
+          "height": 355,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Digital",
+            "xLabel": "Time (ms)",
+            "yLabel": "Logic lanes",
+            "showGrid": true,
+            "showLegend": false,
+            "xAuto": true,
+            "yAuto": true,
+            "lineWidth": 2.0,
+            "xLog": false,
+            "showCursors": true,
+            "cursorA": 1.0,
+            "cursorB": 2.0
+          }
+        },
+        {
+          "id": "pgFooter",
+          "type": "label",
+          "text": "HARDWARE TEST: DIO0 — 1 kΩ — DIO1; all other DIOs disconnected. TEST checks transitions, actual frequency, duty and pin agreement.\nNo high-speed timing guarantee from Windows or simulation; actual edges come from the AD3 DigitalOut engine.",
+          "x": 24,
+          "y": 731,
+          "width": 1110,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Digital Clock / PWM\n * Generate hardware-timed DigitalOut clock and verify duty/frequency.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: For loopback, DIO0 → 1 kΩ → DIO1.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 14 PATTERNS — AD3 DIGITALOUT CLOCK/PWM, CAPTURED WITH DIGITALIN\n// ============================================================================\n// Output is never enabled on startup; only START or TEST calls Patterns1.run().\n// This first release uses one Clock channel, logical DIO0, at physical DIO0.\nfunction pgSettings(){\n  const hz=Number(ui.get('pgFreq')),duty=Number(ui.get('pgDuty'));\n  if(!isFinite(hz)||hz<1||hz>1000000||!isFinite(duty)||duty<1||duty>99)\n    throw Error('Invalid Pattern clock frequency or duty');\n  const ch=Patterns1.Channels.DIO0;\n  ch.Pin.value=0;\n  ch.Output.text='PP';\n  ch.Idle.text='Z';\n  ch.Type.text='Clock';\n  ch.Frequency.value=hz;\n  ch.Duty.value=duty;\n  return {hz,duty};\n}\nfunction pgAutoRate(hz){return Math.min(1000000,Math.max(20000,hz*50));}\nfunction pgInfo(){\n  const cfg=pgSettings();\n  const rate=pgAutoRate(cfg.hz),duration=4096*1000/rate;\n  ui.set('pgInfo','CAPTURE '+(rate/1000).toFixed(1)+' kS/s × 4096\\n'+\n     duration.toFixed(3)+' ms window');\n}\nfunction pgStop(){\n  const ok=Patterns1.stop();\n  ui.set('pgStatus',ok?'STOPPED — Pattern output OFF / high impedance':\n    'DANGER — Pattern output shutdown NOT CONFIRMED: '+Patterns1.lastError);\n  print('Patterns stop: '+(ok?'OUTPUT RELEASED':'FAILED: '+Patterns1.lastError));\n  return ok;\n}\nfunction pgStart(){\n  try{\n    const cfg=pgSettings();\n    // Release previously selected static output pins before DigitalOut starts.\n    if(Patterns1.running && !Patterns1.stop())throw Error('Cannot stop running Pattern: '+Patterns1.lastError);\n    if(!StaticIO.stop())throw Error('Cannot release StaticIO: '+StaticIO.lastError);\n    if(!Patterns1.run())throw Error(Patterns1.lastError);\n    const s=Patterns1.status();\n    ui.set('pgStatus',(s.simulation?'SIMULATION ONLY — no physical output':'RUNNING HARDWARE')+\n      ' / DIO0 / '+s.actualFrequencyHz.toFixed(2)+' Hz / '+\n      s.actualDutyPercent.toFixed(2)+'% duty');\n    print('Patterns started: DIO0 / '+s.actualFrequencyHz+' Hz / '+s.actualDutyPercent+'% duty / '+\n          (s.simulation?'SIMULATION':'PHYSICAL'));\n  }catch(e){\n    const stopped=Patterns1.stop();\n    ui.set('pgStatus','PATTERN START ERROR: '+String(e)+\n        (stopped?' / output stopped':' / STOP UNCONFIRMED: '+Patterns1.lastError));\n    print('Patterns start error: '+String(e));\n  }\n}\nfunction pgPlot(words,rate,suffix){\n  if(!words.length||!isFinite(rate)||rate<=0)throw Error('No valid captured DigitalIn samples');\n  const t=[],d0=[],d1=[];\n  for(let i=0;i<words.length;i++){\n    const w=Number(words[i]); t.push(i*1000/rate);\n    d0.push(w&1);d1.push((w>>>1)&1);\n  }\n  if(!plots.setSeries('pgChart','DIO0',t,d0))throw Error(plots.lastError);\n  if(!plots.setSeries('pgChart','DIO1',t,d1))throw Error(plots.lastError);\n  const rises=[];\n  for(let i=1;i<d1.length;i++)if(d1[i] && !d1[i-1])rises.push(i);\n  let frequency=NaN,duty=NaN,matching=0;\n  for(let i=0;i<d1.length;i++)if(d0[i]===d1[i])matching++;\n  const agreement=100*matching/d1.length;\n  if(rises.length>=3){\n    const first=rises[0],last=rises[rises.length-1];\n    const periods=rises.length-1;\n    frequency=rate*periods/(last-first);\n    let high=0;\n    for(let i=first;i<last;i++)high+=d1[i];\n    duty=100*high/(last-first);\n  }\n  const details='CAPTURE '+suffix+' | '+rises.length+' rising edges | '+\n      (isFinite(frequency)?frequency.toFixed(2):'n/a')+' Hz | '+\n      (isFinite(duty)?duty.toFixed(1):'n/a')+'% duty | '+agreement.toFixed(1)+'% pin match';\n  print('Patterns: '+details);\n  return {rises:rises.length,frequency,duty,agreement,details};\n}\nfunction pgIdealPreview(){\n  const cfg=pgSettings(),rate=pgAutoRate(cfg.hz);\n  const t=[],d=[];\n  for(let i=0;i<2048;i++){\n    const ms=i*1000/rate;\n    t.push(ms);\n    d.push(((i/rate*cfg.hz)%1)<(cfg.duty/100)?1:0);\n  }\n  plots.setSeries('pgChart','DIO0 (ideal simulation)',t,d);\n  ui.set('pgStatus','SIMULATION PREVIEW ONLY — no SDK capture or physical timing measured');\n}\nfunction pgAcquire(requireTest){\n  if(Patterns1.simulation){\n    pgIdealPreview();\n    print('Patterns: SIMULATION ONLY — loopback test requires physical AD3');\n    return;\n  }\n  let outcome='',result=null;\n  try{\n    if(requireTest){\n      pgSettings();\n      if(Patterns1.running && !Patterns1.stop())throw Error('Pattern restart stop failed: '+Patterns1.lastError);\n      if(!StaticIO.stop())throw Error('StaticIO release failed: '+StaticIO.lastError);\n      if(!Patterns1.run())throw Error('DigitalOut start failed: '+Patterns1.lastError);\n    }else if(!Patterns1.running)throw Error('Press START CLOCK / PWM first');\n    const actual=Patterns1.status();\n    const rate=pgAutoRate(actual.actualFrequencyHz || Number(ui.get('pgFreq')));\n    Logic1.Time.Rate.value=rate;\n    Logic1.Time.Samples.value=4096;\n    // Clock is already hardware-running; we do not create the edges using wait().\n    if(!Logic1.single())throw Error('DigitalIn arm failed: '+Logic1.lastError);\n    if(!Logic1.wait(3))throw Error('DigitalIn capture failed: '+Logic1.lastError);\n    result=pgPlot(Logic1.samples(),Logic1.sampleRateHz,\n      requireTest?'DIO0→DIO1 LOOPBACK':'RUNNING CLOCK');\n    const fOk=isFinite(result.frequency) &&\n      Math.abs(result.frequency-actual.actualFrequencyHz)/actual.actualFrequencyHz<=0.05;\n    const dutyOk=isFinite(result.duty) &&\n      Math.abs(result.duty-actual.actualDutyPercent)<=5.0;\n    const matches=result.agreement>=95;\n    outcome=(fOk && dutyOk && matches && result.rises>=3 ?'PASS':'CHECK')+\n      ' | measured '+(isFinite(result.frequency)?result.frequency.toFixed(1):'n/a')+\n      ' Hz / '+(isFinite(result.duty)?result.duty.toFixed(1):'n/a')+\n      '% | expected '+actual.actualFrequencyHz.toFixed(1)+' Hz / '+\n      actual.actualDutyPercent.toFixed(1)+'% | pin match '+result.agreement.toFixed(1)+'%';\n  }catch(e){\n    Logic1.stop();\n    outcome='CAPTURE ERROR: '+String(e);\n  }finally{\n    // An automated test always releases the Pattern output, even on failure.\n    if(requireTest){\n      const released=Patterns1.stop();\n      outcome+=released?' / output released':' / DANGER: OUTPUT STOP NOT CONFIRMED: '+Patterns1.lastError;\n    }\n    ui.set('pgStatus',outcome);\n    print('Pattern loopback: '+outcome);\n  }\n}\nui.on('pgStart','clicked',pgStart);\nui.on('pgStop','clicked',pgStop);\nui.on('pgCapture','clicked',function(){pgAcquire(false);});\nui.on('pgTest','clicked',function(){pgAcquire(true);});\nui.on('pgFreq','selectionChanged',pgInfo);\nui.on('pgDuty','selectionChanged',pgInfo);\npgInfo();\n"
+}

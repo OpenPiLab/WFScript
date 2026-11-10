@@ -1,0 +1,156 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Capture CH1, measure signed DC/RMS, query supported SDK input ranges.",
+  "scriptName": "AD3ScopeExplorer.js",
+  "activePageId": "hardware",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "hardware",
+      "name": "AD3",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "hardwareTitle",
+          "type": "label",
+          "text": "10 AD3 / Scope capture and SDK range discovery",
+          "x": 22,
+          "y": 12,
+          "width": 1080,
+          "height": 36,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "hardwareHelp",
+          "type": "label",
+          "text": "Use 10 Vpp for +3.5 V DC. Query SDK Ranges is read-only; a capture reconfigures the scope.",
+          "x": 24,
+          "y": 53,
+          "width": 1100,
+          "height": 30,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "ad3Scope",
+          "type": "plot",
+          "text": "AD3 CH1 captured waveform",
+          "x": 24,
+          "y": 100,
+          "width": 538,
+          "height": 302,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Line",
+            "xLabel": "Time (s)",
+            "yLabel": "Voltage (V)",
+            "showGrid": true,
+            "showLegend": true,
+            "xAuto": true,
+            "yAuto": true,
+            "lineWidth": 2.0,
+            "showCursors": true,
+            "cursorA": 0,
+            "cursorB": 0.001
+          }
+        },
+        {
+          "id": "ad3Trend",
+          "type": "plot",
+          "text": "AD3 RMS trend",
+          "x": 585,
+          "y": 100,
+          "width": 538,
+          "height": 302,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Line",
+            "xLabel": "Capture #",
+            "yLabel": "RMS (V)",
+            "showGrid": true,
+            "showLegend": true,
+            "xAuto": true,
+            "yAuto": true,
+            "lineWidth": 2.0
+          }
+        },
+        {
+          "id": "ad3Capture",
+          "type": "button",
+          "text": "Capture Scope1 CH1",
+          "x": 24,
+          "y": 739,
+          "width": 208,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "ad3Status",
+          "type": "label",
+          "text": "Optional hardware test; choose Hardware mode and safely connect the AD3.",
+          "x": 250,
+          "y": 742,
+          "width": 830,
+          "height": 33,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "ad3Ranges",
+          "type": "button",
+          "text": "QUERY SDK RANGES",
+          "x": 24,
+          "y": 449,
+          "width": 220,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "ad3RangeStatus",
+          "type": "label",
+          "text": "Press Query SDK Ranges to inspect values reported by the connected device (simulation reports none).",
+          "x": 261,
+          "y": 449,
+          "width": 863,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: AD3 Scope and Range Discovery\n * Capture CH1, measure signed DC/RMS, query supported SDK input ranges.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: For supply loopback, V+ to CH1+, GND to CH1−; select a safe scope range.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\nlet captureN=0; // count successive physical acquisitions\n\n// Explicit hardware use only. No generated output, no implicit acquisition.\nui.on('ad3Capture','clicked',function(){\n try{\n   Scope1.Time.Samples.value=4096;\n   Scope1.Time.Rate.value=1000000;\n   // 10 Vpp covers the +3.5 V supply test that clipped at 5 Vpp.\n   Scope1.Channel1.Range.value=10;\n   if(!Scope1.single())throw Error(Scope1.lastError);\n   if(!Scope1.wait(3))throw Error(Scope1.lastError);\n   plots.fromScope('ad3Scope',1,'Captured CH1');\n   const st=Scope1.Channel1.statistics();\n   plots.appendPoint('ad3Trend','RMS',captureN++,st.rms);\n   ui.set('ad3Status','CH1 DC '+st.mean.toFixed(4)+' V | RMS '+st.rms.toFixed(4)+\n       ' V | range '+Scope1.Channel1.Range.value+' -> '+\n       Number(Scope1.Channel1.Range.real).toFixed(3)+' Vpp');\n }catch(e){ui.set('ad3Status','Capture error: '+e);print('AD3 capture error: '+e);}\n});\n// Does not change Scope configuration or arm an acquisition.\nui.on('ad3Ranges','clicked',function(){\n try {\n   const caps=Scope1.capabilities();\n   const steps=Scope1.Channel1.Range.steps;\n   const text=caps.rangeStepsAvailable ? steps.map(function(v){return Number(v)+' Vpp';}).join(', ') :\n        'SDK range steps unavailable (or Simulation mode)';\n   ui.set('ad3RangeStatus','SDK selectable ranges: '+text);\n   print('[AD3] '+text);\n   if(caps.rangeMinVpp!==undefined && caps.rangeMaxVpp!==undefined)\n     print('[AD3] Info: '+caps.rangeMinVpp+' .. '+caps.rangeMaxVpp+' Vpp ('+caps.rangeStepCount+' steps)');\n   if(caps.rangeStepsError)print('[AD3] '+caps.rangeStepsError);\n } catch(e) { ui.set('ad3RangeStatus','Range query error: '+String(e)); }\n});\n"
+}

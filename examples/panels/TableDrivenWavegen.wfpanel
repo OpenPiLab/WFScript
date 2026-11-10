@@ -1,0 +1,475 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Editable Wavegen frequency recipe: each table row yields a separate model preview or actual AD3 CH1 capture, with an independent result row; explicit hardware controls only.",
+  "scriptName": "TableDrivenWavegen.js",
+  "script": "/**\n * WFScript Example: Table-Driven Wavegen — Multi-Trace Sweep\n * Device: Simulation preview, or deliberate Physical Device selection + W1 command.\n * Wiring: On AD3 loopback W1 -> CH1+, GND -> CH1-. Do not wire to an energized circuit.\n * Simulation: PREVIEW ALL (NO I/O) creates calculated MODEL ONLY traces.\n * This is a standalone Panel demonstration, not a TestRunner/archived report.\n * v5.6.70.3 packaging: physical-control implementation preserved from the\n * user-tested multi-trace example; script logic is unchanged.\n */\n/**\n * WFScript v5.6.70.2 — Table-Driven Wavegen MULTI-TRACE Lab\n * Demonstrates that the Experiment Data Table is an INPUT, not just an output.\n *\n * HOW IT WORKS:\n *  1. User edits the cells in the editable recipeTable widget.\n *  2. readRecipe() calls ui.get('recipeTable') and validates each row.\n *  3. Each entry becomes {frequencyHz, amplitudeVpk, offsetV, dwellMs, minRms, maxRms}.\n *  4. JavaScript uses those values to PREVIEW, configure Wavegen W1, or acquire CH1.\n *  5. Each enabled row adds its OWN named waveform series to the Panel plot.\n *     On a real AD3, plots.fromScope() copies the actual CH1 acquisition BEFORE\n *     the next row starts. In simulation it plots calculated, clearly labeled data.\n *  6. Step results are written to a separate read-only Experiment Data Table.\n *\n * Startup does not enable outputs. PREVIEW buttons never operate hardware.\n * Physical W1 operations require deliberate operator button clicks and are capped\n * to low amplitudes. Safely connect W1 -> CH1+ and GND -> CH1- before Run All.\n * Real output is stopped in every automatic sweep exit path and by Panel Stop.\n *\n * THIS IS AN EXPERIMENT SCRIPT, NOT THE NATIVE TEST EXECUTIVE. Its PASS/FAIL\n * compares to operator-entered limits and is not archived by TestRunner.\n */\n\nconst START_RECIPE = [\n    ['100', '0.50', '0.00', '250', '0.29', '0.42', 'yes'],\n    ['250', '0.75', '0.00', '250', '0.46', '0.59', 'yes'],\n    ['500', '1.00', '0.00', '250', '0.64', '0.78', 'yes'],\n    ['1000', '1.00', '0.00', '250', '0.64', '0.78', 'yes'],\n    ['2000', '0.50', '0.00', '250', '0.29', '0.42', 'no'],\n    ['', '', '', '', '', '', ''],\n    ['', '', '', '', '', '', '']\n];\nlet cursor = 0;\nlet activeW1 = false;\nlet results = [];\n// The native Panel plot allows 12 series; this example allows 10 enabled rows.\nconst TRACE_COLORS = [\n    '#47cce4', '#f3bf46', '#92d36e', '#ed85c0', '#a79be9',\n    '#ff9167', '#5cc2a1', '#d4d66d', '#8aafe5', '#ee7c7c'\n];\nconst SCOPE_RATE_HZ = 250000;\nconst SCOPE_SAMPLES = 8192;\nfunction traceName(step, measured) {\n    // Stable and unique across a sweep, including repeated frequency settings.\n    return 'Row ' + step.sourceRow + ' | ' + step.hz + ' Hz | ' +\n        (measured ? 'CH1 measured' : 'MODEL ONLY');\n}\nfunction traceColor(index) { return TRACE_COLORS[index % TRACE_COLORS.length]; }\nfunction clearTraces() {\n    plots.clear('wavePreview');\n    plots.configure('wavePreview', {\n        title: 'Recipe row waveforms — each trace retained',\n        xLabel: 'Time (s)', yLabel: 'Voltage (V)',\n        showLegend: true, showGrid: true, xAuto: true, yAuto: true\n    });\n}\n\n\nfunction status(message) {\n    ui.set('recipeStatus', message);\n    ui.set('runStatus', message);\n    ui.set('resultsStatus', message);\n    print('[Table Recipe] ' + message);\n}\nfunction physical() { return Device.SN !== 'DEMO'; }\nfunction fixed(value, digits) { return Number(value).toFixed(digits); }\nfunction stopOutput() {\n    // Stop is safe and idempotent, even when W1 is already off.\n    try { Scope1.stop(); } catch (e) { print('Scope stop: ' + String(e)); }\n    try { Wavegen1.stop(); } finally { activeW1 = false; }\n}\nfunction numeric(cell, name, rowNumber, low, high) {\n    const value = Number(String(cell).trim());\n    if (!isFinite(value) || String(cell).trim() === '' || value < low || value > high)\n        throw Error('Table row ' + rowNumber + ': ' + name + ' must be ' + low + ' to ' + high);\n    return value;\n}\n// v5.6.70.2: ui.get() returns true native JavaScript arrays.\n// No Qt-specific conversion helper is necessary.\nfunction currentRecipeRows() {\n    const rows = ui.get('recipeTable');\n    if (!Array.isArray(rows) || rows.length > 20)\n        throw Error('recipeTable must return an array of up to 20 rows');\n    rows.forEach(function(row, i) {\n        if (!Array.isArray(row) || row.length !== 7)\n            throw Error('recipeTable row ' + (i + 1) + ' must have seven cells');\n    });\n    return rows;\n}\nfunction readRecipe() {\n    // Read CURRENT operator-edited cells as native JavaScript arrays.\n    const cells = currentRecipeRows();\n    const out = [];\n    for (let i = 0; i < cells.length; i++) {\n        const row = cells[i];\n        if (row.length !== 7)\n            throw Error('Table row ' + (i + 1) + ': expected seven columns');\n        const clean = row.map(function(v) { return String(v === null || v === undefined ? '' : v).trim(); });\n        if (clean.every(function(v) { return v === ''; })) continue; // blank entry slot\n        const runFlag = clean[6].toLowerCase();\n        if (['yes','y','true','1','no','n','false','0'].indexOf(runFlag) < 0)\n            throw Error('Table row ' + (i + 1) + ': Run? must be yes or no');\n        const hz = numeric(clean[0], 'Frequency (Hz)', i + 1, 100, 5000);\n        const amplitude = numeric(clean[1], 'Amplitude (Vpk)', i + 1, 0.1, 1.5);\n        const offset = numeric(clean[2], 'Offset (V)', i + 1, -0.5, 0.5);\n        const dwell = numeric(clean[3], 'Dwell (ms)', i + 1, 100, 1000);\n        const minRms = numeric(clean[4], 'RMS min (V)', i + 1, 0, 2);\n        const maxRms = numeric(clean[5], 'RMS max (V)', i + 1, 0, 2);\n        if (Math.abs(offset) + amplitude > 2.0)\n            throw Error('Table row ' + (i + 1) + ': |offset| + Vpk may not exceed 2 V');\n        if (minRms >= maxRms)\n            throw Error('Table row ' + (i + 1) + ': RMS min must be less than RMS max');\n        out.push({sourceRow:i+1, hz:hz, amplitude:amplitude, offset:offset,\n                  dwell:dwell, minRms:minRms, maxRms:maxRms,\n                  enabled:['yes','y','true','1'].indexOf(runFlag) >= 0});\n    }\n    const enabled = out.filter(function(s) { return s.enabled; });\n    if (enabled.length === 0) throw Error('Enter at least one enabled row (Run? = yes)');\n    if (enabled.length > 10) throw Error('Maximum ten enabled rows for this demonstration');\n    return enabled;\n}\nfunction toResult(step, actual, verdict) {\n    return [String(step.sourceRow), String(step.hz), fixed(step.amplitude,2),\n            fixed(step.amplitude / Math.SQRT2,4),\n            actual === null ? '' : fixed(actual,4),\n            fixed(step.minRms,3), fixed(step.maxRms,3), verdict];\n}\nfunction writeResults() {\n    ui.set('sweepResults', results);\n}\nfunction updateReadouts(step) {\n    ui.set('currentHz',step.hz);\n    ui.set('currentVpk',step.amplitude);\n    ui.set('currentExpectedRms',step.amplitude/Math.SQRT2);\n}\nfunction addModelTrace(step, index) {\n    // Same elapsed-time span as an 8192-sample, 250 kS/s physical capture.\n    // These are calculated predictions, never measured Scope samples.\n    const x=[], y=[];\n    const points = 2048;\n    const duration = SCOPE_SAMPLES / SCOPE_RATE_HZ;\n    for (let i=0; i<points; i++) {\n        const t = duration*i/(points-1);\n        x.push(t);\n        y.push(step.offset + step.amplitude*Math.sin(2*Math.PI*step.hz*t));\n    }\n    plots.setSeries('wavePreview', traceName(step,false), x, y,\n                    {color:traceColor(index),width:1.5});\n}\nfunction addMeasuredTrace(step, index) {\n    // IMPORTANT: the actual native Scope buffer is overwritten by the NEXT capture.\n    // fromScope() copies this capture into its own named Panel plot series NOW.\n    // Never clear the plot here, and never substitute a calculated sine wave.\n    const name = traceName(step,true);\n    plots.fromScope('wavePreview', 1, name);\n    plots.styleSeries('wavePreview', name,\n                      {color:traceColor(index),width:1.6});\n}\nfunction validateAction() {\n    const steps=readRecipe();\n    cursor=0;\n    status('VALIDATED: ' + steps.length + ' enabled rows. ' +\n           'First: ' + steps[0].hz + ' Hz / ' + fixed(steps[0].amplitude,2) +\n           ' Vpk. Values were read from the live editable table.');\n    return steps;\n}\nfunction addRow() {\n    const rows=currentRecipeRows();\n    if (rows.length >= 20) throw Error('This example limits recipe tables to 20 rows');\n    rows.push(['','','','','','','']);\n    if(!ui.set('recipeTable',rows)) throw Error('Could not update recipeTable');\n    cursor=0;results=[];writeResults();clearTraces();\n    status('Added editable blank row ' + rows.length + '. Cleared stale traces.');\n}\nfunction resetRecipe() {\n    stopOutput();\n    ui.set('recipeTable',START_RECIPE.map(function(r){return r.slice();}));\n    cursor=0;results=[];writeResults();clearTraces();\n    status('Restored example recipe; previous traces cleared. No hardware output enabled.');\n}\nfunction previewAll() {\n    const steps=validateAction();\n    // A preview must not start hardware output. If manual W1 was already on,\n    // stop it before plotting predictions.\n    if(activeW1) stopOutput();\n    clearTraces();\n    results=[];\n    for (let i=0; i<steps.length; i++) {\n        addModelTrace(steps[i],i);\n        results.push(toResult(steps[i],null,'MODEL ONLY'));\n    }\n    writeResults();\n    updateReadouts(steps[0]);\n    cursor=0;\n    status('MODEL ONLY: '+steps.length+' separate predicted waveform traces retained. '+\n           'No W1 output and NO CH1 acquisition occurred.');\n}\nfunction configureW1(step) {\n    Wavegen1.stop();\n    activeW1=false;\n    Wavegen1.Channel1.enable=true;\n    Wavegen1.Channel2.enable=false;\n    Wavegen1.Channel1.Mode.text='Simple';\n    Wavegen1.Channel1.Simple.Type.text='Sine';\n    Wavegen1.Channel1.Simple.Frequency.value=step.hz;\n    Wavegen1.Channel1.Simple.Amplitude.value=step.amplitude;\n    Wavegen1.Channel1.Simple.Offset.value=step.offset;\n    Wavegen1.Channel1.Simple.Phase.value=0;\n    if (Wavegen1.Channel1.Simple.Type.text !== 'Sine')\n        throw Error('SDK rejected sine-wave type');\n    if (!Wavegen1.run()) throw Error('W1 failed: ' + Wavegen1.lastError);\n    activeW1=true;\n    const s=Wavegen1.status(1);\n    if (s && s.carrierFunction && s.carrierFunction !== 'Sine')\n        throw Error('SDK Wavegen type mismatch: ' + s.carrierFunction);\n}\nfunction applyNext() {\n    const recipe=readRecipe();\n    // Step through the recipe while retaining every completed row on the plot.\n    // When cycling back to the beginning, start a clean set of traces.\n    if (cursor>=recipe.length) {cursor=0;results=[];writeResults();clearTraces();}\n    if (cursor===0 && results.length===0) clearTraces();\n    const index=cursor;\n    const step=recipe[index];\n    updateReadouts(step);\n    if (physical()) {\n        // Deliberately requested operator action. This now performs one physical\n        // capture as well as setting W1; W1 stays active until STOP or next row.\n        try {\n            configureScope();\n            configureW1(step);\n            wait(step.dwell/1000);\n            const measured=acquireAcRms();\n            addMeasuredTrace(step,index);\n            const verdict=measured>=step.minRms && measured<=step.maxRms ? 'PASS' : 'FAIL';\n            results.push(toResult(step,measured,verdict));\n            writeResults();\n            status('PHYSICAL row '+step.sourceRow+': CH1 CAPTURED '+step.hz+' Hz, RMS '+\n                fixed(measured,4)+' V — '+verdict+'. Trace retained; W1 ACTIVE until STOP W1.');\n        } catch(e) {stopOutput();throw e;}\n    } else {\n        addModelTrace(step,index);\n        results.push(toResult(step,null,'MODEL ONLY'));\n        writeResults();\n        status('SIMULATED row '+step.sourceRow+': '+step.hz+\n               ' Hz. Predicted waveform retained; no hardware output or capture.');\n    }\n    cursor++;\n}\nfunction configureScope() {\n    Scope1.Time.Rate.value=SCOPE_RATE_HZ;\n    Scope1.Time.Samples.value=SCOPE_SAMPLES;\n    Scope1.Channel1.Range.value=5;\n    Scope1.Channel1.Offset.value=0;\n    Scope1.Channel1.Attenuation.value=1;\n    Scope1.Trigger.Trigger.text='None';\n}\nfunction acquireAcRms() {\n    if (!Scope1.single()) throw Error('CH1 acquisition start failed: '+Scope1.lastError);\n    if (!Scope1.wait(3)) throw Error('CH1 acquisition timed out: '+Scope1.lastError);\n    const m=Scope1.Channel1.statistics();\n    if (!m || Number(m.count)<2048) throw Error('Not enough CH1 samples');\n    const mean=Number(m.mean), rms=Number(m.rms);\n    if (!isFinite(mean) || !isFinite(rms)) throw Error('Invalid CH1 statistics');\n    const value=Math.sqrt(Math.max(0,rms*rms-mean*mean));\n    return value;\n}\nfunction runAll() {\n    const recipe=readRecipe();\n    const real=physical();\n    results=[];writeResults();cursor=0;\n    stopOutput(); // always begin from safe state\n    clearTraces(); // only clear ONCE per sweep; per-row traces remain\n    let failures=0;\n    try {\n        if(real)configureScope();\n        for(let i=0;i<recipe.length;i++) {\n            const step=recipe[i];\n            updateReadouts(step);\n            if(real) {\n                configureW1(step);\n                wait(step.dwell/1000);\n                const measured=acquireAcRms();\n                // Copy real CH1 samples into a new series before the next capture.\n                addMeasuredTrace(step,i);\n                const verdict=measured>=step.minRms && measured<=step.maxRms ? 'PASS' : 'FAIL';\n                if(verdict==='FAIL')failures++;\n                results.push(toResult(step,measured,verdict));\n                status('PHYSICAL row '+step.sourceRow+'/'+recipe.length+': '+step.hz+\n                       ' Hz, captured CH1 RMS '+fixed(measured,4)+' V — '+verdict+\n                       ' ('+(i+1)+' retained traces)');\n            } else {\n                // Explicitly a model, never present it as captured hardware data.\n                addModelTrace(step,i);\n                results.push(toResult(step,null,'MODEL ONLY'));\n                status('MODEL ONLY row '+(i+1)+'/'+recipe.length+': '+step.hz+\n                       ' Hz ('+(i+1)+' retained predicted traces)');\n            }\n            writeResults();\n        }\n        cursor=recipe.length;\n    } finally {\n        stopOutput(); // run failures, scope exceptions and end of sweep all stop W1\n    }\n    status(real ?\n        'PHYSICAL sweep complete; '+recipe.length+' separate CH1 captures on Panel plot, '+\n        failures+' limit failures. W1 OFF.' :\n        'SIMULATION complete; '+recipe.length+\n        ' separate MODEL ONLY traces. NO hardware measurement.');\n}\nfunction safeAction(id,fn) {\n    ui.on(id,'clicked',function(){\n        try {fn();}\n        catch(e) {\n            try{stopOutput();}catch(stopError){print('Stop warning: '+String(stopError));}\n            status('ERROR: '+String(e));\n        }\n    });\n}\nsafeAction('validateRecipe',validateAction);\nsafeAction('addRecipeRow',addRow);\nsafeAction('resetRecipe',resetRecipe);\nsafeAction('previewRecipe',previewAll);\nsafeAction('applyNext',applyNext);\nsafeAction('runAll',runAll);\nsafeAction('stopW1',function(){stopOutput();status('W1 STOPPED by operator.');});\nsafeAction('resetCursor',function(){stopOutput();cursor=0;results=[];writeResults();clearTraces();status('Back to first enabled recipe row. Traces cleared; W1 OFF.');});\n\n// Edited rows arrive as native JavaScript arrays, just like ui.get().\n// A user edit updates the pending recipe but does not enable hardware.\nui.on('recipeTable','valueChanged',function(rows){\n    cursor=0;\n    // Stop active hardware FIRST; even a plot error must not leave W1 running.\n    try { if(activeW1)stopOutput(); }\n    catch(e) {print('Stop after edit: '+String(e));}\n    results=[];writeResults();\n    try {clearTraces();}catch(e){print('Clear stale plot: '+String(e));}\n    try {\n        if (!Array.isArray(rows) || !rows.every(Array.isArray))\n            throw Error('Expected native row arrays from table edit');\n        const count = rows.length;\n        status('RECIPE EDITED: '+count+' table rows. Old traces cleared; validate before running.');\n    } catch(e) {\n        status('RECIPE EDIT received invalid rows: '+String(e));\n    }\n});\n\n// STARTUP: Show mode and initialize read-only results. NO hardware calls.\nwriteResults();\nstatus('READY — '+(physical()?'PHYSICAL DEVICE SELECTED: only explicit W1 buttons enable output.':\n    'SIMULATION MODE: Preview/Run All will not access hardware.')+\n    ' Edit the recipe, then click VALIDATE & READ.');\n",
+  "activePageId": "recipe",
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "recipe",
+      "name": "00 Edit Frequency Recipe",
+      "width": 1260,
+      "height": 875,
+      "controls": [
+        {
+          "id": "recipeTitle",
+          "type": "label",
+          "text": "EDITABLE TABLE  →  WAVEGEN FREQUENCIES & TEST LIMITS",
+          "x": 32,
+          "y": 18,
+          "width": 1186,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "recipeIntro",
+          "type": "instruction_card",
+          "text": "How to use the editable table",
+          "x": 32,
+          "y": 78,
+          "width": 1186,
+          "height": 122,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Procedure",
+            "body": "1. Double-click a table cell to edit Frequency, Vpk, Offset, Dwell, RMS limits or Run? yes/no.\n2. VALIDATE & READ checks the current table.\n3. PREVIEW ALL overlays a calculated trace for every enabled row (NO hardware IO).\n4. On Page 01, APPLY + CAPTURE NEXT or RUN ALL acquires actual CH1 waveforms if a physical AD3 is selected."
+          }
+        },
+        {
+          "id": "recipeTable",
+          "type": "experiment_table",
+          "text": "INPUT — operator-editable experiment recipe",
+          "x": 32,
+          "y": 217,
+          "width": 1186,
+          "height": 340,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Frequency (Hz)|Amplitude (Vpk)|Offset (V)|Dwell (ms)|RMS min (V)|RMS max (V)|Run?",
+            "initialRows": "100|0.50|0.00|250|0.29|0.42|yes\n250|0.75|0.00|250|0.46|0.59|yes\n500|1.00|0.00|250|0.64|0.78|yes\n1000|1.00|0.00|250|0.64|0.78|yes\n2000|0.50|0.00|250|0.29|0.42|no\n||||||\n||||||",
+            "editable": true,
+            "maxRows": 20
+          }
+        },
+        {
+          "id": "validateRecipe",
+          "type": "button",
+          "text": "VALIDATE & READ TABLE",
+          "x": 32,
+          "y": 579,
+          "width": 279,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "addRecipeRow",
+          "type": "button",
+          "text": "ADD BLANK ROW",
+          "x": 331,
+          "y": 579,
+          "width": 279,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "resetRecipe",
+          "type": "button",
+          "text": "RESTORE DEFAULTS",
+          "x": 630,
+          "y": 579,
+          "width": 279,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "previewRecipe",
+          "type": "button",
+          "text": "PREVIEW ALL (NO I/O)",
+          "x": 929,
+          "y": 579,
+          "width": 289,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "recipeStatus",
+          "type": "label",
+          "text": "READY — Edit recipe above",
+          "x": 32,
+          "y": 650,
+          "width": 1186,
+          "height": 67,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "recipeSafety",
+          "type": "instruction_card",
+          "text": "Safe example operating limits",
+          "x": 32,
+          "y": 738,
+          "width": 1186,
+          "height": 116,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Warning",
+            "body": "This is an educational experiment, not a certified production TestRunner. Frequency 100–5000 Hz, sine amplitude 0.1–1.5 Vpk, |offset|+Vpk ≤2 V. In Physical Device mode connect W1 → CH1+ and GND → CH1− before RUN ALL. No output is started when the Panel opens."
+          }
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "name": "01 Apply Wavegen Settings",
+      "width": 1260,
+      "height": 875,
+      "controls": [
+        {
+          "id": "runTitle",
+          "type": "label",
+          "text": "TABLE-DRIVEN WAVEGEN — MULTI-TRACE CH1 CAPTURES",
+          "x": 32,
+          "y": 18,
+          "width": 1186,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "runIntro",
+          "type": "instruction_card",
+          "text": "Preview, apply one frequency, or run the complete sweep",
+          "x": 32,
+          "y": 78,
+          "width": 1186,
+          "height": 118,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Information",
+            "body": "APPLY + CAPTURE NEXT processes one enabled row and adds its own trace. In Physical Device mode it sets W1, waits the row dwell, captures actual CH1 samples and measures RMS; W1 stays on until STOP W1. RUN ALL repeats for every enabled row, preserving a separate colored capture on the Panel plot, then disables W1. Simulation displays separate MODEL ONLY predictions. FIRST RECIPE ROW clears previous traces. The standard Scope workspace continues to show its latest acquisition.",
+            "heading": "One waveform trace per enabled recipe row"
+          }
+        },
+        {
+          "id": "resetCursor",
+          "type": "button",
+          "text": "FIRST RECIPE ROW",
+          "x": 32,
+          "y": 220,
+          "width": 277,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "applyNext",
+          "type": "button",
+          "text": "APPLY + CAPTURE NEXT",
+          "x": 331,
+          "y": 220,
+          "width": 277,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "runAll",
+          "type": "button",
+          "text": "RUN ALL + CH1 CHECK",
+          "x": 630,
+          "y": 220,
+          "width": 277,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "stopW1",
+          "type": "button",
+          "text": "STOP W1 / SCOPE",
+          "x": 929,
+          "y": 220,
+          "width": 289,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "currentHz",
+          "type": "digital_display",
+          "text": "CURRENT FREQUENCY",
+          "x": 32,
+          "y": 309,
+          "width": 368,
+          "height": 85,
+          "value": 1000,
+          "min": 0,
+          "max": 5000,
+          "events": {},
+          "properties": {
+            "unit": "Hz",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "currentVpk",
+          "type": "digital_display",
+          "text": "CURRENT AMPLITUDE",
+          "x": 424,
+          "y": 309,
+          "width": 369,
+          "height": 85,
+          "value": 1,
+          "min": 0,
+          "max": 2,
+          "events": {},
+          "properties": {
+            "unit": "Vpk",
+            "decimals": 2
+          }
+        },
+        {
+          "id": "currentExpectedRms",
+          "type": "digital_display",
+          "text": "IDEAL AC RMS",
+          "x": 817,
+          "y": 309,
+          "width": 401,
+          "height": 85,
+          "value": 0.7071,
+          "min": 0,
+          "max": 3,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 4
+          }
+        },
+        {
+          "id": "wavePreview",
+          "type": "plot",
+          "text": "SWEEP OVERLAY — one named series per table row",
+          "x": 32,
+          "y": 417,
+          "width": 1186,
+          "height": 335,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Line",
+            "xLabel": "Time (s)",
+            "yLabel": "Voltage (V)",
+            "showGrid": true,
+            "showLegend": true,
+            "xAuto": true,
+            "yAuto": true,
+            "lineWidth": 2.0,
+            "title": "Recipe row waveforms — CH1 or model"
+          }
+        },
+        {
+          "id": "runStatus",
+          "type": "label",
+          "text": "READY",
+          "x": 32,
+          "y": 768,
+          "width": 1186,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "results",
+      "name": "02 Results & JavaScript",
+      "width": 1260,
+      "height": 875,
+      "controls": [
+        {
+          "id": "resultsTitle",
+          "type": "label",
+          "text": "PER-ROW MEASUREMENTS — ONE CAPTURED WAVEFORM PER ROW",
+          "x": 32,
+          "y": 18,
+          "width": 1186,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "resultsIntro",
+          "type": "instruction_card",
+          "text": "How the result rows are produced",
+          "x": 32,
+          "y": 78,
+          "width": 1186,
+          "height": 115,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Procedure",
+            "body": "Each enabled recipe row is evaluated separately. The Panel waveform plot retains a distinct named series for EVERY completed row: actual CH1 samples on a physical AD3, or MODEL ONLY sine predictions in Simulation. Frequency and amplitude may differ between traces; the shared X axis uses seconds. Result rows retain ideal and physically measured AC RMS. A new sweep clears old traces and records a fresh set."
+          }
+        },
+        {
+          "id": "sweepResults",
+          "type": "experiment_table",
+          "text": "OUTPUT — script-generated sweep results",
+          "x": 32,
+          "y": 211,
+          "width": 1186,
+          "height": 340,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Recipe row|Hz|Vpk|Ideal RMS|Actual RMS|Low|High|Result",
+            "initialRows": "",
+            "maxRows": 250,
+            "editable": false
+          }
+        },
+        {
+          "id": "tableJsGuide",
+          "type": "instruction_card",
+          "text": "Code to read and use an editable table",
+          "x": 32,
+          "y": 578,
+          "width": 580,
+          "height": 186,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Information",
+            "body": "const rows = ui.get('recipeTable');  // native JS arrays\nconst hz = Number(rows[0][0]);\n// after Scope1.single() + Scope1.wait():\nplots.fromScope('wavePreview', 1, 'Row 1 | CH1 measured');\n// Named series persist; don't clear plot between rows.\n// Each row has a distinct measured waveform & RMS result."
+          }
+        },
+        {
+          "id": "tableModes",
+          "type": "instruction_card",
+          "text": "Results and reporting distinctions",
+          "x": 632,
+          "y": 578,
+          "width": 586,
+          "height": 186,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Warning",
+            "body": "SIMULATION: separate predicted sine traces labeled MODEL ONLY, with no hardware data. PHYSICAL: W1 drives the input and an actual CH1 acquisition is copied into each row's named Plot series; measured RMS is checked against editable limits. Only the Panel plot retains sweep traces; the standard Scope tab shows the most recent capture. This example is NOT an archived native TestRunner report."
+          }
+        },
+        {
+          "id": "resultsStatus",
+          "type": "label",
+          "text": "READY",
+          "x": 32,
+          "y": 780,
+          "width": 1186,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        }
+      ]
+    }
+  ]
+}

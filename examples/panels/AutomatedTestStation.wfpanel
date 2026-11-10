@@ -1,0 +1,1050 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Seven-page automated Test Station with project-owned UUT fields, native execution, auto-archived JSON reports and optional manual export.",
+  "scriptName": "AutomatedTestStation.js",
+  "activePageId": "uut",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": true
+  },
+  "pages": [
+    {
+      "id": "overview",
+      "name": "00 Test Overview",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "guideHeading",
+          "type": "label",
+          "text": "<div align=\"left\" style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\"><h2 style=\"color:#7dd3fc\">WFScript | Build and Run Your First Test</h2><p style=\"color:#cbd5e1\">One C++ test definition. One function library. One simple operator Panel.</p></div>",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "guidePurpose",
+          "type": "label",
+          "text": "<div align=\"left\" style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\"><h3 style=\"color:#7dd3fc\">1. Where is the test?</h3><p>The test is a <b>first-class object inside this .wfpanel</b>, not in JavaScript. Open <b>Test Sequence…</b> in the Panel Designer to edit its steps, order, handlers, acceptance limits and total timeout. Save the .wfpanel and reopen it: those exact settings will be loaded.</p></div>",
+          "x": 25,
+          "y": 105,
+          "width": 611,
+          "height": 229,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "guideMechanics",
+          "type": "label",
+          "text": "<div align=\"left\" style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\"><h3 style=\"color:#7dd3fc\">2. Who does what?</h3><p><b>Qt/C++:</b> loads and validates the test on Panel startup, schedules steps, checks numeric limits, handles cleanup and records results.<br><b>TestSteps.mjs:</b> each exported function makes one simulated measurement and returns a number.<br><b>OperatorPanel.js:</b> binds Run, Next, Stop and Reset; displays/export reports. <b>No test registration or configuration code.</b></p></div>",
+          "x": 656,
+          "y": 105,
+          "width": 633,
+          "height": 229,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "guideSequence",
+          "type": "label",
+          "text": "<div align=\"left\" style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\"><h3 style=\"color:#7dd3fc\">3. Exact sequence</h3><p><b>Setup:</b> 150 ms nonblocking settling.<br><b>Main:</b> V+ 3.301 V (3.25–3.35), V− −3.298 V (−3.35–−3.25), clock 999.8 Hz (990–1010; polled every 10 ms), PWM 50.1% (49–51), finalize.<br><b>Cleanup:</b> restore station. The configured total timeout starts at <b>15,000 ms</b>.</p></div>",
+          "x": 25,
+          "y": 346,
+          "width": 611,
+          "height": 338,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "guideOutcomes",
+          "type": "label",
+          "text": "<div align=\"left\" style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\"><h3 style=\"color:#7dd3fc\">4. What to expect</h3><p><b>RUN TEST:</b> all four numeric measurements PASS; final overall state PASSED; Setup/Cleanup actions are DONE.<br><b>STOP (CLEANUP):</b> graceful terminate while a timed step is RUNNING; unfinished Main steps are skipped and Cleanup runs.<br><b>Test a failure:</b> change the PWM value to 47.5 in TestSteps.mjs. The C++ executive compares it with the saved 49–51% range and reports FAIL without changing any Panel code.</p></div>",
+          "x": 656,
+          "y": 346,
+          "width": 633,
+          "height": 338,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "guideActions",
+          "type": "label",
+          "text": "<div align=\"left\" style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\"><h3 style=\"color:#7dd3fc\">5. Try editing a test</h3><p>Stop Panel mode → open <b>Test Sequence…</b> → set Total Timeout to 15,000 ms or another value → change the Setup delay or insert a new Main Delay → Save to Panel → save the .wfpanel → start Panel → RUN TEST. The report shows the configured timeout. JSON reports auto-save; open them through Script → Open Test Results Folder. <b>No second configuration exists.</b></p></div>",
+          "x": 25,
+          "y": 691,
+          "width": 1264,
+          "height": 153,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": "uut",
+      "name": "01 Run Information",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "uutHeading",
+          "type": "label",
+          "text": "RUN INFORMATION  |  Identify the Unit Under Test",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uutHelp",
+          "type": "label",
+          "text": "This form is automatically linked to the Test Executive in this Panel project. All RUN TEST and NEXT STEP buttons use the same values, no matter which Page they're on.\\nTo add/change fields: Design mode > Test Sequence > Run Information. The native TestRunner checks required values before Setup begins.",
+          "x": 25,
+          "y": 91,
+          "width": 1264,
+          "height": 88,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uutFields",
+          "type": "runInformation",
+          "text": "Run Information (auto-linked to project Test Executive)",
+          "x": 25,
+          "y": 200,
+          "width": 690,
+          "height": 528,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "uutRun",
+          "type": "button",
+          "text": "▶  RUN TEST",
+          "x": 755,
+          "y": 215,
+          "width": 505,
+          "height": 85,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "uutReset",
+          "type": "button",
+          "text": "RESET TEST",
+          "x": 755,
+          "y": 319,
+          "width": 505,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "uutDetails",
+          "type": "label",
+          "text": "TESTING THE NEW FEATURES\n\n1. Press RUN TEST with the serial number blank.\n   The executive should refuse to start.\n\n2. Enter a serial number and RUN again.\n   The test should proceed into Setup / Main / Cleanup.\n\n3. Open the Run Report page. The test report\n   should contain the UUT field values.\n\n4. STOP / RESET, edit the serial number and run again.\n   The new execution should capture the new values.",
+          "x": 755,
+          "y": 408,
+          "width": 505,
+          "height": 315,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uutFooter",
+          "type": "label",
+          "text": "Run Information is project-owned; the entered values are per-execution only and are not saved into the .wfpanel file.",
+          "x": 25,
+          "y": 751,
+          "width": 1235,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "station",
+      "name": "02 Test Station",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "heading",
+          "type": "label",
+          "text": "AUTOMATED TEST STATION  |  C++ EXECUTIVE",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "instructions",
+          "type": "label",
+          "text": "RUN uses the exact saved definition. NEXT STEP advances manually. STOP runs Cleanup. RESET clears results. Edit settings using Test Sequence… in the Panel Designer.",
+          "x": 25,
+          "y": 76,
+          "width": 1264,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "resultPositive",
+          "type": "measurement_result",
+          "text": "V+ SUPPLY",
+          "x": 25,
+          "y": 159,
+          "width": 302,
+          "height": 162,
+          "value": 0,
+          "min": 3.25,
+          "max": 3.35,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "resultNegative",
+          "type": "measurement_result",
+          "text": "V− SUPPLY",
+          "x": 345,
+          "y": 159,
+          "width": 302,
+          "height": 162,
+          "value": 0,
+          "min": -3.35,
+          "max": -3.25,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "resultClock",
+          "type": "measurement_result",
+          "text": "CLOCK FREQUENCY",
+          "x": 25,
+          "y": 343,
+          "width": 302,
+          "height": 162,
+          "value": 0,
+          "min": 990,
+          "max": 1010,
+          "events": {},
+          "properties": {
+            "unit": "Hz",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "resultPwm",
+          "type": "measurement_result",
+          "text": "PWM DUTY CYCLE",
+          "x": 345,
+          "y": 343,
+          "width": 302,
+          "height": 162,
+          "value": 0,
+          "min": 49,
+          "max": 51,
+          "events": {},
+          "properties": {
+            "unit": "%",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "stationNext",
+          "type": "button",
+          "text": "NEXT STEP",
+          "x": 25,
+          "y": 559,
+          "width": 301,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationPass",
+          "type": "button",
+          "text": "RUN TEST",
+          "x": 345,
+          "y": 559,
+          "width": 301,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationFail",
+          "type": "button",
+          "text": "STOP (CLEANUP)",
+          "x": 665,
+          "y": 559,
+          "width": 301,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationReset",
+          "type": "button",
+          "text": "RESET",
+          "x": 985,
+          "y": 559,
+          "width": 301,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationSummary",
+          "type": "label",
+          "text": "READY<br>Run the Qt/C++ Test Executive.",
+          "x": 25,
+          "y": 640,
+          "width": 1264,
+          "height": 95,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "stationSequence",
+          "type": "test_sequence",
+          "text": "Controller Functional Test",
+          "x": 667,
+          "y": 159,
+          "width": 622,
+          "height": 377,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "defaultSteps": "Initialize test station|Verify V+ supply|Verify V− supply|Verify clock frequency|Verify PWM duty cycle|Finalize test summary|Restore station state",
+            "maxSteps": 64,
+            "showProgress": true,
+            "showElapsed": true,
+            "showNumbers": true,
+            "autoScroll": true,
+            "compactMode": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "table",
+      "name": "03 Measurements",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "tableHeading",
+          "type": "label",
+          "text": "MEASUREMENTS  |  Values checked against limits by native C++",
+          "x": 25,
+          "y": 20,
+          "width": 1264,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "tableInfo",
+          "type": "label",
+          "text": "This Table is updated from the native Test Executive even while the Page is hidden.",
+          "x": 25,
+          "y": 85,
+          "width": 1118,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "stationTable",
+          "type": "measurement_table",
+          "text": "Measurement Results",
+          "x": 25,
+          "y": 179,
+          "width": 1264,
+          "height": 560,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "decimals": 3,
+            "maxRows": 100,
+            "headers": "Measurement|Actual|Acceptance limits|Result"
+          }
+        },
+        {
+          "id": "tableFooter",
+          "type": "label",
+          "text": "Limits live in the Test Sequence definition. Functions in TestSteps.mjs return measurements.",
+          "x": 25,
+          "y": 663,
+          "width": 1118,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": "eventlog",
+      "name": "04 Event Log",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "logHeading",
+          "type": "label",
+          "text": "TEST EVENT LOG  |  Automatic native execution events",
+          "x": 25,
+          "y": 20,
+          "width": 1264,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "logInfo",
+          "type": "label",
+          "text": "C++ TestRunner publishes automatic step and measurement events even while this Page is hidden.",
+          "x": 25,
+          "y": 83,
+          "width": 1264,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "stationLog",
+          "type": "event_log",
+          "text": "Test Station Event Log",
+          "x": 25,
+          "y": 172,
+          "width": 1264,
+          "height": 565,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        },
+        {
+          "id": "logFooter",
+          "type": "label",
+          "text": "INFO = operations  |  PASS = accepted  |  FAIL = rejected  |  ERROR = execution stop.\nClear and CSV Export are explicit operator actions; no logs are saved into the .wfpanel file.",
+          "x": 25,
+          "y": 753,
+          "width": 1264,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "name": "05 Run Report",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "reportHeading",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:14px\"><b>05 — NATIVE TEST REPORT</b></div>",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "reportRefresh",
+          "type": "button",
+          "text": "REFRESH C++ RECORD",
+          "x": 25,
+          "y": 105,
+          "width": 260,
+          "height": 57,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "reportApi",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d5e5f1;font-size:12px\"><b>Automatic JSON archive is enabled:</b> edit the folder in Test Sequence → Report Storage. Every finished run is saved, including FAIL and ABORTED. Manual JSON/CSV export is still available.</div>",
+          "x": 811,
+          "y": 105,
+          "width": 478,
+          "height": 77,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "stationReport",
+          "type": "label",
+          "text": "<div align=\"left\" style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px;\"><h3>NO EXECUTION YET</h3><p>Run a test on Page 01 or 04, then return here.</p></div>",
+          "x": 25,
+          "y": 196,
+          "width": 1264,
+          "height": 613,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "reportFooter",
+          "type": "label",
+          "text": "Automatic JSON archiving is ON for this example. Run a test; the saved file path or error will appear here.",
+          "x": 25,
+          "y": 813,
+          "width": 1264,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "reportExportJson",
+          "type": "button",
+          "text": "SAVE JSON REPORT",
+          "x": 300,
+          "y": 105,
+          "width": 238,
+          "height": 57,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "reportExportCsv",
+          "type": "button",
+          "text": "SAVE CSV REPORT",
+          "x": 556,
+          "y": 105,
+          "width": 238,
+          "height": 57,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        }
+      ]
+    },
+    {
+      "id": "sharedUut",
+      "name": "06 Shared UUT View",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "mirrorHeading",
+          "type": "label",
+          "text": "SHARED RUN INFORMATION — SECOND VIEW",
+          "x": 25,
+          "y": 24,
+          "width": 1264,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "mirrorHelp",
+          "type": "label",
+          "text": "This is a SECOND Run Information widget, with its own Panel widget ID but the SAME shared UUT values. Edit any field here, return to Page 01, and confirm the value changed there too. Use the READ PENDING button to inspect the live model from JavaScript; completed reports remain frozen.",
+          "x": 25,
+          "y": 99,
+          "width": 1264,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uutFieldsMirror",
+          "type": "runInformation",
+          "text": "Run Information (auto-linked to project Test Executive)",
+          "x": 25,
+          "y": 180,
+          "width": 690,
+          "height": 530,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "mirrorRead",
+          "type": "button",
+          "text": "READ PENDING UUT (JS)",
+          "x": 755,
+          "y": 202,
+          "width": 505,
+          "height": 70,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "mirrorStatus",
+          "type": "label",
+          "text": "Press READ PENDING to see the currently entered UUT fields and the frozen previous run ID.",
+          "x": 755,
+          "y": 293,
+          "width": 505,
+          "height": 255,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "mirrorFooter",
+          "type": "label",
+          "text": "Changing either form updates the same pending C++ data; no active widget and no duplicated configuration.",
+          "x": 25,
+          "y": 754,
+          "width": 1235,
+          "height": 57,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * OPERATOR PANEL — four jobs only: Run, Next, Stop/Reset, Display.\n *\n * The C++ runtime has ALREADY loaded the saved project test definition\n * and resolved TestSteps.mjs BEFORE this script is evaluated.\n *\n * To edit timing, limits, step order or handlers: Panel Designer > Test Sequence.\n * To change what a measurement does: edit TestSteps.mjs.\n * There is no TestRunner.loadDefinition(), add() or configure() here.\n */\n\nfunction operatorAction(action) {\n    if (!action()) {\n        const message='Executive: '+TestRunner.lastError;\n        print(message);\n        ui.set('uutFooter',message);\n    } else {\n        ui.set('uutFooter','Test action accepted — inspect the Test Station and Run Report pages.');\n    }\n}\n\n// Button IDs correspond directly to buttons on Page 01.\nui.on('stationPass', 'clicked', function() { operatorAction(function() { return TestRunner.run(); }); });\n// Native Run Information widget supplies the fields to C++ automatically.\n// This button runs the very same project-owned sequence, with no metadata script.\nui.on('uutRun', 'clicked', function() { operatorAction(function() { return TestRunner.run(); }); });\nui.on('uutReset','clicked', function() { operatorAction(function() { return TestRunner.reset(); }); refreshReport(); });\nui.on('stationNext', 'clicked', function() { operatorAction(function() { return TestRunner.next(); }); });\nui.on('stationFail', 'clicked', function() { operatorAction(function() { return TestRunner.terminate(); }); });\nui.on('stationReset', 'clicked', function() { operatorAction(function() { return TestRunner.reset(); }); refreshReport(); });\n\nfunction escapeText(value) {\n    return String(value === undefined || value === null ? '' : value)\n        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\nfunction refreshReport() {\n    const r = TestRunner.report();\n    const s = TestRunner.summary();\n    const steps = r.steps || [];\n    const measurements = r.measurements || [];\n    const runInfo = r.runInfo || {};\n    const archive = r.executionId ? TestRunner.archiveInfo() : {status:'idle'};\n    const archiveText = archive.status === 'saved'\n        ? 'AUTO-ARCHIVED JSON: ' + archive.path\n        : archive.status === 'error'\n            ? 'ARCHIVE FAILED: ' + archive.error\n            : archive.status === 'disabled'\n                ? 'Automatic archiving is disabled in Test Sequence > Report Storage.'\n                : 'Archive status: ' + archive.status;\n    if (r.executionId) ui.set('reportFooter', archiveText);\n    const metadata = Object.keys(runInfo).map(function(key) {\n        return '<tr><td>' + escapeText(key) + '</td><td>' + escapeText(runInfo[key]) + '</td></tr>';\n    }).join('');\n    const rows = steps.map(function(step) {\n        return '<tr><td>' + escapeText(step.name) + '</td><td>' +\n            escapeText(step.status) + '</td><td>' + escapeText(step.elapsedMs) + ' ms</td></tr>';\n    }).join('');\n    const data = measurements.map(function(m) {\n        return '<tr><td>' + escapeText(m.name) + '</td><td>' +\n            escapeText(m.value) + ' ' + escapeText(m.unit) + '</td><td>' +\n            escapeText(m.low) + ' – ' + escapeText(m.high) + '</td><td>' +\n            escapeText(m.status) + '</td></tr>';\n    }).join('');\n    ui.set('stationReport', '<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\">' +\n        '<h2>Native Test Report</h2><p><b>Status:</b> ' + escapeText(s.state) +\n        ' &nbsp; <b>Configured deadline:</b> ' + escapeText(s.totalTimeoutMs) + ' ms' +\n        ' &nbsp; <b>Elapsed:</b> ' + escapeText(s.elapsedMs) + ' ms</p>' +\n        '<p><b>Execution ID:</b> ' + escapeText(r.executionId || 'Not yet started') + '</p>' +\n        '<p><b>Archive:</b> ' + escapeText(archiveText) + '</p>' +\n        '<h3>Run Information</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Field</th><th align=\"left\">Value</th></tr>' + metadata + '</table>' +\n        '<h3>Steps</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Step</th><th>Status</th><th>Elapsed</th></tr>' + rows + '</table>' +\n        '<h3>Measurements</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Measurement</th><th>Actual</th><th>Limits</th><th>Verdict</th></tr>' + data + '</table></div>');\n}\n\nfunction saveReport(format) {\n    const file = TestRunner.exportReport(format);\n    const message = file ? 'Saved ' + format.toUpperCase() + ': ' + file : 'Cannot export: ' + TestRunner.lastError;\n    ui.set('reportFooter', escapeText(message));\n    print(message);\n}\nui.on('reportRefresh','clicked', refreshReport);\nui.on('reportExportJson','clicked',function() { saveReport('json'); });\nui.on('reportExportCsv','clicked',function() { saveReport('csv'); });\n\n\n// Page 06 demonstrates the project-owned pending model and two synchronized\n// form widgets. This is READ-ONLY JavaScript; it never configures or copies\n// UUT data. The C++ model owns both forms and the TestRunner start snapshot.\nui.on('mirrorRead','clicked',function() {\n    const pending=TestRunner.pendingRunInfo();\n    const mainView=ui.get('uutFields');\n    const mirrorView=ui.get('uutFieldsMirror');\n    const completed=TestRunner.runInfo();\n    const message='Pending UUT: '+JSON.stringify(pending)+\n        '\\nPage 01 view: '+JSON.stringify(mainView)+\n        '\\nPage 06 view: '+JSON.stringify(mirrorView)+\n        '\\nFrozen executed UUT: '+JSON.stringify(completed);\n    print(message);\n    ui.set('mirrorStatus',message);\n});\n\nTestRunner.onFinished(function() { refreshReport(); });\nrefreshReport(); // Reading state is safe; no test runs at Panel startup.\n",
+  "libraries": [
+    {
+      "name": "TestSteps.mjs",
+      "source": "/**\n * TestSteps.mjs — the ONLY test implementation file.\n *\n * Each exported function does ONE thing and returns the measurement or result.\n * The editor owns order, timing, acceptance limits and cleanup policy.\n * Qt/C++ owns scheduling, comparisons, statuses, and the test report.\n * You can edit these functions without changing the operator Panel.\n */\n\nexport function verifyPositive() {\n    return 3.301;        // In hardware: read the actual supply voltage.\n}\n\nexport function verifyNegative() {\n    return -3.298;\n}\n\nexport function beginClock() {\n    print('Clock acquisition started');\n}\n\nexport function pollClock(stepElapsedMs) {\n    if (stepElapsedMs < 180) return undefined; // Still measuring.\n    return 999.8;      // Numeric result: C++ checks saved limits.\n}\n\nexport function endClock(status, elapsedMs) {\n    print('Clock verification:', status, elapsedMs + ' ms');\n}\n\nexport function verifyPwm() {\n    return 50.1;       // Change to 47.5 to demonstrate a real FAIL.\n}\n\nexport function finalize() {\n    print('All Main tests finished');\n    return true;\n}\n\nexport function restoreStation() {\n    print('Cleanup: restore instruments and release fixture');\n    return true;\n}\n"
+    }
+  ],
+  "testDefinition": {
+    "schemaVersion": 1,
+    "id": "controller-functional-demo",
+    "title": "Controller Functional Test",
+    "config": {
+      "sequenceId": "stationSequence",
+      "tableId": "stationTable",
+      "logId": "stationLog",
+      "summaryId": "stationSummary",
+      "stopOnFailure": true,
+      "totalTimeoutMs": 15000
+    },
+    "steps": [
+      {
+        "id": "initialize",
+        "name": "SETUP — Initialize test station",
+        "group": "setup",
+        "type": "action",
+        "description": "Qt nonblocking 150 ms settling delay",
+        "mode": "delay",
+        "durationMs": 150,
+        "timeoutMs": 600
+      },
+      {
+        "id": "positive",
+        "name": "Verify V+ supply",
+        "group": "main",
+        "type": "numeric",
+        "description": "C++ checks returned voltage against 3.25 to 3.35 V",
+        "mode": "once",
+        "handler": "verifyPositive",
+        "limits": {
+          "low": 3.25,
+          "high": 3.35
+        },
+        "unit": "V",
+        "resultWidget": "resultPositive"
+      },
+      {
+        "id": "negative",
+        "name": "Verify V− supply",
+        "group": "main",
+        "type": "numeric",
+        "description": "C++ checks returned voltage against -3.35 to -3.25 V",
+        "mode": "once",
+        "handler": "verifyNegative",
+        "limits": {
+          "low": -3.35,
+          "high": -3.25
+        },
+        "unit": "V",
+        "resultWidget": "resultNegative"
+      },
+      {
+        "id": "clock",
+        "name": "Verify clock frequency",
+        "group": "main",
+        "type": "numeric",
+        "description": "C++ polls every 10 ms; library returns frequency after settling",
+        "mode": "poll",
+        "intervalMs": 10,
+        "timeoutMs": 800,
+        "handlers": {
+          "start": "beginClock",
+          "poll": "pollClock",
+          "finish": "endClock"
+        },
+        "limits": {
+          "low": 990,
+          "high": 1010
+        },
+        "unit": "Hz",
+        "resultWidget": "resultClock"
+      },
+      {
+        "id": "pwm",
+        "name": "Verify PWM duty cycle",
+        "group": "main",
+        "type": "numeric",
+        "description": "C++ checks returned PWM duty against 49 to 51%",
+        "mode": "once",
+        "handler": "verifyPwm",
+        "limits": {
+          "low": 49,
+          "high": 51
+        },
+        "unit": "%",
+        "resultWidget": "resultPwm"
+      },
+      {
+        "id": "report",
+        "name": "Finalize test summary",
+        "group": "main",
+        "type": "action",
+        "description": "Simple action: completes after measurements",
+        "mode": "once",
+        "handler": "finalize"
+      },
+      {
+        "id": "cleanup",
+        "name": "CLEANUP — Restore safe station state",
+        "group": "cleanup",
+        "type": "action",
+        "description": "Runs on failure/timeout/terminate; abort skips it",
+        "mode": "once",
+        "timeoutMs": 500,
+        "handler": "restoreStation"
+      }
+    ]
+  },
+  "testLibrary": "TestSteps.mjs",
+  "runInformation": {
+    "fields": [
+      {
+        "id": "uutId",
+        "label": "UUT Serial Number",
+        "type": "text",
+        "required": true,
+        "default": ""
+      },
+      {
+        "id": "partNumber",
+        "label": "Part Number",
+        "type": "text",
+        "required": true,
+        "default": "PCB-1042"
+      },
+      {
+        "id": "hardwareRevision",
+        "label": "Hardware Revision",
+        "type": "choice",
+        "required": false,
+        "options": [
+          "Rev A",
+          "Rev B",
+          "Rev C"
+        ],
+        "default": "Rev C"
+      },
+      {
+        "id": "operatorId",
+        "label": "Operator ID",
+        "type": "text",
+        "required": true,
+        "default": "Operator 01"
+      },
+      {
+        "id": "batchNumber",
+        "label": "Batch / Lot",
+        "type": "text",
+        "required": false,
+        "default": ""
+      },
+      {
+        "id": "nominalVoltage",
+        "label": "Nominal supply (V)",
+        "type": "number",
+        "required": false,
+        "default": 3.3
+      },
+      {
+        "id": "inspectionComplete",
+        "label": "Visual inspection complete",
+        "type": "boolean",
+        "required": false,
+        "default": false
+      }
+    ]
+  },
+  "reportStorage": {
+    "autoSave": true,
+    "directory": ""
+  }
+}

@@ -1,0 +1,320 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Table as calibration data: operator-entered sensor points, piecewise-linear lookup, chart and CSV sample log. Hardware-safe simulation.",
+  "scriptName": "CalibrationTable.js",
+  "script": "/**\n * WFScript Example: Editable Calibration Lookup Table\n * Device: Simulation ONLY (no physical instrument API calls).\n * Wiring: None.\n * Simulation: operator-defined sensor volts -> engineering units by piecewise\n *             LINEAR interpolation. Never extrapolate outside entered X range.\n * Table values from ui.get() are NATIVE JavaScript arrays in v5.6.70.2+.\n *\n * Workflow: edit the calibration table, then VALIDATE & PLOT. Move the voltage\n * slider to interpolate; SAVE SAMPLE adds an entry to the results table.\n * Table edits during Run Panel live in runtime state, not the saved .wfpanel.\n * To make permanent defaults, edit Initial Rows in Properties in Design mode.\n */\nconst FACTORY_POINTS=[\n    ['0.50','10.0'],['1.00','25.0'],['2.00','50.0'],\n    ['3.00','90.0'],['4.50','140.0']\n];\nlet calibrated=[];\nlet sampleLog=[];\nlet dirty=true;\nfunction inform(s){\n    ui.set('calStatus',s);\n    ui.set('lookupStatus',s);\n    print('[Calibration Table] '+s);\n}\nfunction parseNumber(cell,row,column,lo,hi){\n    const source=String(cell===null||cell===undefined?'':cell).trim();\n    const value=Number(source);\n    if(!source || !isFinite(value) || value<lo || value>hi)\n        throw Error('Row '+row+' '+column+' must be '+lo+' to '+hi);\n    return value;\n}\nfunction readCalibration(){\n    const rows=ui.get('calibrationTable');\n    if(!Array.isArray(rows) || rows.length>30)\n        throw Error('Expected at most 30 calibration rows from ui.get()');\n    const points=[];\n    rows.forEach(function(row,index){\n        if(!Array.isArray(row) || row.length!==2)\n            throw Error('Calibration row '+(index+1)+' must have two cells');\n        if(row.every(function(v){return String(v===null||v===undefined?'':v).trim()==='';}))return;\n        const x=parseNumber(row[0],index+1,'input (V)',0,5);\n        const y=parseNumber(row[1],index+1,'engineering value',-100,250);\n        points.push({x:x,y:y});\n    });\n    if(points.length<2)throw Error('Enter at least two complete calibration points');\n    points.sort(function(a,b){return a.x-b.x;});\n    for(let i=1;i<points.length;i++)\n        if(Math.abs(points[i].x-points[i-1].x)<1e-9)\n            throw Error('Repeated input voltage '+points[i].x+' V; each X must be unique');\n    return points;\n}\nfunction interpolate(points,x){\n    if(x<points[0].x || x>points[points.length-1].x) return null;\n    for(let i=1;i<points.length;i++){\n        const a=points[i-1],b=points[i];\n        if(x<=b.x){\n            return {value:a.y+(x-a.x)*(b.y-a.y)/(b.x-a.x),segment:i};\n        }\n    }\n    return {value:points[points.length-1].y,segment:points.length-1};\n}\nfunction renderCurve(){\n    plots.clear('calibrationPlot');\n    plots.configure('calibrationPlot',{\n        title:'Entered points and piecewise-linear calibration',\n        chartType:'XY',xLabel:'Sensor input (V)',yLabel:'Engineering value (°C)',\n        showGrid:true,showLegend:true,xAuto:true,yAuto:true\n    });\n    const xs=calibrated.map(function(p){return p.x;});\n    const ys=calibrated.map(function(p){return p.y;});\n    plots.setSeries('calibrationPlot','Interpolated calibration',xs,ys,\n                    {color:'#44c8e4',width:2.3});\n    plots.setSeries('calibrationPlot','Entered calibration points',xs,ys,\n                    {color:'#f3bf52',width:0.5,markerSize:7.0});\n}\nfunction sampleAtInput(){\n    if(dirty || calibrated.length<2){\n        inform('Calibration edited. Press VALIDATE & PLOT before sampling.');\n        return null;\n    }\n    const x=Number(ui.get('probeInput'));\n    if(!isFinite(x))throw Error('Invalid sensor input');\n    ui.set('inputReadout',x);\n    const result=interpolate(calibrated,x);\n    if(result===null){\n        inform('OUT OF RANGE: '+x.toFixed(2)+' V outside '+\n               calibrated[0].x.toFixed(2)+'–'+calibrated[calibrated.length-1].x.toFixed(2)+' V.');\n        return null;\n    }\n    ui.set('estimatedValue',result.value);\n    plots.setSeries('calibrationPlot','Selected input',[x],[result.value],\n                    {color:'#ef89ba',width:1.0,markerSize:9});\n    inform('INTERPOLATED '+x.toFixed(3)+' V -> '+result.value.toFixed(2)+\n           ' °C using segment '+result.segment+'/'+(calibrated.length-1)+'.');\n    return {x:x,temperature:result.value,segment:result.segment};\n}\nfunction validateAndPlot(){\n    calibrated=readCalibration();\n    dirty=false;\n    renderCurve();\n    const result=sampleAtInput();\n    if(result===null)inform('VALIDATED '+calibrated.length+' calibration points; select an in-range voltage.');\n}\nfunction saveSample(){\n    const sample=sampleAtInput();\n    if(!sample)return;\n    if(sampleLog.length>=100)throw Error('Maximum 100 sample-log rows');\n    sampleLog.push([String(sampleLog.length+1),sample.x.toFixed(3),\n                    sample.temperature.toFixed(2),String(sample.segment)]);\n    ui.set('sampleLog',sampleLog);\n    inform('SAVED '+sampleLog.length+' calibrated sample(s); right-click the result table for CSV.');\n}\nfunction restore(){\n    ui.set('calibrationTable',FACTORY_POINTS.map(function(r){return r.slice();}));\n    sampleLog=[];ui.set('sampleLog',[]);\n    validateAndPlot();\n    inform('Factory calibration points restored; no physical input or output.');\n}\nfunction safeClick(id,fn){\n    ui.on(id,'clicked',function(){try{fn();}catch(e){inform('ERROR: '+String(e));}});\n}\nsafeClick('validateCalibration',validateAndPlot);\nsafeClick('restoreCalibration',restore);\nsafeClick('saveSample',saveSample);\nsafeClick('clearSamples',function(){sampleLog=[];ui.set('sampleLog',[]);inform('Sample log cleared.');});\nui.on('calibrationTable','valueChanged',function(rows){\n    dirty=true;\n    calibrated=[];\n    plots.clear('calibrationPlot');\n    inform('EDITED '+rows.length+' rows. Press VALIDATE & PLOT to apply the new calibration.');\n});\nui.on('probeInput','valueChanged',function(){try{sampleAtInput();}catch(e){inform('ERROR: '+String(e));}});\nui.set('sampleLog',[]);\ntry{validateAndPlot();}catch(e){inform('ERROR: '+String(e));}\n",
+  "activePageId": "points",
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "points",
+      "name": "00 Calibration Points",
+      "width": 1260,
+      "height": 900,
+      "controls": [
+        {
+          "id": "calTitle",
+          "type": "label",
+          "text": "CALIBRATION TABLE  →  ENGINEERING-UNIT LOOKUP",
+          "x": 32,
+          "y": 22,
+          "width": 1186,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "calIntro",
+          "type": "instruction_card",
+          "text": "Enter the instrument calibration points",
+          "x": 32,
+          "y": 82,
+          "width": 1186,
+          "height": 122,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Enter a measured input voltage (X) and its corresponding engineering value (Y). Click VALIDATE & PLOT. The script sorts a COPY by X and rejects duplicate voltages, incomplete cells, or out-of-range values. No device input or output is used.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "calibrationTable",
+          "type": "experiment_table",
+          "text": "CALIBRATION POINTS — EDITABLE",
+          "x": 32,
+          "y": 223,
+          "width": 1186,
+          "height": 350,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Sensor volts (V)|Engineering value (°C)",
+            "initialRows": "0.50|10.0\n1.00|25.0\n2.00|50.0\n3.00|90.0\n4.50|140.0",
+            "maxRows": 30,
+            "editable": true
+          }
+        },
+        {
+          "id": "validateCalibration",
+          "type": "button",
+          "text": "VALIDATE & PLOT",
+          "x": 32,
+          "y": 594,
+          "width": 570,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "restoreCalibration",
+          "type": "button",
+          "text": "RESTORE FACTORY POINTS",
+          "x": 628,
+          "y": 594,
+          "width": 590,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "calStatus",
+          "type": "label",
+          "text": "READY — Edit the points, then validate",
+          "x": 32,
+          "y": 673,
+          "width": 1186,
+          "height": 68,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "calSafety",
+          "type": "instruction_card",
+          "text": "Why this is useful",
+          "x": 32,
+          "y": 762,
+          "width": 1186,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Unlike a Measurement Table, this editable table is input to an engineering algorithm. The same technique can store thermistor calibration points, frequency-sweep recipes, DAC lookup curves, motor setpoints, test tolerances and automated sequencing parameters. Entered rows are read with ui.get() as native JavaScript arrays.",
+            "tone": "Information"
+          }
+        }
+      ]
+    },
+    {
+      "id": "lookup",
+      "name": "01 Lookup & Chart",
+      "width": 1260,
+      "height": 900,
+      "controls": [
+        {
+          "id": "lookupTitle",
+          "type": "label",
+          "text": "LOOKUP CURVE — ACTUAL TABLE DATA DRIVES THE MODEL",
+          "x": 32,
+          "y": 22,
+          "width": 1186,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "lookupIntro",
+          "type": "instruction_card",
+          "text": "Interpolate between user-entered points",
+          "x": 32,
+          "y": 82,
+          "width": 1186,
+          "height": 124,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Move the slider to select an input voltage. The calculated value uses piecewise-linear interpolation between the two nearest calibration points. Values outside the entered range are rejected (no extrapolation). Save samples to the table below; right-click it to export CSV. MODEL ONLY — no ADC samples were captured.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "probeInput",
+          "type": "slider",
+          "text": "Sensor input (V)",
+          "x": 32,
+          "y": 225,
+          "width": 595,
+          "height": 53,
+          "value": 2.5,
+          "min": 0,
+          "max": 5,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "inputReadout",
+          "type": "digital_display",
+          "text": "SENSOR INPUT",
+          "x": 660,
+          "y": 219,
+          "width": 250,
+          "height": 88,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "estimatedValue",
+          "type": "digital_display",
+          "text": "ESTIMATED VALUE",
+          "x": 932,
+          "y": 219,
+          "width": 286,
+          "height": 88,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "°C",
+            "decimals": 2
+          }
+        },
+        {
+          "id": "calibrationPlot",
+          "type": "plot",
+          "text": "Calibration transfer curve",
+          "x": 32,
+          "y": 330,
+          "width": 764,
+          "height": 336,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "XY",
+            "xLabel": "Sensor input (V)",
+            "yLabel": "Engineering value (°C)",
+            "showGrid": true,
+            "showLegend": true,
+            "xAuto": true,
+            "yAuto": true,
+            "lineWidth": 2.2,
+            "title": "Piecewise-linear calibration"
+          }
+        },
+        {
+          "id": "sampleLog",
+          "type": "experiment_table",
+          "text": "CALCULATED SAMPLE LOG",
+          "x": 819,
+          "y": 330,
+          "width": 399,
+          "height": 336,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Sample #|Input (V)|Estimated (°C)|Segment",
+            "initialRows": "",
+            "maxRows": 100,
+            "editable": false
+          }
+        },
+        {
+          "id": "saveSample",
+          "type": "button",
+          "text": "SAVE SAMPLE TO LOG",
+          "x": 32,
+          "y": 693,
+          "width": 370,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "clearSamples",
+          "type": "button",
+          "text": "CLEAR SAMPLE LOG",
+          "x": 424,
+          "y": 693,
+          "width": 372,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "lookupStatus",
+          "type": "label",
+          "text": "READY — Click VALIDATE & PLOT on Page 00",
+          "x": 32,
+          "y": 770,
+          "width": 1186,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        }
+      ]
+    }
+  ]
+}

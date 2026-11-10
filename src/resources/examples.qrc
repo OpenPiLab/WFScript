@@ -1,0 +1,27 @@
+<RCC>
+  <qresource prefix="/wfscript/examples">
+    <file alias="catalog.json">../../examples/catalog.json</file>
+    <file alias="GettingStarted.wfpanel">../../examples/panels/GettingStarted.wfpanel</file>
+    <file alias="WidgetPlayground.wfpanel">../../examples/panels/WidgetPlayground.wfpanel</file>
+    <file alias="LabelFormatting.wfpanel">../../examples/panels/LabelFormatting.wfpanel</file>
+    <file alias="EquationExperimentLab.wfpanel">../../examples/panels/EquationExperimentLab.wfpanel</file>
+    <file alias="TableLimitPlot.wfpanel">../../examples/panels/TableLimitPlot.wfpanel</file>
+    <file alias="CalibrationTable.wfpanel">../../examples/panels/CalibrationTable.wfpanel</file>
+    <file alias="EducationalVisuals.wfpanel">../../examples/panels/EducationalVisuals.wfpanel</file>
+    <file alias="AutomatedTestBench.wfpanel">../../examples/panels/AutomatedTestBench.wfpanel</file>
+    <file alias="AutomatedTestStation.wfpanel">../../examples/panels/AutomatedTestStation.wfpanel</file>
+    <file alias="AD3HardwareTestStation.wfpanel">../../examples/panels/AD3HardwareTestStation.wfpanel</file>
+    <file alias="SignalLab.wfpanel">../../examples/panels/SignalLab.wfpanel</file>
+    <file alias="TableDrivenWavegen.wfpanel">../../examples/panels/TableDrivenWavegen.wfpanel</file>
+    <file alias="AnalogCharts.wfpanel">../../examples/panels/AnalogCharts.wfpanel</file>
+    <file alias="DigitalTimingCharts.wfpanel">../../examples/panels/DigitalTimingCharts.wfpanel</file>
+    <file alias="ChartTechniques.wfpanel">../../examples/panels/ChartTechniques.wfpanel</file>
+    <file alias="AD3ScopeExplorer.wfpanel">../../examples/panels/AD3ScopeExplorer.wfpanel</file>
+    <file alias="PowerSupplies.wfpanel">../../examples/panels/PowerSupplies.wfpanel</file>
+    <file alias="StaticDigitalIO.wfpanel">../../examples/panels/StaticDigitalIO.wfpanel</file>
+    <file alias="LogicAnalyzer.wfpanel">../../examples/panels/LogicAnalyzer.wfpanel</file>
+    <file alias="ClockPWM.wfpanel">../../examples/panels/ClockPWM.wfpanel</file>
+    <file alias="QuadratureEncoder.wfpanel">../../examples/panels/QuadratureEncoder.wfpanel</file>
+    <file alias="SequenceLab.wfpanel">../../examples/panels/SequenceLab.wfpanel</file>
+  </qresource>
+</RCC>

@@ -1,0 +1,303 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Control W1, preview waveforms, and capture Scope CH1.",
+  "scriptName": "SignalLab.js",
+  "activePageId": "signal_lab",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "signal_lab",
+      "name": "Signal Lab",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "sigTitle",
+          "type": "label",
+          "text": "WAVEGEN + SCOPE LAB  /  W1 OUTPUT & CH1 ACQUISITION",
+          "x": 24,
+          "y": 14,
+          "width": 1111,
+          "height": 43,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "sigIntro",
+          "type": "label",
+          "text": "Configure W1 and Scope CH1 using Panel controls. Preview is software-only.\nAfter Start W1, waveform and setpoint edits apply live. Stop W1 disables output.",
+          "x": 24,
+          "y": 65,
+          "width": 1111,
+          "height": 43,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "sigShape",
+          "type": "option_selector",
+          "text": "W1 SHAPE",
+          "x": 24,
+          "y": 128,
+          "width": 251,
+          "height": 105,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Sine|Square|Triangle",
+            "defaultIndex": 0,
+            "accent": "blue"
+          }
+        },
+        {
+          "id": "sigRate",
+          "type": "option_selector",
+          "text": "SCOPE SAMPLE RATE",
+          "x": 295,
+          "y": 128,
+          "width": 250,
+          "height": 105,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "250 kS/s|1 MS/s|2 MS/s",
+            "defaultIndex": 1,
+            "accent": "blue"
+          }
+        },
+        {
+          "id": "sigSamples",
+          "type": "option_selector",
+          "text": "SCOPE SAMPLES",
+          "x": 565,
+          "y": 128,
+          "width": 250,
+          "height": 105,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "2048|4096|8192",
+            "defaultIndex": 1,
+            "accent": "blue"
+          }
+        },
+        {
+          "id": "sigRange",
+          "type": "option_selector",
+          "text": "SCOPE CH1 RANGE",
+          "x": 833,
+          "y": 128,
+          "width": 301,
+          "height": 105,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "2 V|5 V|10 V",
+            "defaultIndex": 1,
+            "accent": "blue"
+          }
+        },
+        {
+          "id": "sigFrequency",
+          "type": "rotary_input",
+          "text": "W1 FREQUENCY",
+          "x": 24,
+          "y": 264,
+          "width": 280,
+          "height": 279,
+          "value": 1000,
+          "min": 100,
+          "max": 5000,
+          "events": {},
+          "properties": {
+            "unit": "Hz",
+            "step": 50,
+            "decimals": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "sigAmplitude",
+          "type": "numeric_stepper",
+          "text": "AMPLITUDE / PEAK",
+          "x": 326,
+          "y": 267,
+          "width": 241,
+          "height": 131,
+          "value": 1,
+          "min": 0.1,
+          "max": 2,
+          "events": {},
+          "properties": {
+            "unit": "Vpk",
+            "step": 0.1,
+            "decimals": 2,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "sigOffset",
+          "type": "numeric_stepper",
+          "text": "DC OFFSET",
+          "x": 588,
+          "y": 267,
+          "width": 241,
+          "height": 131,
+          "value": 0,
+          "min": -1,
+          "max": 1,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "step": 0.1,
+            "decimals": 2,
+            "accent": "blue"
+          }
+        },
+        {
+          "id": "sigStart",
+          "type": "button",
+          "text": "START W1",
+          "x": 847,
+          "y": 263,
+          "width": 136,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "sigStop",
+          "type": "button",
+          "text": "STOP W1",
+          "x": 998,
+          "y": 263,
+          "width": 136,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "sigCapture",
+          "type": "button",
+          "text": "CAPTURE CH1",
+          "x": 847,
+          "y": 330,
+          "width": 287,
+          "height": 57,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "sigPreview",
+          "type": "button",
+          "text": "RENDER PREVIEW",
+          "x": 847,
+          "y": 397,
+          "width": 287,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "sigRms",
+          "type": "digital_display",
+          "text": "CH1 RMS",
+          "x": 24,
+          "y": 574,
+          "width": 280,
+          "height": 142,
+          "value": 0,
+          "min": 0,
+          "max": 10,
+          "events": {},
+          "properties": {
+            "unit": "V RMS",
+            "accent": "cyan",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "sigPlot",
+          "type": "plot",
+          "text": "W1 software preview / captured CH1 waveform",
+          "x": 324,
+          "y": 466,
+          "width": 810,
+          "height": 252,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Line",
+            "xLabel": "Time (s)",
+            "yLabel": "Voltage (V)",
+            "showGrid": true,
+            "showLegend": true,
+            "xAuto": true,
+            "yAuto": true,
+            "showCursors": true,
+            "cursorA": 0.0,
+            "cursorB": 0.001,
+            "lineWidth": 2.0
+          }
+        },
+        {
+          "id": "sigStatus",
+          "type": "label",
+          "text": "PREVIEW ONLY — Start W1 to enable the selected output; then changes apply live.",
+          "x": 24,
+          "y": 730,
+          "width": 1110,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Signal Lab — Wavegen and Scope\n * Control W1, preview waveforms, and capture Scope CH1.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: W1 to Scope CH1+, AD3 GND to CH1− for the loopback.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 02 SIGNAL LAB — INSTRUMENT CONTROLS, PREVIEW, AND EXPLICIT AD3 OPERATIONS\n// ============================================================================\n// Selecting Device > Physical Device (before Run Panel) causes the actions\n// below to operate on real hardware. The UI never starts W1 automatically.\n// Preview is pure math and never starts W1. After explicit Start W1, editing\n// the shape or setpoints updates an already-running hardware output.\n//\n// SAFETY: Connect W1 to CH1+ and GND to CH1- for the basic safe loopback.\n// Verify the circuit and output voltage limits BEFORE clicking Start W1.\n// Scope CH1 acquisition is independent: Capture does not start the generator.\nfunction sigValue(id) {\n  const n=Number(ui.get(id));\n  if(!isFinite(n)) throw new Error('Invalid value for '+id);\n  return n;\n}\nfunction sigSettings() {\n  const shape=String(ui.get('sigShape'));\n  const hz=sigValue('sigFrequency');\n  const amplitude=sigValue('sigAmplitude'); // amplitude = V PEAK, not Vpp\n  const offset=sigValue('sigOffset');\n  if(['Sine','Square','Triangle'].indexOf(shape)<0)throw Error('Unsupported shape');\n  if(hz<100 || hz>5000 || amplitude<0.1 || amplitude>2 ||\n     offset< -1 || offset>1 || Math.abs(offset)+amplitude>3)\n    throw Error('W1 settings outside conservative showcase limits');\n  return {shape:shape,hz:hz,amplitude:amplitude,offset:offset};\n}\nfunction sigSample(shape,phase) {\n  if(shape==='Square')return Math.sin(phase)>=0?1:-1;\n  if(shape==='Triangle')return (2/Math.PI)*Math.asin(Math.sin(phase));\n  return Math.sin(phase);\n}\nfunction sigPreviewWaveform() {\n  const s=sigSettings();\n  const x=[], y=[];\n  const duration=4/s.hz; // show four waveform periods at every frequency\n  for(let i=0;i<401;i++) {\n    const t=i*duration/400;\n    x.push(t);\n    y.push(s.offset+s.amplitude*sigSample(s.shape,2*Math.PI*s.hz*t));\n  }\n  plots.clear('sigPlot');\n  plots.setSeries('sigPlot','W1 preview (math only)',x,y,{color:'#49c9e4',width:2.3});\n  ui.set('sigStatus','PREVIEW ONLY  |  '+s.shape+'  •  '+s.hz.toFixed(0)+\n     ' Hz  •  '+s.amplitude.toFixed(2)+' Vpk  •  offset '+s.offset.toFixed(2)+' V');\n}\n// Script-side lifecycle: W1 is never started by editing a setting.\n// Once the operator explicitly presses Start W1, subsequent edits are applied\n// live to the active output. Stop W1 disables live configuration again.\nlet sigW1Running=false;\nfunction sigStartW1() {\n  const s=sigSettings();\n  // Calling run() actually enables W1 in Physical Device mode. Only here!\n  Wavegen1.Channel1.enable=true;\n  Wavegen1.Channel1.Mode.text='Simple';\n  Wavegen1.Channel1.Simple.Type.text=s.shape;\n  Wavegen1.Channel1.Simple.Frequency.value=s.hz;\n  Wavegen1.Channel1.Simple.Amplitude.value=s.amplitude;\n  Wavegen1.Channel1.Simple.Offset.value=s.offset;\n  // Confirm the QJSEngine property mapping before sending the command.\n  // A setter rejecting the text must not silently leave Sine selected.\n  if(Wavegen1.Channel1.Simple.Type.text!==s.shape)\n    throw Error('Wavegen API rejected waveform type '+s.shape);\n  if(!Wavegen1.run())throw Error(Wavegen1.lastError);\n  sigW1Running=true;\n  // The native adapter optionally reports the function returned by the SDK's\n  // FDwfAnalogOutNodeFunctionGet. It is absent on older runtimes/simulators.\n  // If present, warn and disable W1 rather than claim the wrong output is safe.\n  const state=Wavegen1.status(1);\n  if(state && state.carrierFunction && state.carrierFunction!==s.shape) {\n    Wavegen1.stop();\n    sigW1Running=false;\n    throw Error('AD3 reports '+state.carrierFunction+' on W1, expected '+s.shape+'; output stopped');\n  }\n  const verified=state && state.carrierFunction ? ' [SDK: '+state.carrierFunction+']' : '';\n  ui.set('sigStatus',(Device.SN==='DEMO'?'SIMULATED':'PHYSICAL')+' W1 ACTIVE  |  '+s.shape+' '+s.hz.toFixed(0)+\n     ' Hz, '+s.amplitude.toFixed(2)+' Vpk'+verified+'  |  changes apply live; Stop W1 disables output');\n}\nfunction sigStopW1() {\n  Wavegen1.stop();\n  sigW1Running=false;\n  ui.set('sigStatus',(Device.SN==='DEMO'?'SIMULATED':'PHYSICAL')+' W1 STOPPED  |  output disabled; settings are preview-only');\n}\nfunction sigCaptureCH1() {\n  const rateLabel=String(ui.get('sigRate'));\n  const sampleRate={'250 kS/s':250000,'1 MS/s':1000000,'2 MS/s':2000000}[rateLabel];\n  const sampleCount=sigValue('sigSamples');\n  const rangeValue=parseFloat(String(ui.get('sigRange')));\n  if(!sampleRate || [2048,4096,8192].indexOf(sampleCount)<0 ||\n     !(rangeValue>0 && rangeValue<=50))throw Error('Invalid Scope settings');\n  // Capture is one-shot and DOES NOT start or modify W1.\n  Scope1.Time.Samples.value=sampleCount;\n  Scope1.Time.Rate.value=sampleRate;\n  Scope1.Channel1.Range.value=rangeValue;\n  Scope1.Trigger.Trigger.text='None';\n  if(!Scope1.single())throw Error(Scope1.lastError);\n  if(!Scope1.wait(3))throw Error(Scope1.lastError);\n  plots.clear('sigPlot');\n  plots.fromScope('sigPlot',1,'CH1 captured');\n  const m=Scope1.Channel1.statistics();\n  ui.set('sigRms',m.rms);\n  ui.set('sigStatus',(Device.SN==='DEMO'?'SIMULATED':'PHYSICAL')+' CH1 CAPTURE  |  '+m.count+\n     ' samples  •  DC '+Number(m.mean).toFixed(4)+' V  •  RMS '+Number(m.rms).toFixed(4)+\n     ' V  •  Range '+rangeValue+' -> '+Number(Scope1.Channel1.Range.real).toFixed(3)+' Vpp');\n}\n// This wrapper reports errors in the Panel, rather than losing the callback.\nfunction sigAction(id,handler) {\n  ui.on(id,'clicked',function(){\n    try {handler();print('[Signal Lab] '+id+' succeeded');}\n    catch(e) {ui.set('sigStatus','ERROR: '+String(e)); print('[Signal Lab] '+id+': '+String(e));}\n  });\n}\nsigAction('sigPreview',sigPreviewWaveform);\nsigAction('sigStart',sigStartW1);\nsigAction('sigStop',sigStopW1);\nsigAction('sigCapture',sigCaptureCH1);\n// Input changes always update the preview. They modify real W1 *only* after\n// the user has explicitly started the output. No other page starts W1.\nfunction sigInputsChanged() {\n  try {\n    sigPreviewWaveform();\n    if(sigW1Running) sigStartW1(); // SDK commits new waveform + re-arms W1\n  } catch(e) {\n    // If a reconfiguration fails, never silently leave an unexpected output\n    // active at the old waveform. Fail safe to W1 OFF and report the cause.\n    if(sigW1Running) {\n      Wavegen1.stop();\n      sigW1Running=false;\n    }\n    ui.set('sigStatus','W1 SETTINGS ERROR / OUTPUT STOPPED: '+String(e));\n    print('[Signal Lab] Reconfigure failed (W1 stopped): '+String(e));\n  }\n}\nfor(const id of ['sigFrequency','sigAmplitude','sigOffset'])\n  ui.on(id,'valueChanged',sigInputsChanged);\nui.on('sigShape','selectionChanged',sigInputsChanged);\n\n// Startup only calculates a software waveform preview; never starts W1.\ntry { sigPreviewWaveform(); } catch (e) { print('Signal Lab: '+String(e)); }\n"
+}

@@ -1,0 +1,279 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "An editable label-formatting example with plain multiline, wrapped, rich-text and runtime HTML labels.",
+  "scriptName": "LabelFormatting.js",
+  "activePageId": "labels",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": true
+  },
+  "pages": [
+    {
+      "id": "labels",
+      "name": "Text Labels",
+      "width": 1170,
+      "height": 780,
+      "controls": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "Multiline and Rich Text Labels — v5.6.52",
+          "x": 24,
+          "y": 18,
+          "width": 1100,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "hint",
+          "type": "label",
+          "text": "Stop / Design → select a Label → Properties → Text.\nEnter inserts a new line; Text Format selects plain or HTML.",
+          "x": 24,
+          "y": 82,
+          "width": 1100,
+          "height": 68,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "plainTitle",
+          "type": "label",
+          "text": "PLAIN TEXT — literal newlines",
+          "x": 24,
+          "y": 173,
+          "width": 530,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "plainDemo",
+          "type": "label",
+          "text": "Three lines are entered in the multiline editor:\nVoltage: +3.300 V\nStatus: within tolerance",
+          "x": 24,
+          "y": 225,
+          "width": 530,
+          "height": 137,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "richTitle",
+          "type": "label",
+          "text": "RICH TEXT — Qt HTML subset",
+          "x": 576,
+          "y": 173,
+          "width": 548,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "richDemo",
+          "type": "label",
+          "text": "<b>Bold</b> and <i>italic</i><br><span style=\"color:#36bd83; font-size:16pt;\">PASS</span> — <span style=\"color:#efbc58;\">Warning</span><br>Use &lt;br&gt; for an HTML line break.",
+          "x": 576,
+          "y": 225,
+          "width": 548,
+          "height": 137,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Rich Text",
+            "wordWrap": true
+          }
+        },
+        {
+          "id": "plainTags",
+          "type": "label",
+          "text": "PLAIN TEXT — HTML displayed literally",
+          "x": 24,
+          "y": 382,
+          "width": 530,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "tagsDemo",
+          "type": "label",
+          "text": "<b>These tags are literal text</b>\n<font color=\"red\">Not rendered as red</font>",
+          "x": 24,
+          "y": 433,
+          "width": 530,
+          "height": 110,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text",
+            "wordWrap": true
+          }
+        },
+        {
+          "id": "wrapTitle",
+          "type": "label",
+          "text": "WORD WRAP — long text",
+          "x": 576,
+          "y": 382,
+          "width": 548,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "wrapDemo",
+          "type": "label",
+          "text": "The Word Wrap option allows the Label to wrap long descriptions within its available width, instead of cutting off text that does not fit on a single line.",
+          "x": 576,
+          "y": 433,
+          "width": 548,
+          "height": 110,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text",
+            "wordWrap": true
+          }
+        },
+        {
+          "id": "liveTitle",
+          "type": "label",
+          "text": "RUNTIME UI UPDATE — formatted HTML",
+          "x": 24,
+          "y": 566,
+          "width": 530,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        },
+        {
+          "id": "demoLive",
+          "type": "label",
+          "text": "Click the button to update this HTML Label from JavaScript.",
+          "x": 576,
+          "y": 566,
+          "width": 548,
+          "height": 104,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Rich Text",
+            "wordWrap": true
+          }
+        },
+        {
+          "id": "demoUpdate",
+          "type": "button",
+          "text": "UPDATE RICH TEXT LABEL",
+          "x": 24,
+          "y": 622,
+          "width": 530,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "footer",
+          "type": "label",
+          "text": "HTML is a Qt-supported subset, not a full web browser. Use simple, self-contained markup.",
+          "x": 24,
+          "y": 695,
+          "width": 1100,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text"
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Multiline and Rich Text Labels\n *\n * Demonstrates:\n *   - Enter creates newlines in the Label Property Inspector.\n *   - Automatic retains legacy QLabel auto-detection.\n *   - Plain Text displays literal <b>tags</b> without rendering them.\n *   - Rich Text renders a subset of HTML, including <b>, <i>, <br>,\n *     <span style=\"color:...\"> and basic text sizing.\n *   - Word Wrap and runtime ui.set() work on the same Label widget.\n *\n * Device: Simulation. No AD3 or WaveForms DLL required.\n * Wiring: None. This example never commands hardware outputs.\n *\n * To edit a Label: Stop/Design, select a Label, open Properties,\n * change Text Format / Word Wrap as needed, then edit Text in the\n * multiline source editor. Click elsewhere to commit; save the Panel.\n */\n\n// SETTINGS ---------------------------------------------------------------\nconst message = [\n    '<b>TEST RESULT</b><br>',\n    '<span style=\"color:#36bd83; font-size:16pt;\">PASS</span><br>',\n    '<i>Updated from JavaScript via ui.set()</i>'\n].join('');\n\n// EVENTS -----------------------------------------------------------------\nui.on('demoUpdate', 'clicked', function () {\n    // This Label is configured as Rich Text in its design properties.\n    // QLabel interprets supported HTML tags; this is not a browser engine.\n    ui.set('demoLive', message);\n    print('Updated a Rich Text label from JavaScript.');\n});\n"
+}

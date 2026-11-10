@@ -1,0 +1,504 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — A two-Page simulation of professional widgets and shared UI state.",
+  "scriptName": "WidgetPlayground.js",
+  "activePageId": "showcase",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "showcase",
+      "name": "Showcase",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "showcaseTitle",
+          "type": "label",
+          "text": "Widget Playground — Multi-Page Simulation",
+          "x": 24,
+          "y": 16,
+          "width": 1110,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "showcaseSubtitle",
+          "type": "label",
+          "text": "Switch to the Controls Page. It drives these instruments through one shared JavaScript runtime.",
+          "x": 24,
+          "y": 68,
+          "width": 1110,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "dialVoltage",
+          "type": "precision_dial",
+          "text": "DC OUTPUT VOLTAGE",
+          "x": 24,
+          "y": 150,
+          "width": 320,
+          "height": 250,
+          "value": 47.5,
+          "min": 0,
+          "max": 120,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "accent": "cyan",
+            "decimals": 2,
+            "alarmEnabled": true,
+            "alarmHigh": 100,
+            "showTicks": true
+          }
+        },
+        {
+          "id": "livePower",
+          "type": "digital_display",
+          "text": "CALCULATED POWER",
+          "x": 364,
+          "y": 168,
+          "width": 350,
+          "height": 132,
+          "value": 389.5,
+          "min": 0,
+          "max": 2000,
+          "events": {},
+          "properties": {
+            "unit": "W",
+            "accent": "amber",
+            "decimals": 1,
+            "alarmEnabled": true,
+            "alarmHigh": 1500
+          }
+        },
+        {
+          "id": "supplyStatus",
+          "type": "status_beacon",
+          "text": "SUPPLY OUTPUT",
+          "x": 744,
+          "y": 168,
+          "width": 370,
+          "height": 120,
+          "value": 1,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "activeColor": "green",
+            "onText": "ENERGIZED",
+            "offText": "DISABLED",
+            "showGlow": true
+          }
+        },
+        {
+          "id": "voltageBar",
+          "type": "segmented_bar",
+          "text": "VOLTAGE HEADROOM",
+          "x": 24,
+          "y": 425,
+          "width": 530,
+          "height": 155,
+          "value": 47.5,
+          "min": 0,
+          "max": 120,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "accent": "cyan",
+            "decimals": 2,
+            "segments": 36,
+            "warningPct": 75,
+            "alarmPct": 90,
+            "peakHold": true
+          }
+        },
+        {
+          "id": "featureBox",
+          "type": "label",
+          "text": "EXPLORE THE CONTROLS PAGE\n\nAdjust the voltage setpoint, load, mode and enable switch.\nThe gauges on this Page receive their values from JavaScript events.\nNo Analog Discovery hardware is controlled.",
+          "x": 580,
+          "y": 330,
+          "width": 534,
+          "height": 250,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 14
+          }
+        },
+        {
+          "id": "tourBox",
+          "type": "label",
+          "text": "HOW TO USE\n\n1. Click Run Panel.\n2. Switch to the Controls Page and change the inputs.\n3. Return here: values persist across Pages.\n4. Click Edit JavaScript to study wbRefresh() and ui.on().",
+          "x": 24,
+          "y": 605,
+          "width": 1090,
+          "height": 142,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": "controls_lab",
+      "name": "Controls",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "wbTitle",
+          "type": "label",
+          "text": "INTERACTIVE WIDGET PLAYGROUND  /  SIMULATED LOAD BENCH",
+          "x": 24,
+          "y": 14,
+          "width": 1112,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "wbIntro",
+          "type": "label",
+          "text": "Every control below is connected to JavaScript callbacks.\nThe measurements are synthetic — this Page never drives hardware.",
+          "x": 24,
+          "y": 65,
+          "width": 1112,
+          "height": 43,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "wbFrequency",
+          "type": "rotary_input",
+          "text": "SWITCHING FREQUENCY",
+          "x": 24,
+          "y": 127,
+          "width": 278,
+          "height": 278,
+          "value": 25,
+          "min": 1,
+          "max": 50,
+          "events": {},
+          "properties": {
+            "unit": "kHz",
+            "step": 0.5,
+            "decimals": 1,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "wbTarget",
+          "type": "numeric_stepper",
+          "text": "VOLTAGE SETPOINT",
+          "x": 326,
+          "y": 132,
+          "width": 281,
+          "height": 130,
+          "value": 48,
+          "min": 0,
+          "max": 120,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "step": 0.5,
+            "decimals": 1,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "wbMode",
+          "type": "option_selector",
+          "text": "SIMULATION MODE",
+          "x": 626,
+          "y": 132,
+          "width": 280,
+          "height": 130,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Nominal|Warning|Alarm",
+            "defaultIndex": 0,
+            "accent": "blue"
+          }
+        },
+        {
+          "id": "wbEnable",
+          "type": "switch_button",
+          "text": "SIMULATED ENABLE",
+          "x": 929,
+          "y": 131,
+          "width": 205,
+          "height": 132,
+          "value": 1,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "BENCH ON",
+            "offText": "BENCH OFF",
+            "accent": "green"
+          }
+        },
+        {
+          "id": "wbLoadTitle",
+          "type": "label",
+          "text": "LOAD SETPOINT (PERCENT)",
+          "x": 325,
+          "y": 290,
+          "width": 568,
+          "height": 35,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "wbLoad",
+          "type": "slider",
+          "text": "LOAD",
+          "x": 327,
+          "y": 341,
+          "width": 558,
+          "height": 40,
+          "value": 65,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "wbPulse",
+          "type": "momentary_button",
+          "text": "TEST PULSE",
+          "x": 929,
+          "y": 292,
+          "width": 205,
+          "height": 106,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "PULSE ACTIVE",
+            "offText": "PRESS & HOLD",
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "wbInfo",
+          "type": "label",
+          "text": "Move the setpoints, change modes, or toggle the simulated output.\nThe dials, digital meters, bar graph, beacons, and status all follow.",
+          "x": 326,
+          "y": 399,
+          "width": 560,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "wbGauge",
+          "type": "precision_dial",
+          "text": "MEASURED VOLTAGE",
+          "x": 24,
+          "y": 448,
+          "width": 278,
+          "height": 258,
+          "value": 48,
+          "min": 0,
+          "max": 120,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "accent": "cyan",
+            "decimals": 2,
+            "alarmEnabled": true,
+            "alarmHigh": 110,
+            "showTicks": true
+          }
+        },
+        {
+          "id": "wbVoltageReadout",
+          "type": "digital_display",
+          "text": "OUTPUT VOLTAGE",
+          "x": 325,
+          "y": 466,
+          "width": 245,
+          "height": 125,
+          "value": 48,
+          "min": 0,
+          "max": 120,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "accent": "cyan",
+            "decimals": 2
+          }
+        },
+        {
+          "id": "wbMeter",
+          "type": "segmented_bar",
+          "text": "LOAD PERCENTAGE",
+          "x": 590,
+          "y": 465,
+          "width": 290,
+          "height": 147,
+          "value": 65,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "%",
+            "accent": "amber",
+            "decimals": 0,
+            "segments": 32,
+            "warningPct": 75,
+            "alarmPct": 90,
+            "peakHold": true
+          }
+        },
+        {
+          "id": "wbHealth",
+          "type": "status_banner",
+          "text": "BENCH CONDITION",
+          "x": 906,
+          "y": 464,
+          "width": 230,
+          "height": 149,
+          "value": 0,
+          "min": 0,
+          "max": 2,
+          "events": {},
+          "properties": {
+            "okText": "NOMINAL",
+            "warningText": "WARNING",
+            "alarmText": "ALARM"
+          }
+        },
+        {
+          "id": "wbBeacon",
+          "type": "status_beacon",
+          "text": "OUTPUT PERMITTED",
+          "x": 325,
+          "y": 619,
+          "width": 243,
+          "height": 104,
+          "value": 1,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "ENABLED",
+            "offText": "DISABLED",
+            "activeColor": "green",
+            "showGlow": true
+          }
+        },
+        {
+          "id": "wbCurrentReadout",
+          "type": "digital_display",
+          "text": "LOAD CURRENT",
+          "x": 591,
+          "y": 628,
+          "width": 289,
+          "height": 97,
+          "value": 5.2,
+          "min": 0,
+          "max": 15,
+          "events": {},
+          "properties": {
+            "unit": "A",
+            "accent": "green",
+            "decimals": 2
+          }
+        },
+        {
+          "id": "wbReset",
+          "type": "button",
+          "text": "RESET ALL INPUTS",
+          "x": 906,
+          "y": 634,
+          "width": 230,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "wbStatus",
+          "type": "label",
+          "text": "SIMULATION ONLY  |  Press Run Panel first to activate controls and JavaScript events.",
+          "x": 24,
+          "y": 733,
+          "width": 1110,
+          "height": 40,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Widget Playground\n * A two-Page simulation of professional widgets and shared UI state.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: None. All values are simulated.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 01 CONTROLS — A SIMULATED BENCH WITH REAL WIDGET EVENT CALLBACKS\n// ============================================================================\n// This page DOES NOT connect to the AD3 or manipulate hardware. Its values are\n// synthetic and demonstrate how controls and displays remain connected through\n// one shared JavaScript runtime, even while other Pages are visible.\n//\n// Types shown: rotary_input, numeric_stepper, option_selector, switch_button,\n// slider, momentary_button, precision_dial, digital_display, segmented_bar,\n// status_banner, status_beacon, label, and push button.\n//\n// Every ui.get/ui.set address refers to a unique saved widget ID.\nlet wbPulseDown=false;\nfunction wbNumber(id) {\n  const n=Number(ui.get(id));\n  if(!isFinite(n)) throw new Error('Invalid numeric input from '+id);\n  return n;\n}\nfunction wbRefresh() {\n  const target=wbNumber('wbTarget');                 // 0 .. 120 V (simulated)\n  const loadPct=wbNumber('wbLoad');                  // 0 .. 100 %\n  const freqKhz=wbNumber('wbFrequency');             // rotary input: 1 .. 50\n  const mode=String(ui.get('wbMode'));               // option_selector returns TEXT\n  const enabled=Boolean(ui.get('wbEnable'));        // switch_button returns boolean\n\n  // A tiny educational 'power stage' model — NOT measured AD3 data.\n  // Regulation droop increases with load; an active test pulse adds a transient.\n  const droop=1-0.025*(loadPct/100);\n  const actual=enabled?target*droop-(wbPulseDown?Math.min(2.5,target*.05):0):0;\n  const current=enabled?8*(loadPct/100):0;\n  const power=Math.max(0,actual)*current;\n  const alarm=mode==='Alarm'?2:(mode==='Warning'||loadPct>=85?1:0);\n\n  ui.set('wbGauge',actual);\n  ui.set('wbVoltageReadout',actual);\n  ui.set('wbCurrentReadout',current);\n  ui.set('wbMeter',loadPct);\n  ui.set('wbHealth',alarm);\n  ui.set('wbBeacon',enabled && alarm!==2);\n  ui.set('wbStatus',\n    'SIMULATED ONLY  |  '+(enabled?'ENABLED':'DISABLED')+\n    '  •  '+actual.toFixed(2)+' V  •  '+current.toFixed(2)+' A  •  '+\n    power.toFixed(1)+' W  •  '+freqKhz.toFixed(1)+' kHz');\n\n  // Page 00 intentionally shares the same state and updates when 01 changes.\n  ui.set('dialVoltage',actual);\n  ui.set('livePower',power);\n  ui.set('voltageBar',actual);\n  ui.set('supplyStatus',enabled && alarm!==2);\n}\n// An automatic callback runs only while the Panel runtime is RUNNING.\nui.on('wbTarget','valueChanged',wbRefresh);\nui.on('wbFrequency','valueChanged',wbRefresh);\nui.on('wbLoad','valueChanged',wbRefresh);\nui.on('wbMode','selectionChanged',wbRefresh);\nui.on('wbEnable','toggled',wbRefresh);\nui.on('wbPulse','pressed',function(){wbPulseDown=true;wbRefresh();});\nui.on('wbPulse','released',function(){wbPulseDown=false;wbRefresh();});\nui.on('wbReset','clicked',function(){\n  ui.set('wbTarget',48.0);\n  ui.set('wbFrequency',25.0);\n  ui.set('wbLoad',65.0);\n  ui.set('wbMode','Nominal');\n  ui.set('wbEnable',true);\n  wbPulseDown=false;\n  wbRefresh();\n});\n\n// ============================================================================\n\n// Initialize the model without generating any hardware output.\ntry { wbRefresh(); } catch (e) { print('Widget Playground: '+String(e)); }\n"
+}

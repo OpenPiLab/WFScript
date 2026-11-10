@@ -1,0 +1,146 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Quick tour, editor workflow, simulation, and hardware safety.",
+  "scriptName": "GettingStarted.js",
+  "activePageId": "docs",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "docs",
+      "name": "Guide",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "docsTitle",
+          "type": "label",
+          "text": "Welcome to WFScript — Instrument Application Builder",
+          "x": 24,
+          "y": 16,
+          "width": 1110,
+          "height": 40,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "docsIntro",
+          "type": "label",
+          "text": "Explore focused, editable examples from the Examples menu on the Panel toolbar. Each example is a normal .wfpanel project with its own documented JavaScript.",
+          "x": 24,
+          "y": 68,
+          "width": 1110,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "docsStructure",
+          "type": "label",
+          "text": "GET STARTED\n\n1. Choose Examples and select Widget Playground or Signal Lab.\n2. Click Edit JavaScript to read the named event handlers.\n3. Press Run Panel to activate callbacks.\n4. Save/Export your own modified copy.",
+          "x": 24,
+          "y": 164,
+          "width": 528,
+          "height": 250,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 14
+          }
+        },
+        {
+          "id": "docsScript",
+          "type": "label",
+          "text": "JAVASCRIPT BASICS\n\nui.get(id) reads a widget.\nui.set(id,value) updates a widget.\nui.on(id,event,callback) registers a handler.\nplots.setSeries() displays computed data.\nplots.fromScope() transfers a real capture.",
+          "x": 586,
+          "y": 164,
+          "width": 548,
+          "height": 250,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 14
+          }
+        },
+        {
+          "id": "docsDesigner",
+          "type": "label",
+          "text": "MULTI-PAGE PROJECTS\n\nWidget Playground, Analog Charts and Chart Techniques contain multiple Pages. Their widgets share one script runtime, so switching Pages does not restart measurements.\n\nUse Properties and Design Tools to customize the layout.",
+          "x": 24,
+          "y": 438,
+          "width": 528,
+          "height": 220,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 14
+          }
+        },
+        {
+          "id": "docsBeta",
+          "type": "label",
+          "text": "HARDWARE SAFETY\n\nSimulation mode does not drive physical outputs. Before choosing Physical Device, check wiring and signal voltage limits.\n\nUse the explicit Start/Power On/Test actions in the instrument examples. Stop and release outputs when finished.",
+          "x": 586,
+          "y": 438,
+          "width": 548,
+          "height": 220,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 14
+          }
+        },
+        {
+          "id": "docsFooter",
+          "type": "label",
+          "text": "TIP: Examples are bundled as read-only Qt resources. Save/Export creates a normal editable .wfpanel file.",
+          "x": 24,
+          "y": 684,
+          "width": 1110,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Getting Started\n * Quick tour, editor workflow, simulation, and hardware safety.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: No connections required.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// This introductory Panel only contains labels; it performs no I/O.\n// Use the Examples menu to explore the individually documented projects.\nprint('Getting Started: choose an example from the Panel Designer Examples menu.');\n"
+}

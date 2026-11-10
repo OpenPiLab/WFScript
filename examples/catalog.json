@@ -1,0 +1,134 @@
+[
+  {
+    "file": "GettingStarted",
+    "title": "Getting Started",
+    "category": "Getting Started",
+    "description": "Quick tour, editor workflow, simulation, and hardware safety."
+  },
+  {
+    "file": "WidgetPlayground",
+    "title": "Widget Playground",
+    "category": "Getting Started",
+    "description": "A two-Page simulation of professional widgets and shared UI state."
+  },
+  {
+    "file": "LabelFormatting",
+    "title": "Multiline and Rich Text Labels",
+    "category": "Graphics & Charts",
+    "description": "Edit multiline Label text, choose plain or rich HTML formatting, and update from ui.set()."
+  },
+  {
+    "file": "EducationalVisuals",
+    "title": "Embedded Images and Instruction Cards",
+    "category": "Graphics & Charts",
+    "description": "Two-Page illustrated RC filter guide with a fully embedded schematic and editable Procedure, Warning, Information and Success cards."
+  },
+  {
+    "file": "ChartTechniques",
+    "title": "Chart Techniques and Analytics",
+    "category": "Graphics & Charts",
+    "description": "Two Pages with analytics, cursor-ready plots, styling and log axes."
+  },
+  {
+    "file": "AnalogCharts",
+    "title": "Analog Charts and Frequency",
+    "category": "Graphics & Charts",
+    "description": "Three Pages: analog time-series, XY and FFT/frequency examples."
+  },
+  {
+    "file": "DigitalTimingCharts",
+    "title": "Digital Timing and Protocol Charts",
+    "category": "Graphics & Charts",
+    "description": "Two Pages of synthetic logic and UART/SPI/I2C timing traces."
+  },
+  {
+    "file": "EquationExperimentLab",
+    "title": "Mathematical Equations and Experiment Tables",
+    "category": "Tables & Data",
+    "description": "Two-page educational example with TeX-style source preview, scripted numeric predictions, editable lab notes table, and CSV export."
+  },
+  {
+    "file": "CalibrationTable",
+    "title": "Calibration Lookup — Editable Table",
+    "category": "Tables & Data",
+    "description": "Editable two-column sensor calibration, validation, interpolation, transfer curve and logged results, with simulation-only safety."
+  },
+  {
+    "file": "TableLimitPlot",
+    "title": "Table-to-Plot — Limits and Observations",
+    "category": "Tables & Data",
+    "description": "Enter X, nominal, observed and limit values; draw four XY curves, flag out-of-limit points and build a CSV-exportable summary. Simulation-only."
+  },
+  {
+    "file": "TableDrivenWavegen",
+    "title": "Table-Driven Wavegen — Multi-Trace Sweep",
+    "category": "Tables & Data",
+    "description": "Operator-edited Wavegen recipe; each enabled row becomes a separate physical CH1 capture or MODEL ONLY trace, with limits and a result table."
+  },
+  {
+    "file": "SignalLab",
+    "title": "Signal Lab — Wavegen and Scope",
+    "category": "Analog Instruments",
+    "description": "Control W1, preview waveforms, and capture Scope CH1."
+  },
+  {
+    "file": "AD3ScopeExplorer",
+    "title": "AD3 Scope and Range Discovery",
+    "category": "Analog Instruments",
+    "description": "Capture CH1, measure signed DC/RMS, query supported SDK input ranges."
+  },
+  {
+    "file": "PowerSupplies",
+    "title": "V+ / V− Power Supplies",
+    "category": "Analog Instruments",
+    "description": "Set and enable independent programmable supplies and inspect status."
+  },
+  {
+    "file": "StaticDigitalIO",
+    "title": "Static Digital I/O",
+    "category": "Digital Instruments",
+    "description": "Set Z, LOW and HIGH per pin, read inputs and test a physical loopback."
+  },
+  {
+    "file": "LogicAnalyzer",
+    "title": "Logic Analyzer",
+    "category": "Digital Instruments",
+    "description": "Capture 16-bit DigitalIn samples and display a timing chart."
+  },
+  {
+    "file": "ClockPWM",
+    "title": "Digital Clock / PWM",
+    "category": "Digital Instruments",
+    "description": "Generate hardware-timed DigitalOut clock and verify duty/frequency."
+  },
+  {
+    "file": "QuadratureEncoder",
+    "title": "Quadrature Encoder + Index",
+    "category": "Digital Instruments",
+    "description": "Generate synchronized A/B/index and verify RPM and phase."
+  },
+  {
+    "file": "SequenceLab",
+    "title": "Multi-Channel Sequence Lab",
+    "category": "Digital Instruments",
+    "description": "Generate and verify binary, Gray and walking-one multi-pin sequences."
+  },
+  {
+    "file": "AutomatedTestBench",
+    "title": "Automated Test Bench — Measurement Results",
+    "category": "Test Sequences & Executive",
+    "description": "Two-Page simulation: tolerance-aware PASS/FAIL results, read-only measurement table, shared JavaScript runtime."
+  },
+  {
+    "file": "AutomatedTestStation",
+    "title": "Automated Test Station — Project-Owned C++ Executive",
+    "category": "Test Sequences & Executive",
+    "description": "Seven-page self-contained tutorial: project-owned Test Executive, two synchronized Run Information forms, JavaScript pending UUT readback, native numeric limits, Setup/Main/Cleanup and JSON/CSV reports."
+  },
+  {
+    "file": "AD3HardwareTestStation",
+    "title": "AD3 Hardware Test Station — W1 to CH1",
+    "category": "Test Sequences & Executive",
+    "description": "Real AD3 loopback with project-owned Setup/Main/Cleanup, one CH1 acquisition, four native numeric PASS/FAIL checks, UUT identity, archived JSON reports."
+  }
+]

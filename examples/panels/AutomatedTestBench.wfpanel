@@ -1,0 +1,274 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Two-Page simulated automated test bench demonstrating tolerance-aware results and a bounded tabular summary.",
+  "scriptName": "AutomatedTestBench.js",
+  "activePageId": "summary",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": true
+  },
+  "pages": [
+    {
+      "id": "summary",
+      "name": "01 Test Summary",
+      "width": 1170,
+      "height": 780,
+      "controls": [
+        {
+          "id": "heading",
+          "type": "label",
+          "text": "AUTOMATED TEST BENCH  |  Measurement Widgets",
+          "x": 25,
+          "y": 20,
+          "width": 1118,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "instructions",
+          "type": "label",
+          "text": "SIMULATION ONLY — no AD3 output is enabled. Run a nominal test, inject a fault, or reset.\nChange to the Results Table Page to see the same test data in a second view.",
+          "x": 25,
+          "y": 85,
+          "width": 1118,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "resultPositive",
+          "type": "measurement_result",
+          "text": "V+ SUPPLY",
+          "x": 25,
+          "y": 176,
+          "width": 530,
+          "height": 160,
+          "value": 0,
+          "min": 3.25,
+          "max": 3.35,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "resultNegative",
+          "type": "measurement_result",
+          "text": "V− SUPPLY",
+          "x": 613,
+          "y": 176,
+          "width": 530,
+          "height": 160,
+          "value": 0,
+          "min": -3.35,
+          "max": -3.25,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "resultClock",
+          "type": "measurement_result",
+          "text": "CLOCK FREQUENCY",
+          "x": 25,
+          "y": 357,
+          "width": 530,
+          "height": 160,
+          "value": 0,
+          "min": 990,
+          "max": 1010,
+          "events": {},
+          "properties": {
+            "unit": "Hz",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "resultPwm",
+          "type": "measurement_result",
+          "text": "PWM DUTY CYCLE",
+          "x": 613,
+          "y": 357,
+          "width": 530,
+          "height": 160,
+          "value": 0,
+          "min": 49,
+          "max": 51,
+          "events": {},
+          "properties": {
+            "unit": "%",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "runDemo",
+          "type": "button",
+          "text": "RUN DEMO TEST",
+          "x": 25,
+          "y": 542,
+          "width": 335,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "injectFailure",
+          "type": "button",
+          "text": "INJECT FAILURE",
+          "x": 391,
+          "y": 542,
+          "width": 335,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "resetDemo",
+          "type": "button",
+          "text": "RESET RESULTS",
+          "x": 757,
+          "y": 542,
+          "width": 386,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "summaryStatus",
+          "type": "label",
+          "text": "NOT TESTED<br>Choose RUN DEMO or INJECT FAILURE.",
+          "x": 25,
+          "y": 627,
+          "width": 1118,
+          "height": 82,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": "table",
+      "name": "02 Results Table",
+      "width": 1170,
+      "height": 780,
+      "controls": [
+        {
+          "id": "tableHeading",
+          "type": "label",
+          "text": "RESULTS TABLE  |  Shared Runtime Across Pages",
+          "x": 25,
+          "y": 20,
+          "width": 1118,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "tableInfo",
+          "type": "label",
+          "text": "The Summary Page buttons update this Table even when it is hidden.\nActual values and tolerance results are generated in simulation. No hardware is touched.",
+          "x": 25,
+          "y": 85,
+          "width": 1118,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "measurements",
+          "type": "measurement_table",
+          "text": "Measurement Results",
+          "x": 25,
+          "y": 174,
+          "width": 1118,
+          "height": 475,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "decimals": 3,
+            "maxRows": 100,
+            "headers": "Measurement|Actual|Acceptance limits|Result"
+          }
+        },
+        {
+          "id": "tableFooter",
+          "type": "label",
+          "text": "Data source: example JavaScript ui.set(\"measurements\", rows).\nTables are read-only. Result cells calculate PASS/FAIL using inclusive limits.",
+          "x": 25,
+          "y": 663,
+          "width": 1118,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Automated Test Bench (simulation only)\n *\n * Demonstrates two new widgets in v5.6.53:\n *   Measurement Result: numeric ui.set() evaluates inclusive limits.\n *   Measurement Table: ui.set() accepts an array of test-result objects.\n *\n * This project has TWO Pages using ONE shared JavaScript runtime.\n * Clicking a button on the Summary Page updates the Result Table on\n * the other Page, even while that Page is hidden.\n *\n * Simulation: no SDK calls, no voltage outputs, no DigitalOut activity.\n * Wiring: None. No AD3 or external connection is required.\n * All readings below are illustrative simulated data, not AD3 data.\n */\n\n// CONFIGURATION ----------------------------------------------------------\n// Keep limits explicit, together with the scenario numbers. The widget\n// Property Inspector separately owns the same thresholds for its badge.\nconst limits = {\n    positive: {name: 'V+ SUPPLY',  low: 3.25, high: 3.35, unit: 'V'},\n    negative: {name: 'V− SUPPLY',  low: -3.35,high: -3.25,unit: 'V'},\n    clock:    {name: 'CLOCK',      low: 990,  high: 1010, unit: 'Hz'},\n    pwm:      {name: 'PWM DUTY',   low: 49,   high: 51,   unit: '%'}\n};\n\nconst targets = [\n    {id:'resultPositive', key:'positive'},\n    {id:'resultNegative', key:'negative'},\n    {id:'resultClock',    key:'clock'},\n    {id:'resultPwm',      key:'pwm'}\n];\n\n// DATA / PRESENTATION ----------------------------------------------------\nfunction evaluateRow(name, cfg, actual) {\n    // Pass the limits to the Table, whose native widget evaluates PASS/FAIL.\n    return {name:name, value:actual, low:cfg.low, high:cfg.high, unit:cfg.unit};\n}\n\nfunction showReadings(readings, description) {\n    const rows = [];\n    let failures = 0;\n    targets.forEach(function (target) {\n        const cfg = limits[target.key];\n        const actual = readings[target.key];\n        ui.set(target.id, actual); // native Measurement Result checks limits\n        rows.push(evaluateRow(cfg.name,cfg,actual));\n        if (actual < cfg.low || actual > cfg.high) failures++;\n    });\n    // This is a complete replacement, not an append operation. Maximum row\n    // count is configurable in the Table's designer properties (up to 100).\n    ui.set('measurements', rows);\n    const passed = failures === 0;\n    ui.set('summaryStatus', '<b>' + (passed ?\n        '<span style=\"color:#43dd9d;\">ALL TESTS PASS</span>' :\n        '<span style=\"color:#ff6970;\">TEST FAILED</span>') +\n        '</b><br>' + description + ' — ' + (4-failures) + '/4 passed');\n    print('SIMULATED TEST: ' + (passed?'PASS':'FAIL') +\n          ' | ' + (4-failures) + '/4 limits satisfied');\n}\n\nfunction resetResults() {\n    targets.forEach(function (target) {\n        ui.set(target.id, {reset:true});\n    });\n    ui.set('measurements', {reset:true});\n    ui.set('summaryStatus', 'NOT TESTED<br>Choose RUN DEMO or INJECT FAILURE.');\n    print('SIMULATED TEST: results cleared; no instrument outputs touched.');\n}\n\n// PANEL EVENT HANDLERS ---------------------------------------------------\nui.on('runDemo', 'clicked', function () {\n    showReadings({positive:3.301, negative:-3.298,\n                  clock:999.8, pwm:50.1}, 'Nominal simulation');\n});\n\nui.on('injectFailure', 'clicked', function () {\n    showReadings({positive:3.301, negative:-3.298,\n                  clock:999.8, pwm:47.5}, 'Injected PWM failure');\n});\n\nui.on('resetDemo', 'clicked', function () {\n    resetResults();\n});\n\n// Deliberately do not run a test on project load. The user initiates tests.\n"
+}

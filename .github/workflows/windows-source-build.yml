@@ -1,0 +1,30 @@
+name: Windows source build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  source-and-build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt (MSVC 2022, Windows)
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.9.2'
+          arch: win64_msvc2022_64
+          cache: true
+      - name: Verify examples and repository metadata
+        shell: pwsh
+        run: |
+          python tools/check_repo.py
+          python tools/build_examples.py --check
+      - name: Configure application
+        shell: pwsh
+        run: cmake -S . -B build/ci -G "Visual Studio 17 2022" -A x64 -DWFSCRIPT_BUILD_TESTS=OFF
+      - name: Build application
+        shell: pwsh
+        run: cmake --build build/ci --config Release --parallel

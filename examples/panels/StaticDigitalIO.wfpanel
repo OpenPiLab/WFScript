@@ -1,0 +1,998 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Set Z, LOW and HIGH per pin, read inputs and test a physical loopback.",
+  "scriptName": "StaticDigitalIO.js",
+  "activePageId": "static_dio",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "static_dio",
+      "name": "Digital I/O",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "dioTitle",
+          "type": "label",
+          "text": "STATIC DIGITAL I/O  /  DIO0–DIO15",
+          "x": 24,
+          "y": 12,
+          "width": 1110,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 11
+          }
+        },
+        {
+          "id": "dioHelp",
+          "type": "label",
+          "text": "DIO outputs are 3.3 V. Z = high impedance. Pins change ONLY when you select Z/LOW/HIGH or run a test. DIO0→1 loopback uses 1 kΩ.",
+          "x": 24,
+          "y": 58,
+          "width": 1110,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "dioAllZ",
+          "type": "button",
+          "text": "ALL INPUTS (Z)",
+          "x": 24,
+          "y": 112,
+          "width": 220,
+          "height": 47,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "dioRead",
+          "type": "button",
+          "text": "READ ALL INPUTS",
+          "x": 261,
+          "y": 112,
+          "width": 220,
+          "height": 47,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "dioLoopback",
+          "type": "button",
+          "text": "TEST DIO0 → DIO1",
+          "x": 499,
+          "y": 112,
+          "width": 230,
+          "height": 47,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "dioMode",
+          "type": "label",
+          "text": "STOP PANEL = RETURN STATIC OUTPUTS TO Z",
+          "x": 749,
+          "y": 112,
+          "width": 385,
+          "height": 47,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "dioName0",
+          "type": "label",
+          "text": "DIO00",
+          "x": 24,
+          "y": 168,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect0",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 168,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel0",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 168,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName1",
+          "type": "label",
+          "text": "DIO01",
+          "x": 24,
+          "y": 240,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect1",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 240,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel1",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 240,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName2",
+          "type": "label",
+          "text": "DIO02",
+          "x": 24,
+          "y": 312,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect2",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 312,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel2",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 312,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName3",
+          "type": "label",
+          "text": "DIO03",
+          "x": 24,
+          "y": 384,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect3",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 384,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel3",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 384,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName4",
+          "type": "label",
+          "text": "DIO04",
+          "x": 24,
+          "y": 456,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect4",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 456,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel4",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 456,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName5",
+          "type": "label",
+          "text": "DIO05",
+          "x": 24,
+          "y": 528,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect5",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 528,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel5",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 528,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName6",
+          "type": "label",
+          "text": "DIO06",
+          "x": 24,
+          "y": 600,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect6",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 600,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel6",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 600,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName7",
+          "type": "label",
+          "text": "DIO07",
+          "x": 24,
+          "y": 672,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect7",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 102,
+          "y": 672,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "dioLevel7",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 294,
+          "y": 672,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName8",
+          "type": "label",
+          "text": "DIO08",
+          "x": 587,
+          "y": 168,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect8",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 168,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel8",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 168,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName9",
+          "type": "label",
+          "text": "DIO09",
+          "x": 587,
+          "y": 240,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect9",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 240,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel9",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 240,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName10",
+          "type": "label",
+          "text": "DIO10",
+          "x": 587,
+          "y": 312,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect10",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 312,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel10",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 312,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName11",
+          "type": "label",
+          "text": "DIO11",
+          "x": 587,
+          "y": 384,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect11",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 384,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel11",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 384,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName12",
+          "type": "label",
+          "text": "DIO12",
+          "x": 587,
+          "y": 456,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect12",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 456,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel12",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 456,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName13",
+          "type": "label",
+          "text": "DIO13",
+          "x": 587,
+          "y": 528,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect13",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 528,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel13",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 528,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName14",
+          "type": "label",
+          "text": "DIO14",
+          "x": 587,
+          "y": 600,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect14",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 600,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel14",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 600,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioName15",
+          "type": "label",
+          "text": "DIO15",
+          "x": 587,
+          "y": 672,
+          "width": 70,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "dioSelect15",
+          "type": "option_selector",
+          "text": "DRIVE / DIRECTION",
+          "x": 665,
+          "y": 672,
+          "width": 181,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Z|LOW|HIGH",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "dioLevel15",
+          "type": "status_beacon",
+          "text": "ACTUAL INPUT",
+          "x": 857,
+          "y": 672,
+          "width": 267,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "HIGH",
+            "offText": "LOW",
+            "activeColor": "green",
+            "showGlow": false
+          }
+        },
+        {
+          "id": "dioStatus",
+          "type": "label",
+          "text": "READY — all outputs requested HIGH-Z (not yet configured)",
+          "x": 24,
+          "y": 750,
+          "width": 1110,
+          "height": 33,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Static Digital I/O\n * Set Z, LOW and HIGH per pin, read inputs and test a physical loopback.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: For loopback, DIO0 → 1 kΩ → DIO1; no external driven circuits.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 12 DIGITAL I/O — WAVEFORMS-STYLE STATIC I/O AND SAFE LOOPBACK\n// ============================================================================\n// Physically driving a pin is explicit: selecting a Z/LOW/HIGH value invokes\n// StaticIO.setPin(). Starting this Panel performs NO StaticIO output writes.\n// WaveForms-compatible: StaticIO.Channel0.DIO0.value=1; StaticIO.config();\n// 0=LOW, 1=HIGH, 2=Z. Channel0 holds DIO0..7, Channel1 DIO8..15.\nconst dioStates=['Z','LOW','HIGH'];\nfunction dioGetCode(i) {\n  const s=String(ui.get('dioSelect'+i));\n  if(s==='Z')return 2;\n  if(s==='LOW')return 0;\n  if(s==='HIGH')return 1;\n  throw Error('Invalid DIO'+i+' selection '+s);\n}\nfunction dioRefresh(msg) {\n  const s=StaticIO.status();\n  if(!s.valid) {\n    ui.set('dioStatus','INPUT STATUS FAILED: '+s.lastError);\n    print('StaticIO status error: '+s.lastError);\n    return false;\n  }\n  for(let i=0;i<16;i++)ui.set('dioLevel'+i,(s.inputMask>>>i)&1);\n  const driven=('0000'+(s.outputEnableMask&0xffff).toString(16).toUpperCase()).slice(-4);\n  const level=('0000'+(s.inputMask&0xffff).toString(16).toUpperCase()).slice(-4);\n  ui.set('dioStatus',(msg||'REFRESH')+' | '+(s.simulation?'SIMULATION (no external wiring model)':'AD3 HARDWARE')+\n      ' | OE 0x'+driven+' | INPUT 0x'+level);\n  return true;\n}\nfunction dioApplyPin(i) {\n  try {\n    const state=dioGetCode(i);\n    if(!StaticIO.setPin(i,state))throw Error(StaticIO.lastError);\n    dioRefresh('DIO'+i+' '+dioStates[state===2?0:state===0?1:2]+' APPLIED');\n  } catch(e) {\n    const stopOk=StaticIO.stop();\n    for(let k=0;k<16;k++)ui.set('dioSelect'+k,'Z');\n    if(stopOk)dioRefresh('ERROR / OUTPUTS RELEASED: '+String(e));\n    else ui.set('dioStatus','DANGER: HIGH-Z NOT CONFIRMED: '+StaticIO.lastError+' / '+String(e));\n    print('StaticIO DIO'+i+': '+String(e));\n  }\n}\nfunction dioAllInputs() {\n  const ok=StaticIO.stop();\n  if(ok) {\n    for(let i=0;i<16;i++)ui.set('dioSelect'+i,'Z');\n    dioRefresh('ALL INPUTS / HIGH-Z');\n  } else ui.set('dioStatus','DANGER: HIGH-Z NOT CONFIRMED — '+StaticIO.lastError);\n}\nfunction dioLoopback() {\n  if(StaticIO.simulation) {\n    ui.set('dioStatus','LOOPBACK requires Physical Device mode and DIO0→1 through 1 kΩ');\n    return;\n  }\n  let message='';\n  try {\n    // First release everything, then drive DIO0. DIO1 remains high-Z.\n    if(!StaticIO.stop())throw Error('Cannot establish safe input state: '+StaticIO.lastError);\n    if(!StaticIO.setPin(0,1))throw Error(StaticIO.lastError);\n    wait(0.020); // allow flywire and input level to settle\n    const hi=StaticIO.readPin(1);\n    if(!StaticIO.setPin(0,0))throw Error(StaticIO.lastError);\n    wait(0.020);\n    const lo=StaticIO.readPin(1);\n    if(hi<0 || lo<0)throw Error('Read failed: '+StaticIO.lastError);\n    message=(hi===1 && lo===0)?'PASS: DIO1 followed HIGH then LOW':'FAIL: DIO1 read HIGH='+hi+', LOW='+lo;\n  } catch(e) {message='ERROR: '+String(e);}\n  finally {\n    const stopped=StaticIO.stop();\n    if(stopped) {\n      for(let i=0;i<16;i++)ui.set('dioSelect'+i,'Z');\n      dioRefresh('LOOPBACK '+message+' — ALL HIGH-Z');\n    } else ui.set('dioStatus','DANGER: LOOPBACK HIGH-Z NOT CONFIRMED: '+StaticIO.lastError+' | '+message);\n  }\n  print('StaticIO loopback: '+message);\n}\nfor(let i=0;i<16;i++)\n  ui.on('dioSelect'+i,'selectionChanged',function(){dioApplyPin(i);});\nui.on('dioRead','clicked',function(){dioRefresh('MANUAL READ');});\nui.on('dioAllZ','clicked',dioAllInputs);\nui.on('dioLoopback','clicked',dioLoopback);\n// Passive read only; no output enable SDK command on startup.\ntry{dioRefresh('READY / NO OUTPUT COMMANDS SENT');}\ncatch(e){ui.set('dioStatus','Startup digital read unavailable: '+String(e));}\n\n\n// ============================================================================\n"
+}

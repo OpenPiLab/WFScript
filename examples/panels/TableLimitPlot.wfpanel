@@ -1,0 +1,321 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Table-to-Plot: Editable setpoints, observations, tolerance curves and a results table. Simulation-only general engineering example.",
+  "scriptName": "TableLimitPlot.js",
+  "script": "/**\n * WFScript Example: Table-to-Plot — Limits and Observations\n * Device: Simulation ONLY. No AD3 instrument is configured or enabled.\n * Purpose: Use an editable Experiment Table as an operator-owned dataset,\n *          validate every row, draw multiple XY series and build a result log.\n *\n * 1. Page 00: enter X, nominal, observed, lower and upper values.\n * 2. Press VALIDATE & PLOT (or RESTORE DEFAULTS).\n * 3. Page 01: inspect the plotted curves and calculated in/out-of-limit rows.\n *\n * Runtime table edits are not written into the project's design-time defaults.\n * For persistent defaults, edit the table's Initial Rows in Properties while\n * in Design mode; you can also export a runtime table with right-click > CSV.\n * Requires WFScript v5.6.70.2+ (ui.get() returns native JavaScript arrays).\n */\nconst FACTORY_DATA = [\n    ['100', '1.00', '1.03', '0.90', '1.10'],\n    ['200', '1.30', '1.28', '1.20', '1.40'],\n    ['300', '1.50', '1.57', '1.40', '1.60'],\n    ['400', '1.80', '1.65', '1.70', '1.90'],\n    ['500', '2.00', '2.06', '1.90', '2.10'],\n    ['600', '2.10', '2.12', '2.00', '2.20']\n];\nlet current = [];\nlet inputDirty = true;\n\nfunction status(message) {\n    ui.set('editStatus', message);\n    ui.set('plotStatus', message);\n    print('[Table-to-Plot] ' + message);\n}\n\nfunction numericCell(raw, rowIndex, column) {\n    const source = raw === null || raw === undefined ? '' : String(raw).trim();\n    const value = Number(source);\n    if (!source || !isFinite(value) || Math.abs(value) > 1000000)\n        throw Error('Row ' + rowIndex + ': ' + column + ' must be a finite number (absolute value <= 1,000,000).');\n    return value;\n}\n\nfunction readAndValidate() {\n    const table = ui.get('limitInputTable');\n    if (!Array.isArray(table))\n        throw Error('The Experiment Table must return a native JavaScript array. Requires WFScript v5.6.70.2+.');\n    if (table.length > 40)\n        throw Error('The example supports up to 40 data rows.');\n    const parsed = [];\n    table.forEach(function(row, index) {\n        const number = index + 1;\n        if (!Array.isArray(row) || row.length !== 5)\n            throw Error('Row ' + number + ' requires five cells (X, nominal, observed, lower, upper).');\n        if (row.every(function(cell) { return cell === null || cell === undefined || String(cell).trim() === ''; }))\n            return; // an entirely blank row is intentional and safely ignored\n        const x = numericCell(row[0], number, 'X');\n        const nominal = numericCell(row[1], number, 'Nominal');\n        const observed = numericCell(row[2], number, 'Observed');\n        const lower = numericCell(row[3], number, 'Lower');\n        const upper = numericCell(row[4], number, 'Upper');\n        if (lower > upper)\n            throw Error('Row ' + number + ': lower limit is greater than upper limit.');\n        if (nominal < lower || nominal > upper)\n            throw Error('Row ' + number + ': nominal value must lie within its limits.');\n        parsed.push({ sourceRow: number, x, nominal, observed, lower, upper,\n                      inLimit: observed >= lower && observed <= upper });\n    });\n    if (parsed.length < 2)\n        throw Error('Enter at least two complete data rows.');\n    parsed.sort(function(a, b) { return a.x - b.x; });\n    for (let i = 1; i < parsed.length; ++i)\n        if (parsed[i].x === parsed[i - 1].x)\n            throw Error('Duplicate X value: ' + parsed[i].x + ' (rows ' +\n                        parsed[i - 1].sourceRow + ' and ' + parsed[i].sourceRow + ').');\n    return parsed;\n}\n\nfunction drawAndSummarize(points) {\n    current = points;\n    inputDirty = false;\n    const x = points.map(p => p.x);\n    plots.clear('limitCurve');\n    plots.configure('limitCurve', {\n        chartType: 'XY',\n        title: 'Entered data — observed vs. limits',\n        xLabel: 'X (user-defined)',\n        yLabel: 'Value (user-defined)',\n        showGrid: true, showLegend: true, xAuto: true, yAuto: true\n    });\n    plots.setSeries('limitCurve', 'Upper limit', x, points.map(p => p.upper),\n                    { color: '#efa46b', width: 1.5 });\n    plots.setSeries('limitCurve', 'Nominal', x, points.map(p => p.nominal),\n                    { color: '#8fa9f2', width: 2.0 });\n    plots.setSeries('limitCurve', 'Lower limit', x, points.map(p => p.lower),\n                    { color: '#efa46b', width: 1.5 });\n    plots.setSeries('limitCurve', 'Observed (entered)', x, points.map(p => p.observed),\n                    { color: '#46cfb8', width: 2.3, markerSize: 6 });\n    const bad = points.filter(p => !p.inLimit);\n    if (bad.length)\n        plots.setSeries('limitCurve', 'Out-of-limit points', bad.map(p => p.x),\n                        bad.map(p => p.observed),\n                        { color: '#ff5e81', width: 0.5, markerSize: 9 });\n\n    const results = points.map(function(p) {\n        return [String(p.sourceRow), String(p.x), p.nominal.toFixed(3),\n                p.observed.toFixed(3), p.lower.toFixed(3), p.upper.toFixed(3),\n                p.inLimit ? 'IN LIMITS' : 'OUTSIDE'];\n    });\n    ui.set('limitResults', results);\n    ui.set('pointCount', points.length);\n    ui.set('outsideCount', bad.length);\n    const maxDeviation = points.reduce((max, p) =>\n        Math.max(max, Math.abs(p.observed - p.nominal)), 0);\n    ui.set('largestDeviation', maxDeviation);\n    status('EVALUATED ' + points.length + ' point(s): ' +\n           (points.length - bad.length) + ' in limits, ' + bad.length +\n           ' outside. These are user-entered observations, NOT hardware measurements.');\n}\n\nfunction validateAndPlot() {\n    // Keep a failed validation from leaving an old trace labeled as current.\n    current = [];\n    inputDirty = true;\n    plots.clear('limitCurve');\n    ui.set('limitResults', []);\n    ui.set('pointCount', 0);\n    ui.set('outsideCount', 0);\n    ui.set('largestDeviation', 0);\n    drawAndSummarize(readAndValidate());\n}\n\nfunction resetValues() {\n    ui.set('limitInputTable', FACTORY_DATA.map(row => row.slice()));\n    validateAndPlot();\n}\n\nfunction safeClick(id, action) {\n    ui.on(id, 'clicked', function() {\n        try { action(); }\n        catch (error) { status('ERROR: ' + String(error)); }\n    });\n}\n\nsafeClick('plotEnteredData', validateAndPlot);\nsafeClick('restoreLimitData', resetValues);\nsafeClick('clearLimitResults', function() {\n    current = []; inputDirty = true;\n    plots.clear('limitCurve');\n    ui.set('limitResults', []);\n    ui.set('pointCount', 0);\n    ui.set('outsideCount', 0);\n    ui.set('largestDeviation', 0);\n    status('Plot and analysis cleared. Your entered table values were kept.');\n});\n\nui.on('limitInputTable', 'valueChanged', function(rows) {\n    // An incomplete edit should not be evaluated until the operator commits it.\n    current = []; inputDirty = true;\n    plots.clear('limitCurve');\n    ui.set('limitResults', []);\n    ui.set('pointCount', 0);\n    ui.set('outsideCount', 0);\n    ui.set('largestDeviation', 0);\n    status('EDITED ' + rows.length + ' table row(s). Press VALIDATE & PLOT to refresh the graph.');\n});\n\ntry { validateAndPlot(); }\ncatch (error) { status('ERROR: ' + String(error)); }\n",
+  "activePageId": "edit",
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "edit",
+      "name": "00 Edit Data & Limits",
+      "width": 1250,
+      "height": 950,
+      "controls": [
+        {
+          "id": "editTitle",
+          "type": "label",
+          "text": "TABLE → XY PLOT — EDIT THE DATA, NOT THE JAVASCRIPT",
+          "x": 36,
+          "y": 26,
+          "width": 1178,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "editIntro",
+          "type": "instruction_card",
+          "text": "Enter observed values and their limits",
+          "x": 36,
+          "y": 86,
+          "width": 1178,
+          "height": 138,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Information",
+            "body": "Each row defines an X coordinate, a nominal value, an observed value, and inclusive lower/upper limits. Edit cells, then click VALIDATE & PLOT. The script reads ordinary JavaScript arrays with ui.get(), checks missing values and duplicate X coordinates, and builds all plot series and an evaluation table. These values are examples entered by a person, not measurements from the AD3."
+          }
+        },
+        {
+          "id": "limitInputTable",
+          "type": "experiment_table",
+          "text": "EDITABLE PROFILE — USER DATA",
+          "x": 36,
+          "y": 244,
+          "width": 1178,
+          "height": 348,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "X|Nominal|Observed|Lower limit|Upper limit",
+            "initialRows": "100|1.00|1.03|0.90|1.10\n200|1.30|1.28|1.20|1.40\n300|1.50|1.57|1.40|1.60\n400|1.80|1.65|1.70|1.90\n500|2.00|2.06|1.90|2.10\n600|2.10|2.12|2.00|2.20",
+            "editable": true,
+            "maxRows": 40
+          }
+        },
+        {
+          "id": "plotEnteredData",
+          "type": "button",
+          "text": "VALIDATE & PLOT TABLE",
+          "x": 36,
+          "y": 613,
+          "width": 571,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "restoreLimitData",
+          "type": "button",
+          "text": "RESTORE EXAMPLE DATA",
+          "x": 644,
+          "y": 613,
+          "width": 570,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "editStatus",
+          "type": "label",
+          "text": "READY — enter data and click VALIDATE & PLOT",
+          "x": 36,
+          "y": 695,
+          "width": 1178,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "editHint",
+          "type": "instruction_card",
+          "text": "Suggested experiment",
+          "x": 36,
+          "y": 785,
+          "width": 1178,
+          "height": 112,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Procedure",
+            "body": "Change the Observed value at X=400 to 1.75, then validate again; the outside-limit count should drop from 1 to 0. Try reversing two X rows: the plotted copy sorts by X, but your original table order stays unchanged. An entirely empty row is ignored; a partly filled row is rejected. Right-click a table to export CSV. Runtime edits do not change the saved design-time Initial Rows."
+          }
+        }
+      ]
+    },
+    {
+      "id": "results",
+      "name": "01 XY Plot & Results",
+      "width": 1250,
+      "height": 1210,
+      "controls": [
+        {
+          "id": "resultTitle",
+          "type": "label",
+          "text": "PLOTTED DATA — MULTIPLE SERIES FROM ONE TABLE",
+          "x": 36,
+          "y": 26,
+          "width": 1178,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "plotIntro",
+          "type": "instruction_card",
+          "text": "What the script builds",
+          "x": 36,
+          "y": 80,
+          "width": 1178,
+          "height": 115,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Information",
+            "body": "The four curves (Observed, Nominal, Lower, Upper) use the values from the editable table on Page 00. Out-of-limit points are highlighted as a separate series. The result table below is script-generated and read-only. No oscilloscope input, test runner, or physical outputs are used in this example."
+          }
+        },
+        {
+          "id": "pointCount",
+          "type": "digital_display",
+          "text": "POINTS EVALUATED",
+          "x": 36,
+          "y": 214,
+          "width": 365,
+          "height": 90,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "outsideCount",
+          "type": "digital_display",
+          "text": "OUTSIDE LIMITS",
+          "x": 426,
+          "y": 214,
+          "width": 365,
+          "height": 90,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "largestDeviation",
+          "type": "digital_display",
+          "text": "MAX |OBS-NOM|",
+          "x": 816,
+          "y": 214,
+          "width": 398,
+          "height": 90,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "limitCurve",
+          "type": "plot",
+          "text": "User-entered observed values and limits",
+          "x": 36,
+          "y": 328,
+          "width": 1178,
+          "height": 365,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "XY",
+            "xLabel": "X (user-defined)",
+            "yLabel": "Value (user-defined)",
+            "showGrid": true,
+            "showLegend": true,
+            "xAuto": true,
+            "yAuto": true,
+            "title": "Table data plotted as XY curves",
+            "lineWidth": 2.0
+          }
+        },
+        {
+          "id": "limitResults",
+          "type": "experiment_table",
+          "text": "EVALUATED RESULTS — READ ONLY",
+          "x": 36,
+          "y": 709,
+          "width": 1178,
+          "height": 224,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Input row|X|Nominal|Observed|Lower|Upper|Status",
+            "initialRows": "",
+            "maxRows": 40,
+            "editable": false
+          }
+        },
+        {
+          "id": "clearLimitResults",
+          "type": "button",
+          "text": "CLEAR PLOT / RESULTS",
+          "x": 36,
+          "y": 947,
+          "width": 574,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "plotStatus",
+          "type": "label",
+          "text": "READY — validate the table on Page 00",
+          "x": 630,
+          "y": 947,
+          "width": 584,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "plotHint",
+          "type": "instruction_card",
+          "text": "Reuse this pattern",
+          "x": 36,
+          "y": 1031,
+          "width": 1178,
+          "height": 120,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Information",
+            "body": "Replace the editable source table with test setpoints, calibration limits, expected performance curves, or recorded measurements. The same JavaScript pattern — read, validate, transform, plot, summarize — works without a specialized widget. A native Test Executive run is separate and can archive certified results."
+          }
+        }
+      ]
+    }
+  ]
+}

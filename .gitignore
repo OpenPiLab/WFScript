@@ -1,0 +1,53 @@
+# Build and Qt Creator generated output
+/build/
+/build-*/
+/cmake-build-*/
+/out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+build.ninja
+.ninja_*/
+compile_commands.json
+
+# IDE, user and local configuration
+*.user
+*.user.*
+*.autosave
+*.pro.user
+*.pro.user.*
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Generated executables/object files
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.obj
+*.o
+*.a
+*.lib
+*.d
+*.log
+*.tmp
+
+# Python and Node generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+node_modules/
+
+# Private local data (do not put saved UUT/run data in source tree)
+/reports/
+/Reports/
+/local-data/
+/tmp/
+/temp/
+
+# Example *.wfpanel and source assets are explicitly tracked under examples/.

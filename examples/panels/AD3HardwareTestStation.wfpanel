@@ -1,0 +1,937 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Six-page native AD3 hardware-loopback Test Station: real W1-to-Scope-CH1 capture, four C++ numeric limit tests, safe Cleanup, UUT identity, and automatically archived JSON reports.",
+  "scriptName": "AD3HardwareTestStation.js",
+  "activePageId": "uut",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": true
+  },
+  "pages": [
+    {
+      "id": "overview",
+      "name": "00 Wiring & Guide",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "guideHeading",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">AD3 Hardware Loopback Test | WFScript v5.6.68</h3><p>A real Test Executive example built from previously validated Wavegen/Scope code.</p></div>",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 77,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "guideWiring",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">1. Wiring (only two connections)</h3><p><b>W1 → Scope 1+</b> and <b>AD3 GND → Scope 1−</b>. Use two short jumper wires. Leave the tested circuit disconnected. This example generates a 1 kHz sine wave at 1.0 V peak, 0 V offset. Do not connect mains or other powered circuits.</p></div>",
+          "x": 25,
+          "y": 110,
+          "width": 615,
+          "height": 228,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "guideMode",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">2. Select the correct device</h3><p>Start with <b>Device → Simulation</b> to validate the test workflow. Stop Panel; select <b>Physical Device</b> with the Analog Discovery 3; confirm wiring before starting the Panel again. The JSON report identifies simulation versus hardware. Opening the Panel does NOT start W1.</p></div>",
+          "x": 654,
+          "y": 110,
+          "width": 635,
+          "height": 228,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "guideFlow",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">3. Real native Test Executive</h3><p><b>Setup:</b> configure W1 and Scope, start W1, then nonblocking 350 ms settling delay.<br><b>Main:</b> one Scope CH1 acquisition, then four numeric checks:<br>AC RMS 0.60–0.82 V, frequency 975–1025 Hz, peak-to-peak 1.70–2.30 V, DC mean −0.10–+0.10 V.<br><b>Cleanup:</b> stop Scope and W1, including the normal failure path. Limits and order are edited in <b>Test Sequence...</b>.</p></div>",
+          "x": 25,
+          "y": 350,
+          "width": 615,
+          "height": 341,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "guideNotes",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">4. Why the measurements belong to one capture</h3><p>The first numeric handler captures 16,384 samples at 1 MS/s; the next three handlers read the SAME saved acquisition. The C++ TestRunner, not JavaScript, evaluates configured numeric limits. The operator script only handles buttons and report display. <b>Do not use an emergency Abort to test normal Cleanup</b>; use the labelled graceful Stop action.</p></div>",
+          "x": 654,
+          "y": 350,
+          "width": 635,
+          "height": 341,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "guideFooter",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">5. Quick start</h3><p>Open <b>01 Run Information</b>, enter a UUT serial, choose <b>RUN TEST</b>, then view <b>02 Live Test</b>, <b>03 Measurements</b>, <b>04 Event Log</b> and <b>05 Run Report</b>. Auto-archived JSON is viewable in <b>Script → Test Results Browser</b>.</p></div>",
+          "x": 25,
+          "y": 703,
+          "width": 1264,
+          "height": 146,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "uut",
+      "name": "01 Run Information",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "uutHeading",
+          "type": "label",
+          "text": "AD3 LOOPBACK TEST  |  Unit Under Test",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uutHelp",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">Operator setup</h3><p>The field definitions are owned by this Panel’s <b>Test Sequence → Run Information</b>. Complete the required serial number, then select RUN TEST. Nothing drives W1 until a test starts. Run Information is captured once and archived with the results.</p></div>",
+          "x": 25,
+          "y": 87,
+          "width": 1264,
+          "height": 101,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uutFields",
+          "type": "runInformation",
+          "text": "Run Information (linked to the project Test Executive)",
+          "x": 25,
+          "y": 201,
+          "width": 685,
+          "height": 529,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "uutRun",
+          "type": "button",
+          "text": "RUN AD3 LOOPBACK TEST",
+          "x": 744,
+          "y": 208,
+          "width": 544,
+          "height": 84,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "uutReset",
+          "type": "button",
+          "text": "RESET TEST",
+          "x": 744,
+          "y": 308,
+          "width": 544,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "uutDetails",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">Physical test checklist</h3><p><b>1.</b> W1 connected to 1+; GND connected to 1−.<br><b>2.</b> Select Device → Physical Device before Run Panel.<br><b>3.</b> Confirm W1 will produce ±1 V relative to GND.<br><b>4.</b> Use STOP (CLEANUP) on the Live Test page for graceful termination.<br><b>5.</b> JSON reports are automatically saved to the configured results folder.</p></div>",
+          "x": 744,
+          "y": 390,
+          "width": 544,
+          "height": 309,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uutFooter",
+          "type": "label",
+          "text": "READY  |  Select Simulation first, or select Physical Device and confirm the wiring.",
+          "x": 25,
+          "y": 750,
+          "width": 1264,
+          "height": 84,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "station",
+      "name": "02 Live Test",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "stationHeading",
+          "type": "label",
+          "text": "AD3 W1 → CH1  |  Hardware Test Execution",
+          "x": 25,
+          "y": 17,
+          "width": 1264,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationHelp",
+          "type": "label",
+          "text": "One real CH1 capture per execution. Numeric test limits belong to the visual Test Sequence definition.",
+          "x": 25,
+          "y": 86,
+          "width": 1264,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "resultAcRms",
+          "type": "measurement_result",
+          "text": "AC RMS",
+          "x": 25,
+          "y": 148,
+          "width": 296,
+          "height": 147,
+          "value": 0,
+          "min": 0.6,
+          "max": 0.82,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 4
+          }
+        },
+        {
+          "id": "resultFrequency",
+          "type": "measurement_result",
+          "text": "FREQUENCY",
+          "x": 348,
+          "y": 148,
+          "width": 296,
+          "height": 147,
+          "value": 0,
+          "min": 975,
+          "max": 1025,
+          "events": {},
+          "properties": {
+            "unit": "Hz",
+            "decimals": 2
+          }
+        },
+        {
+          "id": "resultVpp",
+          "type": "measurement_result",
+          "text": "PEAK TO PEAK",
+          "x": 672,
+          "y": 148,
+          "width": 296,
+          "height": 147,
+          "value": 0,
+          "min": 1.7,
+          "max": 2.3,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "resultOffset",
+          "type": "measurement_result",
+          "text": "DC OFFSET",
+          "x": 993,
+          "y": 148,
+          "width": 296,
+          "height": 147,
+          "value": 0,
+          "min": -0.1,
+          "max": 0.1,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 4
+          }
+        },
+        {
+          "id": "stationSequence",
+          "type": "test_sequence",
+          "text": "AD3 W1 to CH1 Functional Test",
+          "x": 25,
+          "y": 318,
+          "width": 600,
+          "height": 350,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "defaultSteps": "Configure W1 and Scope|Settle generator|Capture AC RMS|Verify frequency|Verify peak to peak|Verify DC offset|Stop W1 / safe cleanup",
+            "maxSteps": 64,
+            "showProgress": true,
+            "showElapsed": true,
+            "showNumbers": true,
+            "autoScroll": true,
+            "compactMode": false
+          }
+        },
+        {
+          "id": "hwTrace",
+          "type": "plot",
+          "text": "Scope CH1 — last captured waveform",
+          "x": 646,
+          "y": 318,
+          "width": 643,
+          "height": 350,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Line",
+            "xLabel": "Time (s)",
+            "yLabel": "Voltage (V)",
+            "showGrid": true,
+            "showLegend": true,
+            "xAuto": true,
+            "yAuto": true,
+            "showCursors": true,
+            "cursorA": 0.0,
+            "cursorB": 0.001,
+            "lineWidth": 2.0
+          }
+        },
+        {
+          "id": "stationRun",
+          "type": "button",
+          "text": "RUN TEST",
+          "x": 25,
+          "y": 681,
+          "width": 295,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationStop",
+          "type": "button",
+          "text": "STOP (CLEANUP)",
+          "x": 344,
+          "y": 681,
+          "width": 295,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationReset",
+          "type": "button",
+          "text": "RESET",
+          "x": 663,
+          "y": 681,
+          "width": 295,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationReportButton",
+          "type": "button",
+          "text": "REFRESH REPORT",
+          "x": 979,
+          "y": 681,
+          "width": 310,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "stationSummary",
+          "type": "label",
+          "text": "READY  |  No test currently running.",
+          "x": 25,
+          "y": 754,
+          "width": 1264,
+          "height": 86,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "table",
+      "name": "03 Measurements",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "tableHeading",
+          "type": "label",
+          "text": "Measured Values and Test Limits",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "tableInfo",
+          "type": "label",
+          "text": "Limits are configured in Test Sequence. Measurement cards and this table update from the native C++ TestRunner.",
+          "x": 25,
+          "y": 93,
+          "width": 1264,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationTable",
+          "type": "measurement_table",
+          "text": "AD3 W1 / Scope CH1 Measurement Results",
+          "x": 25,
+          "y": 177,
+          "width": 1264,
+          "height": 551,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "decimals": 4,
+            "maxRows": 100,
+            "headers": "Measurement|Actual|Acceptance limits|Result"
+          }
+        },
+        {
+          "id": "tableFooter",
+          "type": "label",
+          "text": "Acquired data is reused across all four numeric checks. Use Results Browser to review archived previous runs.",
+          "x": 25,
+          "y": 748,
+          "width": 1264,
+          "height": 87,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "eventlog",
+      "name": "04 Event Log",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "logHeading",
+          "type": "label",
+          "text": "Test Event Log",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "logInfo",
+          "type": "label",
+          "text": "Native events include Setup, numeric limits, failures, Cleanup and archive status.",
+          "x": 25,
+          "y": 91,
+          "width": 1264,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationLog",
+          "type": "event_log",
+          "text": "AD3 Test Executive Log",
+          "x": 25,
+          "y": 173,
+          "width": 1264,
+          "height": 563,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "showTimestamp": true
+          }
+        },
+        {
+          "id": "logFooter",
+          "type": "label",
+          "text": "If a test fails, inspect the failed step and the Cleanup step, then open its saved JSON in Test Results Browser.",
+          "x": 25,
+          "y": 752,
+          "width": 1264,
+          "height": 83,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "report",
+      "name": "05 Run Report",
+      "width": 1320,
+      "height": 860,
+      "controls": [
+        {
+          "id": "reportHeading",
+          "type": "label",
+          "text": "Execution Record  |  Hardware or Simulation",
+          "x": 25,
+          "y": 18,
+          "width": 1264,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "reportRefresh",
+          "type": "button",
+          "text": "REFRESH",
+          "x": 25,
+          "y": 100,
+          "width": 241,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "reportExportJson",
+          "type": "button",
+          "text": "EXPORT JSON",
+          "x": 284,
+          "y": 100,
+          "width": 241,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "reportExportCsv",
+          "type": "button",
+          "text": "EXPORT CSV",
+          "x": 544,
+          "y": 100,
+          "width": 241,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "reportApi",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:13px\"><h3 style=\"color:#7dd3fc\">Native automatic archiving</h3><p>Each completed run saves one immutable JSON report. Previous reports are shown by <b>Script → Test Results Browser...</b></p></div>",
+          "x": 809,
+          "y": 100,
+          "width": 480,
+          "height": 77,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationReport",
+          "type": "label",
+          "text": "<div style=\"font-family:Segoe UI;color:#d9e8f4\"><h3>NO EXECUTION YET</h3><p>Run the hardware test on Page 01 or 02, then return here.</p></div>",
+          "x": 25,
+          "y": 196,
+          "width": 1264,
+          "height": 613,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "reportFooter",
+          "type": "label",
+          "text": "Ready — automatic JSON archiving is configured for this example.",
+          "x": 25,
+          "y": 813,
+          "width": 1264,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * AD3 Hardware Test Station — operator script.\n * No test definition/configuration in this file. Native C++ reads project-owned\n * testDefinition, Run Information, Report Storage and AD3LoopbackSteps.mjs.\n * The MODULE operates the instrument; this script only handles UI/reporting.\n */\nfunction action(label, fn) {\n    const ok = fn();\n    const msg = ok ? label + ' accepted.' : label + ' rejected: ' + TestRunner.lastError;\n    print('[AD3 operator] ' + msg);\n    ui.set('uutFooter', msg);\n}\nui.on('uutRun','clicked', function(){ action('RUN TEST',function(){return TestRunner.run();}); });\nui.on('stationRun','clicked',function(){ action('RUN TEST',function(){return TestRunner.run();}); });\nui.on('stationStop','clicked',function(){ action('STOP (CLEANUP)',function(){return TestRunner.terminate();}); });\nui.on('uutReset','clicked',function(){action('RESET',function(){return TestRunner.reset();}); refreshReport();});\nui.on('stationReset','clicked',function(){action('RESET',function(){return TestRunner.reset();}); refreshReport();});\nui.on('stationReportButton','clicked',refreshReport);\n\nfunction escapeHtml(value) {\n    return String(value === undefined || value === null ? '' : value)\n        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\nfunction refreshReport() {\n    const report=TestRunner.report();\n    const summary=TestRunner.summary();\n    const steps=report.steps || [], measurements=report.measurements || [];\n    const archive=report.executionId ? TestRunner.archiveInfo() : {status:'idle'};\n    const mode=(report.instrument && report.instrument.mode) || 'not started';\n    const archivetext=archive.status==='saved' ? 'SAVED: '+archive.path :\n        archive.status==='error' ? 'ARCHIVE ERROR: '+archive.error :\n        'Archive status: '+archive.status;\n    const uut=Object.keys(report.runInfo || {}).map(function(key){\n        return '<tr><td>'+escapeHtml(key)+'</td><td>'+escapeHtml(report.runInfo[key])+'</td></tr>';\n    }).join('');\n    const stepRows=steps.map(function(s){\n        return '<tr><td>'+escapeHtml(s.name)+'</td><td>'+escapeHtml(s.status)+'</td><td>'+escapeHtml(s.elapsedMs)+' ms</td></tr>';\n    }).join('');\n    const measureRows=measurements.map(function(m){\n        return '<tr><td>'+escapeHtml(m.name)+'</td><td>'+escapeHtml(m.value)+' '+escapeHtml(m.unit)+\n          '</td><td>'+escapeHtml(m.low)+' ... '+escapeHtml(m.high)+'</td><td>'+escapeHtml(m.status)+'</td></tr>';\n    }).join('');\n    const html='<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\">'+\n      '<h2>AD3 Hardware Loopback — Native Test Report</h2>'+\n      '<p><b>RESULT:</b> '+escapeHtml(summary.state)+' &nbsp; <b>Instrument:</b> '+escapeHtml(mode)+\n      ' &nbsp; <b>Elapsed:</b> '+escapeHtml(summary.elapsedMs)+' ms</p>'+\n      '<p><b>Execution ID:</b> '+escapeHtml(report.executionId || '(not run yet)')+'</p>'+\n      '<p><b>Archive:</b> '+escapeHtml(archivetext)+'</p>'+\n      '<h3>Run Information</h3><table width=\"100%\" cellpadding=\"4\"><tr><th>Field</th><th>Value</th></tr>'+uut+'</table>'+\n      '<h3>Setup / Main / Cleanup</h3><table width=\"100%\" cellpadding=\"4\"><tr><th>Step</th><th>Status</th><th>Time</th></tr>'+stepRows+'</table>'+\n      '<h3>Actual Measurements</h3><table width=\"100%\" cellpadding=\"4\"><tr><th>Measurement</th><th>Value</th><th>Limits</th><th>Result</th></tr>'+measureRows+'</table></div>';\n    ui.set('stationReport',html);\n    if (report.executionId) ui.set('reportFooter',archivetext);\n}\nfunction exportResult(format) {\n    const path=TestRunner.exportReport(format);\n    const text=path ? 'Exported '+format.toUpperCase()+': '+path :\n        'Export failed: '+TestRunner.lastError;\n    ui.set('reportFooter',text); print(text);\n}\nui.on('reportRefresh','clicked',refreshReport);\nui.on('reportExportJson','clicked',function(){exportResult('json');});\nui.on('reportExportCsv','clicked',function(){exportResult('csv');});\nTestRunner.onFinished(function(){ refreshReport(); });\n// No test is started when the Panel starts. Reading the report is harmless.\nrefreshReport();\n",
+  "libraries": [
+    {
+      "name": "AD3LoopbackSteps.mjs",
+      "source": "/**\n * AD3LoopbackSteps.mjs — REAL W1 -> Scope CH1 instrument measurements.\n * This library runs inside WFScript's ONE QJSEngine. No module imports are\n * necessary; Wavegen1, Scope1, Device, plots, print are native bindings.\n * The visual Test Sequence owns limit checks and execution order.\n *\n * SAFE WIRING: W1 -> CH1+; AD3 GND -> CH1-. Nothing else connected.\n * Physical operation is explicit: select Physical Device BEFORE Run Panel.\n * The Panel script does not start outputs on load.\n */\nlet capture = null;\n\nfunction requireCaptured(key) {\n    if (capture === null) throw Error('No CH1 capture available; capture step must run first');\n    const v = Number(capture[key]);\n    if (!isFinite(v)) throw Error('Invalid CH1 ' + key + ' measurement');\n    return v;\n}\n\nexport function configureLoopback() {\n    capture = null;\n    if (!Device.isConnected()) throw Error('No AD3 connected or simulator available');\n    // Turn off any previous W1/W2 waveform before configuring.\n    Wavegen1.stop();\n    Wavegen1.Channel1.enable = true;\n    Wavegen1.Channel2.enable = false;\n    Wavegen1.Channel1.Mode.text = 'Simple';\n    Wavegen1.Channel1.Simple.Type.text = 'Sine';\n    Wavegen1.Channel1.Simple.Frequency.value = 1000;\n    Wavegen1.Channel1.Simple.Amplitude.value = 1.0; // V peak, 2 Vpp\n    Wavegen1.Channel1.Simple.Offset.value = 0;\n    Wavegen1.Channel1.Simple.Phase.value = 0;\n    if (Wavegen1.Channel1.Simple.Type.text !== 'Sine')\n        throw Error('Wavegen rejected Sine function');\n    Scope1.Time.Rate.value = 1000000; // 1 MS/s\n    Scope1.Time.Samples.value = 16384;\n    Scope1.Channel1.Range.value = 5;  // supported AD3 hardware 5 Vpp range\n    Scope1.Channel1.Offset.value = 0;\n    Scope1.Channel1.Attenuation.value = 1;\n    Scope1.Trigger.Trigger.text = 'None';\n    if (!Wavegen1.run()) throw Error('W1 start failed: ' + Wavegen1.lastError);\n    const w = Wavegen1.status(1);\n    if (w && w.carrierFunction && w.carrierFunction !== 'Sine') {\n        Wavegen1.stop();\n        throw Error('Unexpected W1 function: ' + w.carrierFunction);\n    }\n    print('[AD3 test] W1 1 kHz sine, 1.0 Vpk, CH1 5 Vpp range; 350 ms settle next');\n    return true;\n}\n\nexport function captureAcRms() {\n    capture = null;\n    if (!Scope1.single()) throw Error('Scope start failed: ' + Scope1.lastError);\n    if (!Scope1.wait(3)) throw Error('Scope acquisition failed: ' + Scope1.lastError);\n    const st = Scope1.Channel1.statistics();\n    if (!st || Number(st.count) < 2048)\n        throw Error('Insufficient CH1 samples: ' + (st ? st.count : 0));\n    const mean = Number(st.mean), rms = Number(st.rms);\n    const frequency = Number(st.frequencyHz);\n    const vpp = Number(st.vpp);\n    if (![mean, rms, frequency, vpp].every(isFinite))\n        throw Error('Non-finite scope statistics (check W1 -> CH1 wiring)');\n    // Ignore DC offset when checking AC RMS, unlike total RMS.\n    const acRms = Math.sqrt(Math.max(0, rms * rms - mean * mean));\n    capture = {acRms:acRms,frequency:frequency,vpp:vpp,mean:mean, count:Number(st.count)};\n    print('[AD3 test] CH1 N=' + capture.count + ', AC RMS=' + acRms.toFixed(4) +\n          ' V, f=' + frequency.toFixed(2) + ' Hz, Vpp=' + vpp.toFixed(4) +\n          ' V, DC=' + mean.toFixed(4) + ' V');\n    // Plot is an optional visualization: an invalid plot must not turn a\n    // valid measurement into a failed test.\n    try { plots.fromScope('hwTrace', 1, 'Last captured CH1'); }\n    catch (e) { print('[AD3 test] Chart not updated: ' + String(e)); }\n    return acRms;\n}\n\nexport function measureFrequency() { return requireCaptured('frequency'); }\nexport function measureVpp()       { return requireCaptured('vpp'); }\nexport function measureMean()      { return requireCaptured('mean'); }\n\nexport function cleanupLoopback() {\n    // Always attempt BOTH shutdown operations. Even a Scope error must not\n    // prevent W1 shutdown. Best effort hardware-off is more important than UI.\n    let scopeError = null;\n    try { Scope1.stop(); } catch (e) { scopeError = String(e); }\n    try { Wavegen1.stop(); }\n    catch (e) { throw Error('W1 could not be stopped: ' + String(e)); }\n    print('[AD3 test] Cleanup: Scope stopped; W1 disabled' +\n          (scopeError ? ' (scope warning: '+scopeError+')' : ''));\n    return true;\n}\n"
+    }
+  ],
+  "testDefinition": {
+    "schemaVersion": 1,
+    "id": "ad3-w1-ch1-physical-loopback",
+    "title": "AD3 W1 to CH1 — Real Hardware Test",
+    "config": {
+      "sequenceId": "stationSequence",
+      "tableId": "stationTable",
+      "logId": "stationLog",
+      "summaryId": "stationSummary",
+      "stopOnFailure": true,
+      "totalTimeoutMs": 12000
+    },
+    "steps": [
+      {
+        "id": "configure",
+        "name": "SETUP — Configure and start W1 / Scope",
+        "group": "setup",
+        "type": "action",
+        "description": "1 kHz Sine, 1 Vpk, 0 V DC; CH1 5 Vpp, 16,384 samples @ 1 MS/s",
+        "mode": "once",
+        "timeoutMs": 1600,
+        "handler": "configureLoopback"
+      },
+      {
+        "id": "settle",
+        "name": "SETUP — Allow generator to settle",
+        "group": "setup",
+        "type": "action",
+        "description": "Native nonblocking 350 ms settling delay",
+        "mode": "delay",
+        "durationMs": 350,
+        "timeoutMs": 850
+      },
+      {
+        "id": "acRms",
+        "name": "Measure CH1 AC RMS",
+        "group": "main",
+        "type": "numeric",
+        "description": "Acquire once; return AC-coupled RMS from CH1 samples",
+        "mode": "once",
+        "timeoutMs": 6500,
+        "handler": "captureAcRms",
+        "limits": {
+          "low": 0.6,
+          "high": 0.82
+        },
+        "unit": "V",
+        "resultWidget": "resultAcRms"
+      },
+      {
+        "id": "frequency",
+        "name": "Measure CH1 frequency",
+        "group": "main",
+        "type": "numeric",
+        "description": "Read frequency from same captured samples",
+        "mode": "once",
+        "timeoutMs": 700,
+        "handler": "measureFrequency",
+        "limits": {
+          "low": 975,
+          "high": 1025
+        },
+        "unit": "Hz",
+        "resultWidget": "resultFrequency"
+      },
+      {
+        "id": "peakToPeak",
+        "name": "Measure CH1 peak-to-peak voltage",
+        "group": "main",
+        "type": "numeric",
+        "description": "Read Vpp from same captured samples",
+        "mode": "once",
+        "timeoutMs": 700,
+        "handler": "measureVpp",
+        "limits": {
+          "low": 1.7,
+          "high": 2.3
+        },
+        "unit": "V",
+        "resultWidget": "resultVpp"
+      },
+      {
+        "id": "dcOffset",
+        "name": "Measure CH1 DC mean",
+        "group": "main",
+        "type": "numeric",
+        "description": "Read mean DC offset from same captured samples",
+        "mode": "once",
+        "timeoutMs": 700,
+        "handler": "measureMean",
+        "limits": {
+          "low": -0.1,
+          "high": 0.1
+        },
+        "unit": "V",
+        "resultWidget": "resultOffset"
+      },
+      {
+        "id": "cleanup",
+        "name": "CLEANUP — Stop Scope and W1",
+        "group": "cleanup",
+        "type": "action",
+        "description": "Safely stop Wavegen and Scope after success, test failure, or graceful terminate",
+        "mode": "once",
+        "timeoutMs": 1600,
+        "handler": "cleanupLoopback"
+      }
+    ]
+  },
+  "testLibrary": "AD3LoopbackSteps.mjs",
+  "runInformation": {
+    "fields": [
+      {
+        "id": "uutId",
+        "label": "UUT / Run Serial Number",
+        "type": "text",
+        "required": true,
+        "default": ""
+      },
+      {
+        "id": "partNumber",
+        "label": "Board / Test Fixture",
+        "type": "text",
+        "required": false,
+        "default": "AD3-LOOPBACK"
+      },
+      {
+        "id": "operatorId",
+        "label": "Operator",
+        "type": "text",
+        "required": false,
+        "default": "Lab Operator"
+      },
+      {
+        "id": "testNote",
+        "label": "Run Notes",
+        "type": "text",
+        "required": false,
+        "default": ""
+      }
+    ]
+  },
+  "reportStorage": {
+    "autoSave": true,
+    "directory": ""
+  }
+}

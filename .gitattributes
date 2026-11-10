@@ -1,0 +1,17 @@
+* text=auto
+*.cpp text eol=lf
+*.h text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.py text eol=lf
+*.qrc text eol=lf
+*.wfpanel text eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.bmp binary
+*.webp binary
+*.gif binary
+*.zip binary

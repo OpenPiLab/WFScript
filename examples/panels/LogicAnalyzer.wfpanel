@@ -1,0 +1,232 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "WFScript v5.6.51 example — Capture 16-bit DigitalIn samples and display a timing chart.",
+  "scriptName": "LogicAnalyzer.js",
+  "activePageId": "digital_logic",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "digital_logic",
+      "name": "Logic Analyzer",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "liTitle",
+          "type": "label",
+          "text": "DIGITAL LOGIC ANALYZER  /  16-BIT AD3 ACQUISITION",
+          "x": 24,
+          "y": 12,
+          "width": 1110,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "liHelp",
+          "type": "label",
+          "text": "CAPTURE INPUT reads DIO signals without driving pins. LOOPBACK TEST drives DIO0 only, with DIO1 as input through 1 kΩ.\nDigital plotting uses actual SDK sampling rate; simulation is marked as such.",
+          "x": 24,
+          "y": 65,
+          "width": 1110,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "liRate",
+          "type": "option_selector",
+          "text": "SAMPLE RATE",
+          "x": 24,
+          "y": 145,
+          "width": 260,
+          "height": 71,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "10000|20000|50000|100000|1000000",
+            "defaultIndex": 1,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "liSamples",
+          "type": "option_selector",
+          "text": "CAPTURE SAMPLES",
+          "x": 298,
+          "y": 145,
+          "width": 260,
+          "height": 71,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "1024|2048|4096|8192",
+            "defaultIndex": 2,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "liPin",
+          "type": "option_selector",
+          "text": "DISPLAY DIO",
+          "x": 572,
+          "y": 145,
+          "width": 260,
+          "height": 71,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "DIO1|DIO2|DIO3|DIO4|DIO5|DIO6|DIO7|DIO8|DIO9|DIO10|DIO11|DIO12|DIO13|DIO14|DIO15",
+            "defaultIndex": 0,
+            "accent": "amber"
+          }
+        },
+        {
+          "id": "liInfo",
+          "type": "label",
+          "text": "CAPTURE WINDOW: 204.8 ms (20 kS/s × 4096)\nDIO0 and selected input plotted",
+          "x": 846,
+          "y": 145,
+          "width": 288,
+          "height": 71,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "liCapture",
+          "type": "button",
+          "text": "CAPTURE INPUTS",
+          "x": 24,
+          "y": 227,
+          "width": 265,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "liLoopback",
+          "type": "button",
+          "text": "RUN DIO0 → DIO1 TEST",
+          "x": 307,
+          "y": 227,
+          "width": 335,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "liClear",
+          "type": "button",
+          "text": "CLEAR CHART",
+          "x": 660,
+          "y": 227,
+          "width": 223,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {}
+        },
+        {
+          "id": "liStatus",
+          "type": "label",
+          "text": "READY / Nothing armed. Open Panel does not drive outputs.",
+          "x": 24,
+          "y": 296,
+          "width": 1110,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "liChart",
+          "type": "digital_plot",
+          "text": "AD3 DigitalIn samples — DIO0 and selected input",
+          "x": 24,
+          "y": 353,
+          "width": 1110,
+          "height": 365,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "chartType": "Digital",
+            "xLabel": "Time (ms)",
+            "yLabel": "Logic lanes",
+            "showGrid": true,
+            "showLegend": false,
+            "xAuto": true,
+            "yAuto": true,
+            "lineWidth": 2.0,
+            "xLog": false,
+            "showCursors": true,
+            "cursorA": 40.0,
+            "cursorB": 80.0
+          }
+        },
+        {
+          "id": "liFooter",
+          "type": "label",
+          "text": "TEST: wire DIO0 — 1 kΩ — DIO1. LOOPBACK forces 10 kS/s × 4096 (409.6 ms), then arms and toggles DIO0.\nCAPTURE INPUTS uses the selected rate; at 1 MS/s the capture window is only 4.096 ms.",
+          "x": 24,
+          "y": 726,
+          "width": 1110,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Example: Logic Analyzer\n * Capture 16-bit DigitalIn samples and display a timing chart.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: For loopback, DIO0 → 1 kΩ → DIO1.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 13 LOGIC ANALYZER — REAL 16-BIT DIGITALIN ACQUISITION\n// ============================================================================\n// single() arms an untriggered acquisition; wait() transfers it afterward.\n// CAPTURE INPUTS never enables digital outputs. LOOPBACK deliberately drives\n// DIO0 (only) while DigitalIn captures both DIO0 and DIO1.\nfunction liSettings() {\n  const rate=Number(ui.get('liRate'));\n  const samples=Number(ui.get('liSamples'));\n  const pinLabel=String(ui.get('liPin'));\n  const pin=Number(pinLabel.replace('DIO',''));\n  if(!isFinite(rate)||rate<1||!isFinite(samples)||samples<16||\n     !Number.isInteger(pin)||pin<1||pin>15)throw Error('Invalid Logic capture setting');\n  Logic1.Time.Rate.value=rate;\n  Logic1.Time.Samples.value=samples;\n  return {rate,samples,pin};\n}\nfunction liPlot(words,rate,pin,prefix) {\n  if(!words.length || !isFinite(rate) || rate<=0)throw Error('No valid DigitalIn capture samples');\n  const times=[],output=[],input=[];\n  let edges=0,high=0;\n  for(let i=0;i<words.length;i++) {\n    times.push(i*1000/rate); // milliseconds for the Digital Timing chart\n    const word=Number(words[i]);\n    output.push(word&1);\n    const bit=(word>>>pin)&1;\n    input.push(bit);\n    if(bit)high++;\n    if(i>0 && bit!==input[i-1])edges++;\n  }\n  if(!plots.setSeries('liChart','DIO0',times,output))throw Error(plots.lastError);\n  if(!plots.setSeries('liChart','DIO'+pin,times,input))throw Error(plots.lastError);\n  const duration=(1000*words.length/rate).toFixed(3);\n  const result=prefix+' | '+words.length+' samples / '+rate.toFixed(1)+\n      ' Hz / '+duration+' ms / DIO'+pin+' edges='+edges+' / HIGH '+\n      (100*high/words.length).toFixed(1)+'%';\n  ui.set('liStatus',result);\n  print('Logic capture: '+result);\n  return edges;\n}\nfunction liCaptureOnly() {\n  try {\n    const cfg=liSettings();\n    ui.set('liStatus','CAPTURING INPUTS / no output commands');\n    if(!Logic1.single())throw Error(Logic1.lastError);\n    if(!Logic1.wait(3))throw Error(Logic1.lastError);\n    liPlot(Logic1.samples(),Logic1.sampleRateHz,cfg.pin,\n           StaticIO.simulation?'SIMULATED INPUT DATA':'PHYSICAL INPUT CAPTURE');\n  } catch(e) {\n    Logic1.stop();\n    ui.set('liStatus','INPUT CAPTURE ERROR: '+String(e));\n    print('Logic input capture error: '+String(e));\n  }\n}\nfunction liLoopback() {\n  liSettings();\n  // The self-generated loopback must have a long enough capture window.\n  ui.set('liRate','10000');\n  ui.set('liSamples','4096');\n  ui.set('liPin','DIO1');\n  const simulated=!!StaticIO.simulation;\n  let outcome='',released=false;\n  try {\n    if(!simulated) {\n      // This operation intentionally releases any previously driven static pins.\n      if(!StaticIO.stop())throw Error('Cannot establish all inputs Z: '+StaticIO.lastError);\n      if(!StaticIO.setPin(0,0))throw Error('Cannot set DIO0 LOW: '+StaticIO.lastError);\n      if(!wait(0.020))throw Error('Script interrupted during digital loopback');\n    }\n    // Conservative fixed acquisition window: 4096/10000 = 409.6ms.\n    // The page settings are reset explicitly so a previous fast capture cannot\n    // silently make the software-timed test miss its edges.\n    Logic1.Time.Rate.value=10000;\n    Logic1.Time.Samples.value=4096;\n    if(!Logic1.single())throw Error('Arm failed: '+Logic1.lastError);\n    if(!simulated) {\n      if(!wait(0.025))throw Error('Script interrupted during digital loopback');\n      if(!StaticIO.setPin(0,1))throw Error(StaticIO.lastError);\n      if(!wait(0.030))throw Error('Script interrupted during digital loopback');\n      if(!StaticIO.setPin(0,0))throw Error(StaticIO.lastError);\n      if(!wait(0.030))throw Error('Script interrupted during digital loopback');\n      if(!StaticIO.setPin(0,1))throw Error(StaticIO.lastError);\n      if(!wait(0.030))throw Error('Script interrupted during digital loopback');\n      if(!StaticIO.setPin(0,0))throw Error(StaticIO.lastError);\n    }\n    if(!Logic1.wait(3))throw Error('DigitalIn wait failed: '+Logic1.lastError);\n    const words=Logic1.samples();\n    const edges=liPlot(words,Logic1.sampleRateHz,1,\n                      simulated?'SIMULATED LOOPBACK':'DIO0→DIO1 LOOPBACK');\n    let matching=0;\n    for(let i=0;i<words.length;i++)\n      if((words[i]&1)===((words[i]>>>1)&1))matching++;\n    const agreement=100*matching/words.length;\n    outcome=simulated?'SIMULATION ONLY — no hardware tested':\n            (edges>=2 && agreement>=95 ?\n              'PASS: DIO1 transitions captured ('+edges+' edges, '+agreement.toFixed(1)+'% matches DIO0)':\n              'CHECK WIRING / TIMING: '+edges+' DIO1 edges, DIO0/DIO1 match '+agreement.toFixed(1)+'%');\n  } catch(e) {\n    outcome='ERROR: '+String(e);\n    Logic1.stop();\n  } finally {\n    // On hardware: never claim high-Z unless the SDK accepted the stop.\n    if(simulated)released=true;\n    else released=StaticIO.stop();\n    if(released) {\n      // Static I/O is released; its selector widgets belong to a different example.\n      ui.set('liStatus',outcome+' | STATIC OUTPUTS Z');\n    } else ui.set('liStatus','DANGER — HIGH-Z NOT CONFIRMED: '+StaticIO.lastError+' / '+outcome);\n    print('Logic loopback: '+outcome+(released?' / output released':' / STOP FAILED'));\n  }\n}\nui.on('liCapture','clicked',liCaptureOnly);\nui.on('liLoopback','clicked',liLoopback);\nui.on('liClear','clicked',function(){\n  plots.clear('liChart');\n  ui.set('liStatus','CHART CLEARED — acquisition idle');\n});\n\n// Show the currently selected DigitalIn acquisition window instead of a stale\n// 20 kS/s default. Source v5.6.47 behavior remains otherwise unchanged.\nfunction liUpdateInfo(){\n  const rate=Number(ui.get('liRate')),samples=Number(ui.get('liSamples'));\n  if(rate>0 && samples>0)\n    ui.set('liInfo','CAPTURE WINDOW '+(samples*1000/rate).toFixed(3)+\n        ' ms\\n'+(rate/1000).toFixed(1)+' kS/s × '+samples+' samples');\n}\nui.on('liRate','selectionChanged',liUpdateInfo);\nui.on('liSamples','selectionChanged',liUpdateInfo);\nliUpdateInfo();\n\n// ============================================================================\n"
+}
