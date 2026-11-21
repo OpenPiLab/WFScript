@@ -42,3 +42,68 @@ jobs:
       - name: Run native Qt CTests
         shell: pwsh
         run: ctest --test-dir build/ci -C Release --output-on-failure -j 2
+      - name: Package portable Windows ZIP
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Join-Path $PWD 'build/ci/Release/WFScript.exe'
+          if (-not (Test-Path $exe)) { throw "Application was not built: $exe" }
+
+          $packageRoot = Join-Path $PWD 'build/portable'
+          $appDir = Join-Path $packageRoot 'WFScript-Windows-x64'
+          $zipPath = Join-Path $packageRoot 'WFScript-Windows-x64.zip'
+          New-Item -ItemType Directory -Force -Path $appDir | Out-Null
+          Copy-Item $exe (Join-Path $appDir 'WFScript.exe')
+
+          # Qt's deployment tool supplies the Qt plugins and DLLs, including its
+          # compiler-runtime deployment on the hosted MSVC build machine.
+          $deployTool = (Get-Command windeployqt.exe -ErrorAction Stop).Source
+          & $deployTool --release --compiler-runtime (Join-Path $appDir 'WFScript.exe')
+          if ($LASTEXITCODE -ne 0) { throw "windeployqt failed ($LASTEXITCODE)" }
+
+          # SQLite is used by the WFScript JavaScript API. Include its driver even
+          # if the automatic scan doesn't recognize dynamically loaded plugins.
+          $sqlitePlugin = Join-Path $env:QT_ROOT_DIR 'plugins/sqldrivers/qsqlite.dll'
+          $sqliteTarget = Join-Path $appDir 'sqldrivers/qsqlite.dll'
+          if (-not (Test-Path $sqliteTarget)) {
+            if (-not (Test-Path $sqlitePlugin)) { throw "Qt SQLite driver unavailable: $sqlitePlugin" }
+            New-Item -ItemType Directory -Force -Path (Split-Path $sqliteTarget) | Out-Null
+            Copy-Item $sqlitePlugin $sqliteTarget
+          }
+
+          foreach ($file in @('LICENSE', 'README.md', 'docs/manuals/WFScript_Getting_Started.pdf', 'docs/manuals/WFScript_User_Guide.pdf')) {
+            if (-not (Test-Path $file)) { throw "Required portable package file missing: $file" }
+          }
+          Copy-Item LICENSE (Join-Path $appDir 'LICENSE')
+          Copy-Item README.md (Join-Path $appDir 'README.md')
+          New-Item -ItemType Directory -Force -Path (Join-Path $appDir 'Documentation') | Out-Null
+          Copy-Item docs/manuals/WFScript_Getting_Started.pdf (Join-Path $appDir 'Documentation/WFScript_Getting_Started.pdf')
+          Copy-Item docs/manuals/WFScript_User_Guide.pdf (Join-Path $appDir 'Documentation/WFScript_User_Guide.pdf')
+          @'
+          WFScript portable Windows x64 build (MSVC 2022 / Qt 6.9.2)
+
+          1. Extract all files before running WFScript.exe.
+          2. Launch WFScript.exe in this folder.
+          3. Analog Discovery devices require Digilent WaveForms and its SDK runtime,
+             installed separately: https://digilent.com/shop/software/digilent-waveforms/
+          4. This package is a GitHub Actions development build. It was built and
+             CTest-checked on GitHub, but has not yet been clean-PC verified.
+          5. If Windows reports a missing Visual C++ runtime, install the latest
+             Microsoft Visual C++ Redistributable (x64).
+          '@ | Set-Content -Encoding UTF8 (Join-Path $appDir 'PORTABLE_README.txt')
+
+          foreach ($file in @('WFScript.exe', 'platforms/qwindows.dll', 'sqldrivers/qsqlite.dll')) {
+            if (-not (Test-Path (Join-Path $appDir $file))) { throw "Missing deployment file: $file" }
+          }
+          Compress-Archive -Path $appDir -DestinationPath $zipPath -Force
+          $sizeMB = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
+          Write-Host "Created $zipPath ($sizeMB MB)"
+          Get-FileHash -Algorithm SHA256 $zipPath | Format-List
+
+      - name: Upload portable ZIP to this Actions run
+        uses: actions/upload-artifact@v4
+        with:
+          name: WFScript-Windows-x64
+          path: build/portable/WFScript-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
