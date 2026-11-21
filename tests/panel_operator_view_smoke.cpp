@@ -19,8 +19,12 @@
 #include <functional>
 #include <QThread>
 #include <QDebug>
+#include <cstdio>
 
 static int fail(const char* message) {
+    // Write to the standard error stream explicitly for MSVC/CTest CI logs.
+    std::fprintf(stderr, "OPERATOR VIEW FAIL: %s\n", message);
+    std::fflush(stderr);
     qCritical() << "OPERATOR VIEW FAIL:" << message;
     return 1;
 }

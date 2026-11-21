@@ -859,6 +859,10 @@ if(WFSCRIPT_BUILD_TESTS)
     qt_add_executable(WFScriptOperatorViewSmoke
         tests/panel_operator_view_smoke.cpp
         ${_wfs896_sources})
+    # Explicitly build this GUI smoke test as a console executable on Windows.
+    # Otherwise MSVC may route qCritical() diagnostics to the debugger instead
+    # of the CTest capture stream on a hosted GitHub Actions runner.
+    set_target_properties(WFScriptOperatorViewSmoke PROPERTIES WIN32_EXECUTABLE FALSE)
     target_include_directories(WFScriptOperatorViewSmoke PRIVATE src)
     target_link_libraries(WFScriptOperatorViewSmoke PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptOperatorViewSmoke COMMAND WFScriptOperatorViewSmoke)
