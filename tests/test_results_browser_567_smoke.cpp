@@ -8,7 +8,9 @@
 #include <QJsonObject>
 #include <QLineEdit>
 #include <QPlainTextEdit>
-#include <QTableWidget>
+#include <QTableView>
+#include <QAbstractItemModel>
+#include <QTabWidget>
 #include <QTemporaryDir>
 #include <QDebug>
 
@@ -44,32 +46,37 @@ int main(int argc,char** argv) {
     CHECK(put(tmp.filePath(QStringLiteral("report_2.json")),QStringLiteral("22222222-2222-4222-8222-222222222222"),
               QStringLiteral("failed"),QStringLiteral("UNIT-002"),QStringLiteral("2026-11-08T13:02:00.000Z")),"fail fixture");
     TestResultsBrowserDialog browser(tmp.path());
-    auto* table=browser.findChild<QTableWidget*>(QStringLiteral("historyTable"));
+    auto* table=browser.findChild<QTableView*>(QStringLiteral("historyTable"));
     auto* search=browser.findChild<QLineEdit*>(QStringLiteral("historySearch"));
     auto* verdict=browser.findChild<QComboBox*>(QStringLiteral("historyVerdict"));
-    auto* steps=browser.findChild<QTableWidget*>(QStringLiteral("historySteps"));
-    auto* measurements=browser.findChild<QTableWidget*>(QStringLiteral("historyMeasurements"));
-    auto* runInfo=browser.findChild<QTableWidget*>(QStringLiteral("historyRunInfo"));
+    auto* steps=browser.findChild<QTableView*>(QStringLiteral("historySteps"));
+    auto* measurements=browser.findChild<QTableView*>(QStringLiteral("historyMeasurements"));
+    auto* runInfo=browser.findChild<QTableView*>(QStringLiteral("historyRunInfo"));
     auto* raw=browser.findChild<QPlainTextEdit*>(QStringLiteral("historyRawJson"));
     CHECK(table && search && verdict && steps && measurements && runInfo && raw,"find controls");
-    CHECK(table->rowCount()==2,"two archived runs shown initially");
-    CHECK(steps->rowCount()==1 && measurements->rowCount()==1 && runInfo->rowCount()==2,
+    CHECK(table->model()->rowCount()==2,"two archived runs shown initially");
+    CHECK(steps->model()->rowCount()==1 && measurements->model()->rowCount()==1 && runInfo->model()->rowCount()==2,
           "selecting a run populates steps, measurements and UUT metadata");
-    CHECK(raw->toPlainText().contains(QStringLiteral("executionId")),"raw JSON displays selected report");
+    CHECK(raw->toPlainText().isEmpty(),"raw JSON is not formatted before opening tab");
+    auto* tabs=browser.findChild<QTabWidget*>(QStringLiteral("historyDetailTabs"));
+    CHECK(tabs,"detail tab view");
+    tabs->setCurrentWidget(raw);
+    CHECK(raw->toPlainText().contains(QStringLiteral("executionId")),"raw JSON displays selected report on demand");
+    tabs->setCurrentIndex(0);
     search->setText(QStringLiteral("UNIT-002"));
-    CHECK(table->rowCount()==1 && table->item(0,1)->text()==QStringLiteral("UNIT-002"),"search by UUT");
+    CHECK(table->model()->rowCount()==1 && table->model()->index(0,1).data().toString()==QStringLiteral("UNIT-002"),"search by UUT");
     search->setText(QString());
     const int failIndex=verdict->findData(QStringLiteral("failed"));
     CHECK(failIndex>=0,"failure filter available");
     verdict->setCurrentIndex(failIndex);
-    CHECK(table->rowCount()==1 && table->item(0,2)->text()==QStringLiteral("FAIL"),"filter by failed runs");
+    CHECK(table->model()->rowCount()==1 && table->model()->index(0,2).data().toString()==QStringLiteral("FAIL"),"filter by failed runs");
     verdict->setCurrentIndex(0);
     search->setText(QStringLiteral("not-present"));
-    CHECK(table->rowCount()==0 && raw->toPlainText().isEmpty(),"empty search clears outdated detail");
+    CHECK(table->model()->rowCount()==0 && raw->toPlainText().isEmpty(),"empty search clears outdated detail");
     search->clear();
-    CHECK(table->rowCount()==2,"restore results");
+    CHECK(table->model()->rowCount()==2,"restore results");
     browser.setResultsDirectory(tmp.filePath(QStringLiteral("new-empty-directory")));
-    CHECK(table->rowCount()==0,"missing new archive folder is an empty valid history");
+    CHECK(table->model()->rowCount()==0,"missing new archive folder is an empty valid history");
     qInfo()<<"PASS v5.6.67 native Results Browser smoke";
     return 0;
 }

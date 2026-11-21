@@ -20,10 +20,16 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QScrollBar>
+#include <QShowEvent>
+#include <QEvent>
 #include <QStringList>
 #include <QByteArray>
-#include <QTableWidget>
-#include <QTableWidgetItem>
+#include <QTableView>
+#include <QAbstractTableModel>
+#include <deque>
+#include <cstdint>
+#include <iterator>
+#include <QItemSelectionModel>
 #include <QVBoxLayout>
 #include <QMetaType>
 #include <QtGlobal>
@@ -54,6 +60,109 @@ QColor severityColor(const QString& level,bool light) {
 }
 }
 
+
+// Retains only data and a filtered index, never QTableWidgetItem objects.
+// Qt's item view paints on demand even with tens of thousands of events.
+class EventLogModel final : public QAbstractTableModel {
+public:
+    using Id=std::uint64_t;
+    explicit EventLogModel(std::deque<EventLogWidget::Entry>* entries,Id* firstId,QObject* parent)
+        :QAbstractTableModel(parent),m_entries(entries),m_firstId(firstId){}
+    int rowCount(const QModelIndex& parent=QModelIndex()) const override {
+        return parent.isValid()?0:int(m_visible.size());
+    }
+    int columnCount(const QModelIndex& parent=QModelIndex()) const override {
+        return parent.isValid()?0:4;
+    }
+    QVariant headerData(int section,Qt::Orientation orientation,int role) const override {
+        if(role==Qt::DisplayRole && orientation==Qt::Horizontal)
+            return QStringList{QStringLiteral("Time"),QStringLiteral("Level"),
+                QStringLiteral("Source"),QStringLiteral("Message")}.value(section);
+        return {};
+    }
+    QVariant data(const QModelIndex& idx,int role) const override {
+        if(!idx.isValid()||idx.row()<0||idx.row()>=int(m_visible.size()))return {};
+        const Id id=m_visible[std::size_t(idx.row())];
+        if(id<*m_firstId || id-*m_firstId>=m_entries->size())return {};
+        const auto& e=(*m_entries)[std::size_t(id-*m_firstId)];
+        if(role==Qt::DisplayRole||role==Qt::ToolTipRole) {
+            if(idx.column()==0) {
+                if(role==Qt::ToolTipRole)return e.timestamp;
+                const QDateTime t=QDateTime::fromString(e.timestamp,Qt::ISODateWithMs);
+                return t.isValid()?t.toString(QStringLiteral("HH:mm:ss.zzz")):e.timestamp;
+            }
+            if(idx.column()==1)return e.level;
+            if(idx.column()==2)return e.source;
+            return e.message;
+        }
+        if(role==Qt::ForegroundRole && idx.column()==1)
+            return QBrush(severityColor(e.level,m_light));
+        return {};
+    }
+    void setLight(bool light) {
+        if(m_light==light)return;
+        m_light=light;
+        if(!m_visible.empty())
+            emit dataChanged(index(0,1),index(rowCount()-1,1),{Qt::ForegroundRole});
+    }
+    void resetRows(const QString& filter,bool light) {
+        beginResetModel();
+        m_filter=filter;m_light=light;m_visible.clear();
+        Id id=*m_firstId;
+        for(const auto& e:*m_entries) {
+            if(filter==QStringLiteral("All")||e.level==filter)m_visible.push_back(id);
+            ++id;
+        }
+        endResetModel();
+    }
+    // Incremental eviction retains all unaffected model indexes. Both the
+    // history and visible-ID deque pop from the front without shifting 50k rows.
+    void dropOldest(int count) {
+        if(count<=0)return;
+        const Id nextFirst=*m_firstId+Id(count);
+        int visibleRemoved=0;
+        for(const auto id:m_visible) {
+            if(id>=nextFirst)break;
+            ++visibleRemoved;
+        }
+        if(visibleRemoved)beginRemoveRows(QModelIndex(),0,visibleRemoved-1);
+        for(int i=0;i<count;++i)m_entries->pop_front();
+        *m_firstId=nextFirst;
+        for(int i=0;i<visibleRemoved;++i)m_visible.pop_front();
+        if(visibleRemoved)endRemoveRows();
+    }
+    void appendRange(Id first,Id last) {
+        int visibleAdded=0;
+        for(Id id=first;id<last;++id) {
+            const auto& e=(*m_entries)[std::size_t(id-*m_firstId)];
+            if(m_filter==QStringLiteral("All")||e.level==m_filter)++visibleAdded;
+        }
+        if(!visibleAdded)return;
+        const int start=int(m_visible.size());
+        beginInsertRows(QModelIndex(),start,start+visibleAdded-1);
+        for(Id id=first;id<last;++id) {
+            const auto& e=(*m_entries)[std::size_t(id-*m_firstId)];
+            if(m_filter==QStringLiteral("All")||e.level==m_filter)m_visible.push_back(id);
+        }
+        endInsertRows();
+    }
+    Id visibleIdAt(int row) const {
+        return row>=0 && row<int(m_visible.size()) ? m_visible[std::size_t(row)] : Id(0);
+    }
+    int indexAtOrAfter(Id id) const {
+        if(m_visible.empty())return -1;
+        const auto it=std::lower_bound(m_visible.begin(),m_visible.end(),id);
+        if(it==m_visible.end())return int(m_visible.size())-1;
+        return int(std::distance(m_visible.begin(),it));
+    }
+private:
+    std::deque<EventLogWidget::Entry>* m_entries;
+    Id* m_firstId;
+    std::deque<Id> m_visible;
+    QString m_filter=QStringLiteral("All");
+    bool m_light=false;
+};
+
 EventLogWidget::EventLogWidget(QWidget* parent):QWidget(parent) {
     setObjectName(QStringLiteral("wfEventLogRoot"));
     auto* layout=new QVBoxLayout(this);
@@ -80,23 +189,29 @@ EventLogWidget::EventLogWidget(QWidget* parent):QWidget(parent) {
     auto* exportButton=new QPushButton(QStringLiteral("Export CSV"),this);
     bar->addWidget(copy);bar->addWidget(clear);bar->addWidget(exportButton);
     layout->addLayout(bar);
-    m_table=new QTableWidget(this);
+    m_table=new QTableView(this);
     m_table->setObjectName(QStringLiteral("eventLogTable"));
-    m_table->setColumnCount(4);
-    m_table->setHorizontalHeaderLabels({QStringLiteral("Time"),QStringLiteral("Level"),
-                                       QStringLiteral("Source"),QStringLiteral("Message")});
+    m_model=new EventLogModel(&m_entries,&m_firstId,m_table);
+    m_table->setModel(m_model);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_table->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setAlternatingRowColors(true);
     m_table->setShowGrid(false);
     m_table->verticalHeader()->setVisible(false);
-    m_table->horizontalHeader()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
-    m_table->horizontalHeader()->setSectionResizeMode(1,QHeaderView::ResizeToContents);
-    m_table->horizontalHeader()->setSectionResizeMode(2,QHeaderView::ResizeToContents);
-    m_table->horizontalHeader()->setSectionResizeMode(3,QHeaderView::Stretch);
+    m_table->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    m_table->verticalHeader()->setDefaultSectionSize(27);
+    // Do not scan retained rows to resize headers every time a row arrives.
+    auto* header=m_table->horizontalHeader();
+    header->setSectionResizeMode(0,QHeaderView::Interactive);
+    header->setSectionResizeMode(1,QHeaderView::Interactive);
+    header->setSectionResizeMode(2,QHeaderView::Interactive);
+    header->setSectionResizeMode(3,QHeaderView::Stretch);
+    header->resizeSection(0,118);
+    header->resizeSection(1,72);
+    header->resizeSection(2,138);
     m_table->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-    m_table->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_table->setVerticalScrollMode(QAbstractItemView::ScrollPerItem);
     layout->addWidget(m_table,1);
     connect(m_filter,&QComboBox::currentTextChanged,this,[this](const QString&){refresh();});
     connect(copy,&QPushButton::clicked,this,[this]{copySelected();});
@@ -108,7 +223,7 @@ EventLogWidget::EventLogWidget(QWidget* parent):QWidget(parent) {
 void EventLogWidget::configure(const QString& title,int maxEntries,bool autoScroll,
                                bool showTimestamp,bool showSource) {
     m_title=title.left(120);
-    m_maxEntries=qBound(10,maxEntries,2000);
+    m_maxEntries=qBound(10,maxEntries,100000);
     m_autoScroll=autoScroll;
     m_showTimestamp=showTimestamp;
     m_showSource=showSource;
@@ -116,16 +231,21 @@ void EventLogWidget::configure(const QString& title,int maxEntries,bool autoScro
     m_heading->setText(m_title.isEmpty()?QStringLiteral("Event Log"):m_title);
     m_table->setColumnHidden(0,!m_showTimestamp);
     m_table->setColumnHidden(2,!m_showSource);
+    applyTheme();
+    refresh();
+}
+
+void EventLogWidget::applyTheme() {
     const bool light=InstrumentVisuals::light(this);
     m_heading->setStyleSheet(light?QStringLiteral("color:#23384c;"):
                                     QStringLiteral("color:#e0ebf5;"));
     setStyleSheet(light?QStringLiteral(
         "QWidget#wfEventLogRoot{background:#edf4fa;border:1px solid #b8cbd9;border-radius:8px;}"
-        "QTableWidget{background:#f4f8fc;color:#26394b;alternate-background-color:#e4edf5;border:1px solid #b8cbd9;}"
+        "QTableView{background:#f4f8fc;color:#26394b;alternate-background-color:#e4edf5;border:1px solid #b8cbd9;}"
         "QHeaderView::section{background:#d9e8f2;color:#26394b;border:0;padding:5px;}"):
         QStringLiteral(
         "QWidget#wfEventLogRoot{background:#101e2f;border:1px solid #3a536b;border-radius:8px;}"
-        "QTableWidget{background:#0e1c2b;color:#d6e4f1;alternate-background-color:#172b3e;border:1px solid #3a536b;}"
+        "QTableView{background:#0e1c2b;color:#d6e4f1;alternate-background-color:#172b3e;border:1px solid #3a536b;}"
         "QHeaderView::section{background:#243a4e;color:#d6e4f1;border:0;padding:5px;}"));
 
     // The Page canvas styles its QComboBox children, but does not supply a
@@ -171,7 +291,13 @@ void EventLogWidget::configure(const QString& title,int maxEntries,bool autoScro
         .arg(popupSurface.name(),ink.name(),border.name(),selection.name()));
     for(int i=0;i<m_filter->count();++i)
         m_filter->setItemData(i,QBrush(ink),Qt::ForegroundRole);
-    refresh();
+    // Keep the current filtered ID index: theme changes must never rebuild
+    // 50,000 rows or move the user's scroll position.
+    static_cast<EventLogModel*>(m_model)->setLight(light);
+}
+void EventLogWidget::changeEvent(QEvent* event) {
+    QWidget::changeEvent(event);
+    if(event->type()==QEvent::ThemeChange)applyTheme();
 }
 
 bool EventLogWidget::parseEntry(const QVariant& value,Entry* out) {
@@ -206,7 +332,9 @@ bool EventLogWidget::parseEntry(const QVariant& value,Entry* out) {
 }
 
 void EventLogWidget::trimToCapacity() {
-    if(m_entries.size()>m_maxEntries)m_entries.remove(0,m_entries.size()-m_maxEntries);
+    const int excess=int(m_entries.size())-m_maxEntries;
+    for(int i=0;i<excess;++i)m_entries.pop_front();
+    m_firstId+=std::uint64_t(std::max(0,excess));
 }
 
 bool EventLogWidget::replaceEvents(const QVariantList& values) {
@@ -217,7 +345,10 @@ bool EventLogWidget::replaceEvents(const QVariantList& values) {
         if(!parseEntry(value,&e))return false;
         parsed.append(std::move(e));
     }
-    m_entries=std::move(parsed);
+    m_entries.clear();
+    m_firstId=m_nextId;
+    for(auto& entry:parsed)m_entries.push_back(std::move(entry));
+    m_nextId+=std::uint64_t(parsed.size());
     refresh();
     return true;
 }
@@ -231,9 +362,47 @@ bool EventLogWidget::appendEvents(const QVariant& value) {
         if(!parseEntry(element,&entry))return false;
         parsed.push_back(std::move(entry));
     }
-    m_entries+=parsed;
-    trimToCapacity();
-    refresh();
+    const int evict=std::max(0,int(m_entries.size())+int(parsed.size())-m_maxEntries);
+    const bool wasVisible=isVisible();
+    if(!wasVisible || m_viewDirty) {
+        // Hidden pages do not send row notifications for every background event.
+        for(int i=0;i<evict;++i)m_entries.pop_front();
+        m_firstId+=std::uint64_t(evict);
+        for(auto& entry:parsed)m_entries.push_back(std::move(entry));
+        m_nextId+=std::uint64_t(parsed.size());
+        m_viewDirty=true;
+        if(wasVisible)refresh();
+        return true;
+    }
+
+    auto* model=static_cast<EventLogModel*>(m_model);
+    auto* scroll=m_table->verticalScrollBar();
+    const int oldScroll=scroll->value();
+    const bool atBottom=oldScroll>=scroll->maximum()-2;
+    // Stable visible event ID preserves the user's browsing position even
+    // after rows above it expire. If their event itself expires, anchor to
+    // the oldest surviving visible row.
+    const int topRow=m_table->rowAt(1);
+    const auto anchorId=model->visibleIdAt(topRow>=0?topRow:0);
+    model->dropOldest(evict);
+    const std::uint64_t firstNew=m_nextId;
+    for(auto& entry:parsed)m_entries.push_back(std::move(entry));
+    m_nextId+=std::uint64_t(parsed.size());
+    model->appendRange(firstNew,m_nextId);
+    if(m_autoScroll && atBottom)m_table->scrollToBottom();
+    else if(evict>0) {
+        // Qt normally adjusts the scroll position when top rows are removed.
+        // Only reposition if the event the user was reading actually moved;
+        // issuing scrollTo() for every timer event would itself create churn.
+        const int currentTop=m_table->rowAt(1);
+        if(currentTop>=0 && model->visibleIdAt(currentTop)==anchorId) {
+            // Already anchored; no viewport operation required.
+        } else {
+            const int anchoredRow=model->indexAtOrAfter(anchorId);
+            if(anchoredRow>=0)
+                m_table->scrollTo(model->index(anchoredRow,0),QAbstractItemView::PositionAtTop);
+        }
+    } else scroll->setValue(oldScroll);
     return true;
 }
 
@@ -248,7 +417,7 @@ bool EventLogWidget::applyEvents(const QVariant& payload) {
     return false;
 }
 
-void EventLogWidget::clearEvents() {m_entries.clear();refresh();}
+void EventLogWidget::clearEvents() {m_entries.clear();m_firstId=m_nextId;refresh();}
 void EventLogWidget::setFilter(const QString& level) {
     const QString normalized=level.trimmed().toUpper();
     const int i=m_filter->findText(normalized.isEmpty() || normalized==QStringLiteral("ALL") ?
@@ -262,34 +431,20 @@ int EventLogWidget::visibleEntryCount() const {
     for(const auto& entry:m_entries)if(entry.level==filter)++count;
     return count;
 }
+void EventLogWidget::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    if(m_viewDirty)refresh();
+}
 void EventLogWidget::refresh() {
     if(!m_table)return;
-    const QString filter=m_filter->currentText();
     auto* scroll=m_table->verticalScrollBar();
     const int oldScroll=scroll->value();
     const bool atBottom=oldScroll>=scroll->maximum()-2;
-    const bool light=InstrumentVisuals::light(this);
-    m_table->setUpdatesEnabled(false);
-    m_table->setRowCount(0);
-    for(const auto& entry:m_entries) {
-        if(filter!=QStringLiteral("All") && entry.level!=filter)continue;
-        const int row=m_table->rowCount();
-        m_table->insertRow(row);
-        QString displayTime=entry.timestamp;
-        const QDateTime t=QDateTime::fromString(displayTime,Qt::ISODateWithMs);
-        if(t.isValid())displayTime=t.toString(QStringLiteral("HH:mm:ss.zzz"));
-        const QStringList cells{displayTime,entry.level,entry.source,entry.message};
-        for(int col=0;col<4;col++) {
-            auto* item=new QTableWidgetItem(cells.at(col));
-            item->setFlags(Qt::ItemIsSelectable|Qt::ItemIsEnabled);
-            item->setToolTip(cells.at(col));
-            if(col==1)item->setForeground(severityColor(entry.level,light));
-            m_table->setItem(row,col,item);
-        }
-    }
-    m_table->setUpdatesEnabled(true);
-    if(m_autoScroll && atBottom)scroll->setValue(scroll->maximum());
+    static_cast<EventLogModel*>(m_model)->resetRows(m_filter->currentText(),
+                                                    InstrumentVisuals::light(this));
+    if(m_autoScroll && atBottom)m_table->scrollToBottom();
     else scroll->setValue(qMin(oldScroll,scroll->maximum()));
+    m_viewDirty=false;
 }
 QString EventLogWidget::csvText() const {
     QString result=QStringLiteral("Timestamp,Level,Source,Message\r\n");
@@ -300,18 +455,15 @@ QString EventLogWidget::csvText() const {
 }
 void EventLogWidget::copySelected() {
     QStringList out;
-    QSet<int> selected;
-    for(const auto& item:m_table->selectedItems())selected.insert(item->row());
-    QList<int> rows=selected.values();std::sort(rows.begin(),rows.end());
-    for(const auto& row:rows) {
+    auto rows=m_table->selectionModel()->selectedRows();
+    std::sort(rows.begin(),rows.end(),[](const QModelIndex& a,const QModelIndex& b){return a.row()<b.row();});
+    for(const QModelIndex& selected:rows) {
         QStringList fields;
-        for(int col=0;col<4;col++) {
-            auto* item=m_table->item(row,col);
-            fields.append(item?item->text():QString());
-        }
-        out.append(fields.join('\t'));
+        for(int column=0;column<4;++column)
+            fields.append(m_model->index(selected.row(),column).data().toString());
+        out.append(fields.join(QLatin1Char('\t')));
     }
-    if(!out.isEmpty())QApplication::clipboard()->setText(out.join('\n'));
+    if(!out.isEmpty())QApplication::clipboard()->setText(out.join(QLatin1Char('\n')));
 }
 void EventLogWidget::exportCsv() {
     const QString path=QFileDialog::getSaveFileName(this,QStringLiteral("Export Event Log"),

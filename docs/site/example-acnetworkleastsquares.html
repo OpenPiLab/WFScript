@@ -1,0 +1,171 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WFScript AC Laboratory — From physics to JavaScript least-squares measurement · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>WFScript AC Laboratory — From physics to JavaScript least-squares measurement</h1>
+<p><strong>Applies to WFScript v0.2-dev.8.9.2.</strong> The embedded <code>.wfpanel</code> includes Pages 07 (derivation), 08 (annotated code) and 09 (synthetic / real fit explorer). This companion explanation expands the lessons. The calculation is visible in <code>examples/libraries/CaptureAnalysis.mjs</code>, embedded byte-for-byte in the <code>.wfpanel</code>.</p>
+<h2>1. Why estimate a sine wave instead of reading one peak?</h2>
+<p>A real Scope records discrete voltages. Even a clean RC filter produces signals with offsets, quantization, interference, harmonic distortion and some noise. A single maximum depends on where the samples land relative to the waveform peak. A zero crossing is similarly sensitive to offsets and noise. Instead, use every sample to estimate the single-frequency sinusoid that best explains the capture.</p>
+<p>The AD3 generates a nominal sine at a <strong>commanded</strong> frequency <code>f</code>. The existing <code>acquireOne(f)</code> in <code>ACNetworkLaboratory.js</code> captures both channels during one Scope acquisition and reads back the <strong>actual Scope sampling rate</strong> as <code>actualRate</code>. The fitting routine treats <code>f</code> as known: <strong>it does not independently measure the generator frequency</strong>. It also assumes one sample time base for both channels. We fit CH1 and CH2 separately, so each can have an independent offset, amplitude and phase.</p>
+<p>For sample index <code>i</code>, <code>t_i=i/f_s</code> and <code>θ_i=2π f i/f_s</code>. Write</p>
+<p>[
+y_i=d+a\sin\theta_i+b\cos\theta_i+e_i.
+]</p>
+<p>Unknowns: <code>d</code> = DC offset (V), <code>a</code> = sine coefficient (V), <code>b</code> = cosine coefficient (V), <code>e_i</code> = residual (V). This is <strong>linear in the three unknown coefficients</strong> even though the waveform is periodic in time. There is no iterative nonlinear optimizer and no need to detect an integer number of periods.</p>
+<h2>2. Why do sine and cosine encode phase?</h2>
+<p>Using the angle-addition identity,</p>
+<p>[
+A\sin(\theta+\phi)=A\cos\phi\sin\theta+A\sin\phi\cos\theta.
+]</p>
+<p>Therefore <code>a = A cos φ</code> and <code>b = A sin φ</code>; after fitting,</p>
+<p>[
+\boxed{A=\sqrt{a^2+b^2},\quad \phi=\operatorname{atan2}(b,a)}.
+]</p>
+<p><strong>Warning about argument order:</strong> our model is <em>sine plus cosine</em>, so the phase is <code>atan2(cosCoef,sinCoef)</code>. This is a frequent source of mistakes. <code>atan2</code> also handles the correct quadrant, unlike a plain <code>atan</code> quotient.</p>
+<p>A nonzero <code>d</code> changes neither <code>A</code> nor <code>φ</code> in the correctly fitted model.</p>
+<h2>3. Deriving least squares</h2>
+<p>Define <code>s_i = sin θ_i</code>, <code>c_i = cos θ_i</code>, and prediction <code>ŷ_i=d+a s_i+b c_i</code>. Minimize the sum of squared errors:</p>
+<p>[
+S(d,a,b)=\sum_{i=0}^{N-1}(y_i-d-a s_i-b c_i)^2.
+]</p>
+<p>The optimal coefficients satisfy <code>∂S/∂d = ∂S/∂a = ∂S/∂b = 0</code>. These three equations are equivalent to the normal equations</p>
+<p>[
+\begin{bmatrix}
+N&amp;\sum s_i&amp;\sum c_i\
+\sum s_i&amp;\sum s_i^2&amp;\sum s_i c_i\
+\sum c_i&amp;\sum s_i c_i&amp;\sum c_i^2
+\end{bmatrix}
+\begin{bmatrix}d\a\b\end{bmatrix}=
+\begin{bmatrix}\sum y_i\\sum s_i y_i\\sum c_i y_i\end{bmatrix}.
+]</p>
+<p>This is a linear-algebra problem: the three columns <code>[1,s,c]</code> form a design matrix <code>X</code>. We solve <code>(XᵀX) β = Xᵀy</code> with <code>β=[d,a,b]ᵀ</code>. The 3×3 matrix is never actually allocated; <code>fitSinusoid()</code> only accumulates the necessary sums.</p>
+<h3>3.1 Eliminate the offset</h3>
+<p>Let <code>s̄ = Σs_i/N</code>, <code>c̄ = Σc_i/N</code>, <code>ȳ = Σy_i/N</code>. Center both basis vectors and the data. Define</p>
+<p>[
+S_{ss}=\sum(s_i-\bar s)^2,\quad S_{sc}=\sum(s_i-\bar s)(c_i-\bar c),\quad S_{cc}=\sum(c_i-\bar c)^2,
+]</p>
+<p>[
+S_{sy}=\sum(s_i-\bar s)(y_i-\bar y),\quad S_{cy}=\sum(c_i-\bar c)(y_i-\bar y).
+]</p>
+<p>Then solve only two equations:</p>
+<p>[
+S_{ss}a+S_{sc}b=S_{sy},\qquad S_{sc}a+S_{cc}b=S_{cy}.
+]</p>
+<p>With <code>D=Sss*Scc−Ssc²</code>,</p>
+<p>[
+a=\frac{S_{sy}S_{cc}-S_{cy}S_{sc}}{D},\quad
+b=\frac{S_{cy}S_{ss}-S_{sy}S_{sc}}{D},\quad
+d=\bar y-a\bar s-b\bar c.
+]</p>
+<p>This is <strong>exactly</strong> the technique implemented in the embedded JavaScript. A small <code>D</code> implies that the basis functions cannot be independently resolved for the supplied sample geometry; the code rejects degenerate fits. Normal equations are suitable for this tiny fixed-frequency basis in our bounded captures, but are not a universal numerical method for badly conditioned large least-squares problems.</p>
+<h2>4. Map mathematical objects to real code</h2>
+<p>Open <code>CaptureAnalysis.mjs</code> (or Page 08 in the Panel):</p>
+<table>
+<thead>
+<tr>
+  <th>Mathematics</th>
+  <th>JavaScript</th>
+  <th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>θ</code> increment</td>
+  <td><code>step=2*Math.PI*f/rate</code></td>
+  <td>Angular step per actual sample</td>
+</tr>
+<tr>
+  <td><code>Σs</code>, <code>Σc</code>, <code>Σs²</code>, <code>Σc²</code>, <code>Σsc</code></td>
+  <td><code>s0</code>, <code>c0</code>, <code>ss</code>, <code>cc</code>, <code>sc</code></td>
+  <td>Basis Gram-matrix entries</td>
+</tr>
+<tr>
+  <td><code>Σy</code>, <code>Σys</code>, <code>Σyc</code></td>
+  <td><code>y0</code>, <code>ys</code>, <code>yc</code></td>
+  <td>Data and basis correlations</td>
+</tr>
+<tr>
+  <td><code>Sss</code>, <code>Ssc</code>, <code>Scc</code></td>
+  <td><code>a</code>, <code>b</code>, <code>d</code> (locally <strong>matrix entries</strong>)</td>
+  <td>Centered 2×2 system; distinct from sine/cosine coefficients</td>
+</tr>
+<tr>
+  <td><code>Ssy</code>, <code>Scy</code></td>
+  <td><code>rhsS</code>, <code>rhsC</code></td>
+  <td>Centered right-hand side</td>
+</tr>
+<tr>
+  <td><code>D</code></td>
+  <td><code>det</code></td>
+  <td>2×2 determinant</td>
+</tr>
+<tr>
+  <td><code>a</code>, <code>b</code> (fitted coefficients)</td>
+  <td><code>sinCoef</code>, <code>cosCoef</code></td>
+  <td>The actual voltage coefficients</td>
+</tr>
+<tr>
+  <td><code>d</code> (voltage offset)</td>
+  <td><code>offset</code></td>
+  <td>Recovered mean after solving</td>
+</tr>
+<tr>
+  <td><code>A</code>, <code>φ</code></td>
+  <td><code>amplitude</code>, <code>angle</code></td>
+  <td>Voltage peak and sine-convention phase</td>
+</tr>
+<tr>
+  <td><code>ŷ_i</code></td>
+  <td><code>predictSample(fit,rate,f,i)</code></td>
+  <td>Reconstructed sample, without changing raw data</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Implementation note:</strong> <code>a</code>, <code>b</code> and <code>d</code> inside the centered-equations code refer to matrix entries, <em>not</em> the physical coefficients with the same mathematical letters. The source uses <code>sinCoef</code>, <code>cosCoef</code>, <code>offset</code> for the actual fitted physical parameters. Students should trace this naming carefully.</p>
+<p>The physical path still calls <code>analyzeTwoChannel()</code> as before. The v8.9.2 release adds <code>inputFit</code> and <code>outputFit</code> to its return value, so the student Pages can display coefficients and residuals without doing a second, different kind of fit. Older outputs (<code>gain</code>, <code>db</code>, <code>phaseDeg</code>, <code>inputVpk</code>, etc.) are preserved.</p>
+<h2>5. From two fitted channels to the RC transfer function</h2>
+<p>For each channel, let <code>(Ain, φin)</code> and <code>(Aout, φout)</code> be the fitted peak amplitude and phase. The measured complex transfer at the test frequency is represented by</p>
+<p>[
+|H|=\frac{A_{out}}{A_{in}},\qquad G_{\mathrm{dB}}=20\log_{10}|H|,\qquad \phi_H=\phi_{out}-\phi_{in}.
+]</p>
+<p>The code wraps the result into (−180°, 180°]. Both channel phases are referenced to the same acquisition origin; the reference phase cancels on subtraction. The <em>theoretical</em> first-order RC models in <code>CircuitLab.mjs</code> are</p>
+<p>[
+H_{LP}(j\omega)=\frac{1}{1+j\omega RC},\qquad H_{HP}(j\omega)=\frac{j\omega RC}{1+j\omega RC}.
+]</p>
+<p>These are predictions, not data. At <code>f_c=1/(2πRC)</code>, both have gain <code>1/√2</code> = −3.0103 dB and phase −45° (low pass) or +45° (high pass).</p>
+<p><strong>Reference experiment, not built-in AD3 data:</strong> our previously documented physical resistor was <strong>980 Ω</strong> and capacitance <strong>571 nF at 1 kHz</strong>. Their theoretical <code>f_c</code> is about <strong>284.4 Hz</strong>. The earlier WFScript sweep estimated about <strong>284.7 Hz</strong>, close to Digilent WaveForms. These historical observations are deliberately <em>not preloaded</em> as measured rows in this <code>.wfpanel</code>: actual AD3 rows must be acquired live.</p>
+<p>The physical preflight now permits <strong>R ≥ 900 Ω</strong>, so a measured nominal 1 kΩ resistor such as 980 Ω can be entered directly, while retaining a conservative lower bound. W1 is still limited to 1 V peak, zero DC offset, and explicit wiring verification.</p>
+<h2>6. Diagnostics: what a good fit does and does not prove</h2>
+<p>With <code>ŷ_i = d+a sinθ_i+b cosθ_i</code>, define residual <code>e_i=y_i−ŷ_i</code> and</p>
+<p>[
+\mathrm{RMS}<em>{res}=\sqrt{\frac{1}{N}\sum e_i^2},\qquad
+\mathrm{Residual%}=100\frac{\mathrm{RMS}</em>{res}}{A},\qquad
+R^2=1-\frac{\sum e_i^2}{\sum(y_i-\bar y)^2}.
+]</p>
+<p>The residual RMS is in volts. The percent uses fitted <strong>peak</strong> amplitude, not AC RMS, and is simply a scale-normalized goodness-of-fit number. <code>R²</code> is descriptive goodness of fit, not a calibration confidence or a guarantee of accurate gain and phase. A near-zero residual is possible even when the probes are swapped or their absolute gain is uncalibrated.</p>
+<p>Real residuals can contain unmodeled harmonics, broadband noise, imperfect settling, offset drift, timing error, finite precision, and mismatch between the commanded and actual excitation frequency. The method estimates a sine <em>at the specified frequency</em>; it does not determine or correct sample-clock errors, instrument channel delay, or generator-frequency uncertainty.</p>
+<h2>7. Page 09 lab exercises</h2>
+<ol>
+<li><strong>Pure sine:</strong> Set noise and 2nd harmonic both to zero. Keep <code>2.75</code> cycles. Observe practically zero residual, accurate gain/phase and non-integer-cycle support. Change to <code>1.25</code> or <code>7.50</code> cycles. Does the fit remain accurate?</li>
+<li><strong>Noise:</strong> Raise noise from <code>0%</code> to <code>5%</code> to <code>15%</code> peak, holding cycles constant. Observe increasing RMS residual and variations in gain and phase. Noise uses a deterministic pseudo-random generator so repeated runs with the same settings agree.</li>
+<li><strong>Harmonics:</strong> Reset noise to zero; increase second harmonic. What does the residual plot show? Why does a very good single-frequency fit not capture the waveform's harmonic shape?</li>
+<li><strong>DC offset:</strong> Read the <code>d</code> term of both fitted channels. Why are the offsets nonzero even with no noise?</li>
+<li><strong>Real AD3:</strong> On Page 04, perform a real two-channel capture, then click <strong>SHOW LAST REAL AD3 CAPTURE</strong> on Page 09. Compare physical waveform and fitted traces, residual RMS (mV), percent-of-peak, <code>R²</code>, gain, phase and the RC model. No wavegen action is triggered by Page 09 itself.</li>
+<li><strong>Edit the source:</strong> Change the deterministic synthetic signal's harmonic magnitude or the model's phase and explain the difference between a predicted physical response, the synthetic sample source and the fitted estimate.</li>
+</ol>
+<p>The Page 09 plots decimate for rendering only. All fit coefficients and diagnostic statistics use <strong>all</strong> paired samples. CSV/JSON exports of physical rows now include the CH1/CH2 fit RMS residual and percent-of-peak; CSV columns were appended without changing the existing 11-column Notebook widget.</p>
+<h2>8. Limits, safety and repeatability</h2>
+<ul>
+<li>No actual physical signal is created in Simulation/fit demo mode; opening the project does not start W1.</li>
+<li>The real fit explorer requires an actual prior Scope capture. A synthetic trace is always labeled <code>SYNTHETIC</code>; it is never added as an <code>AD3</code> Notebook record.</li>
+<li>Real measurements require explicit Device selection, operator wiring verification and W1 ARM. Emergency cleanup and the 1 V peak ceiling remain in place. The waveform must come from a low-voltage supervised breadboard circuit, not mains.</li>
+<li>The existing export filenames are fixed and can overwrite a previous export; rename or copy files before another export if you need multiple sessions. Timestamped sessions are a separate future task, not part of v8.9.2.</li>
+<li>The new fit diagnostics are educational and cannot replace traceable metrology, instrument calibration or a formal uncertainty budget.</li>
+</ul>
+<h2>Files and testing</h2>
+<ul>
+<li><code>examples/libraries/CaptureAnalysis.mjs</code>: production least-squares fit, reconstruction, residual diagnostics.</li>
+<li><code>examples/source/ACNetworkLaboratory.js</code>: acquisition unchanged except optional fit-page refresh; synthetic demo and UI plots added.</li>
+<li><code>examples/panels/ACNetworkLaboratory.wfpanel</code>: complete self-contained ten-Page lab with exact embedded source.</li>
+<li><code>tests/offline/ac_network_modules.mjs</code>: fractional-cycle, offset, harmonic-residual, prediction and gain/phase assertions.</li>
+<li><code>tests/offline/ac_network_lab_mock.mjs</code>: no-output startup, synthetic and physical-fit routing, AD3 gate/sweep/export tests.</li>
+<li><code>tests/ac_network_lab_smoke.cpp</code>: native Qt/<code>QJSEngine</code> smoke expectations; requires Windows Qt compilation.</li>
+</ul>
+<p>The source and Node mocks are checked here. <strong>The new GUI Pages and the physical AD3 integration in v8.9.2 are not yet Windows hardware validated.</strong></p>
+<p class="doc-footnote">Source: <code>examples/guides/ACNetworkLeastSquares.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

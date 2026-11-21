@@ -1,0 +1,701 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "libraries": [],
+  "testDefinition": {},
+  "testLibrary": "",
+  "description": "Native Binary Lab RC1.3: synthetic benchmarks, real localhost TCP, read/write codecs, actual native FileIO roundtrip, DBC bit fields, native samples. No external instruments.",
+  "scriptName": "NativeBinaryPerformanceLab.js",
+  "activePageId": "binary_scpi",
+  "script": "// WFScript v0.2-dev Binary Lab 1 — reproducible native-vs-JavaScript benchmarks.\n// This Panel never connects to an external instrument, enables outputs, or reads\n// arbitrary files. The optional TCP test only uses 127.0.0.1 and an ephemeral port.\n// All test data is deterministic. Native and JS results must agree to report PASS.\n// Timing is wall-clock in the worker thread via Binary.clockUs() (monotonic Qt timer).\n// It is NOT a measurement of the MHO954's network throughput.\nvar lastScpi = 'Not run', lastPacket = 'Not run', lastTcp = 'Not run';\nvar tcpBusy = false;\nvar metricRows = [], activeSuite = 'SCPI', activePoints = 0, activeBytes = 0, runSerial=0, activeRun=0;\nfunction logLine(s) { print('[BINARY LAB] ' + s); }\nfunction status(s) { ui.set('benchStatus',s); ui.set('benchStatus2',s); logLine(s); }\nfunction fail(s,e) { status(s+' ERROR: '+(e&&e.message?e.message:e)); }\nfunction check(ok,label) { if(!ok) throw Error('CORRECTNESS FAILURE: '+label); }\nfunction bench(label,fn) {\n    var start=Binary.clockUs(), value=fn(), us=Binary.clockUs()-start;\n    return {value:value,ms:us/1000};\n}\nfunction fmt(n) {return Number(n).toFixed(3);}\nfunction row(name,nativeMs,jsMs,verdict) {\n    metricRows.push({run:activeRun,suite:activeSuite,task:name,points:activePoints,bytes:activeBytes,nativeMs:nativeMs,jsMs:jsMs,verdict:verdict});\n    var speed= nativeMs>0 ? fmt(jsMs/nativeMs)+'x' : 'n/a';\n    return name+' | Native '+fmt(nativeMs)+' ms | JS '+fmt(jsMs)+' ms | '+speed+' | '+verdict;\n}\nfunction selectedPoints() {\n    var value=String(ui.get('pointSize'));\n    return value==='1,000,000' ? 1000000 : 100000;\n}\nfunction selectedRepeat() {\n    var value=Number(ui.get('repetitions'));\n    if(!isFinite(value) || value<1 || value>5) return 1;\n    return Math.floor(value);\n}\nfunction jsWordBytes(count) {\n    var b=new Array(count*2);\n    for(var i=0;i<count;i++){\n        var value=((i*73+1519)&65535);\n        b[2*i]=value&255;b[2*i+1]=value>>>8;\n    }\n    return b;\n}\nfunction jsStatsU16LE(b,count) {\n    var lo=65535,hi=0,sum=0,sum2=0;\n    for(var i=0;i<count;i++){\n        var v=b[2*i]+256*b[2*i+1];\n        if(v<lo)lo=v;if(v>hi)hi=v;\n        sum+=v;sum2+=v*v;\n    }\n    return {count:count,min:lo,max:hi,sum:sum,mean:sum/count,rms:Math.sqrt(sum2/count)};\n}\nfunction jsFrameOf(b) {\n    var digits=String(b.length), prefix='#'+String(digits.length)+digits;\n    var result=new Array(prefix.length+b.length+1);\n    for(var j=0;j<prefix.length;j++)result[j]=prefix.charCodeAt(j);\n    for(var i=0;i<b.length;i++)result[prefix.length+i]=b[i];\n    result[result.length-1]=10;\n    return result;\n}\nfunction jsPayloadOf(frame) {\n    check(frame[0]===35,'JS frame marker');\n    var digits=frame[1]-48, len=0;\n    check(digits>0&&digits<=9,'JS frame digit count');\n    for(var i=2;i<2+digits;i++)len=len*10+(frame[i]-48);\n    check(frame.length===2+digits+len+1,'JS full frame length');\n    return frame.slice(2+digits,2+digits+len);\n}\nfunction closeEnough(a,b){return Math.abs(a-b)<0.000001*Math.max(1,Math.abs(a),Math.abs(b));}\nfunction runScpi() {\n    try {\n        activeSuite='SCPI'; activeRun=++runSerial;activePoints=selectedPoints(); activeBytes=activePoints*2;\n        var points=selectedPoints(), lines=[], generationNative=bench('native generation',function(){return Binary.wordPattern(points);});\n        var generationJS=bench('JS generation',function(){return jsWordBytes(points);});\n        var b=generationNative.value, a=generationJS.value;\n        check(b && b.length===2*points,'native WORD allocation');\n        check(b.readU16LE(0)===a[0]+256*a[1],'first WORD');\n        check(b.readU16LE(2*(points-1))===a[2*points-2]+256*a[2*points-1],'last WORD');\n        lines.push(row('Build '+points+' WORD points',generationNative.ms,generationJS.ms,'PASS'));\n        var nativeFrame=bench('native IEEE frame',function(){return Binary.wrapIEEE(b);});\n        var jsFrame=bench('JS IEEE frame',function(){return jsFrameOf(a);});\n        check(nativeFrame.value && nativeFrame.value.length===jsFrame.value.length,'IEEE framed lengths');\n        lines.push(row('Pack IEEE488.2 frame',nativeFrame.ms,jsFrame.ms,'PASS'));\n        var nativeExtract=bench('native header parse',function(){return nativeFrame.value.ieeePayload();});\n        var jsExtract=bench('JS header parse+slice',function(){return jsPayloadOf(jsFrame.value);});\n        check(nativeExtract.value && nativeExtract.value.length===jsExtract.value.length,'IEEE payload extraction');\n        check(nativeExtract.value.readU16LE(0)===a[0]+a[1]*256,'IEEE payload data');\n        lines.push(row('Parse IEEE + extract payload',nativeExtract.ms,jsExtract.ms,'PASS'));\n        var nativeStats=bench('native WORD stats',function(){return b.statsU16LE(0,points);});\n        var jsStats=bench('JS WORD stats',function(){return jsStatsU16LE(a,points);});\n        var ns=nativeStats.value,js=jsStats.value;\n        check(ns.count===js.count&&ns.min===js.min&&ns.max===js.max,'WORD stats count/min/max');\n        check(closeEnough(ns.sum,js.sum)&&closeEnough(ns.rms,js.rms),'WORD sum and RMS');\n        lines.push(row('Decode + min/max/mean/RMS',nativeStats.ms,jsStats.ms,'PASS'));\n        // Simulate SCPI recv events: byte-by-byte JS accumulation vs native buffer append.\n        // Frame building above is excluded from this measured phase.\n        var nativeStream=Binary.stream(Math.max(300000,nativeFrame.value.length+256));\n        var nativeAssembly=bench('native stream assembly',function(){\n            for(var off=0;off<nativeFrame.value.length;off+=16384){\n                var part=nativeFrame.value.slice(off,Math.min(16384,nativeFrame.value.length-off));\n                check(nativeStream.append(part),'native stream append');\n            }\n            return nativeStream.readIEEE();\n        });\n        var jsAssembly=bench('JS stream assembly',function(){\n            var rx=[];\n            for(var off=0;off<jsFrame.value.length;off+=16384){\n                var end=Math.min(jsFrame.value.length,off+16384);\n                for(var k=off;k<end;k++)rx.push(jsFrame.value[k]);\n            }\n            return jsPayloadOf(rx);\n        });\n        check(nativeAssembly.value && nativeAssembly.value.length===jsAssembly.value.length,'assembled payload');\n        lines.push(row('16 KiB chunks → complete SCPI frame',nativeAssembly.ms,jsAssembly.ms,'PASS'));\n        var result='SCPI WORD / '+points+' points / '+(2*points)+' bytes\\n'+lines.join('\\n');\n        result+='\\nResult: '+ns.count+' samples, min='+ns.min+' max='+ns.max+' RMS codes='+fmt(ns.rms);\n        result+='\\nNative payload storage: '+(2*points)+' bytes (plus wrappers); JS payload array: '+(2*points)+' numeric elements.';\n        result+='\\nMethods compare equivalent results, not identical internal storage. No external scope used.';\n        ui.set('scpiResults',result); lastScpi=result;\n        status('SCPI synthetic test PASS — '+points+' WORD samples; 5 comparisons');\n        logLine(result.split('\\n').join(' | '));\n        // Explicitly release large native views; JavaScript arrays are local.\n        nativeAssembly.value.release();nativeExtract.value.release();nativeFrame.value.release();b.release();nativeStream.clear();\n    } catch(e) {fail('SCPI benchmark',e);ui.set('scpiResults','FAILED: '+e.message);}\n}\nfunction jsPattern(count){var b=new Array(count);for(var i=0;i<count;i++)b[i]=(i*73+19)&255;return b;}\nfunction jsSum32(bytes){var x=0;for(var i=0;i<bytes.length;i++)x=(x+bytes[i])>>>0;return x;}\nfunction jsCRC(bytes){\n    var crc=65535;\n    for(var i=0;i<bytes.length;i++){\n        crc^=bytes[i];for(var bit=0;bit<8;bit++)crc=(crc&1)?((crc>>>1)^0xA001):(crc>>>1);\n    }\n    return crc;\n}\nfunction runProtocols() {\n    try {\n        activeSuite='PACKET';activeRun=++runSerial;activePoints=0;activeBytes=1048576;\n        var lines=[], n=1048576, generationN=bench('native pattern',function(){return Binary.pattern(n);});\n        var generationJ=bench('JS pattern',function(){return jsPattern(n);});\n        var data=generationN.value, js=generationJ.value;\n        check(data&&data.length===n&&data.readU8(0)===js[0]&&data.readU8(n-1)===js[n-1],'file-like bytes');\n        lines.push(row('Build synthetic 1 MiB file payload',generationN.ms,generationJ.ms,'PASS'));\n        var nativeSum=bench('native checksum',function(){return data.sum32();});\n        var jsSum=bench('JS checksum',function(){return jsSum32(js);});\n        check(nativeSum.value===jsSum.value,'file-like sum32');\n        lines.push(row('File-style 1 MiB byte checksum',nativeSum.ms,jsSum.ms,'PASS'));\n        activeBytes=4096;\n        var packetN=Binary.pattern(4096), packetJS=jsPattern(4096);\n        var nativeCrc=bench('native CRC',function(){return packetN.crc16();});\n        var jsCrc=bench('JS CRC',function(){return jsCRC(packetJS);});\n        check(nativeCrc.value===jsCrc.value,'CRC16/Modbus');\n        lines.push(row('Protocol CRC16 / 4096 bytes',nativeCrc.ms,jsCrc.ms,'PASS'));\n        activeBytes=8;\n        var fields=Binary.fromHex('12 34 78 56 00 00 80 3f');\n        check(fields && fields.readU16BE(0)===0x1234,'U16 BE');\n        check(fields.readU16LE(2)===0x5678,'U16 LE');\n        check(closeEnough(fields.readF32LE(4),1),'float32 LE');\n        check(fields.toHex(0,8)==='123478560000803f','hex');\n        var nativeFields=bench('native fields',function(){\n            var sum=0;for(var i=0;i<10000;i++)sum+=fields.readU16LE(2)+fields.readF32LE(4);\n            return sum;\n        });\n        var jsFields=bench('JS fields',function(){\n            var sum=0;var f=[18,52,120,86,0,0,128,63];\n            for(var i=0;i<10000;i++)sum+=(f[2]+256*f[3])+1;\n            return sum;\n        });\n        check(nativeFields.value===jsFields.value,'small field access');\n        lines.push(row('10k small field reads',nativeFields.ms,jsFields.ms,'PASS'));\n        var view=data.slice(100,256);\n        check(view&&view.length===256&&view.readU8(0)===js[100],'sliced view');\n        view.release();\n        var out='FILE / PACKET / FIELDS (synthetic, no disk I/O)\\n'+lines.join('\\n');\n        out+='\\nCRC16='+nativeCrc.value+'  sum32='+nativeSum.value+'  endian and F32 checks PASS';\n        out+='\\nSmall scalar reads may be faster in JavaScript: native method-call overhead is real.';\n        ui.set('packetResults',out);lastPacket=out;status('Protocol and file-style tests PASS — 4 comparisons');\n        logLine(out.split('\\n').join(' | '));\n        fields.release();packetN.release();data.release();\n    } catch(e){fail('Protocol benchmark',e);ui.set('packetResults','FAILED: '+e.message);}\n}\nfunction clearResults() {\n    ui.set('scpiResults','Not run');ui.set('packetResults','Not run');ui.set('tcpResults','Not run');\n    metricRows=[];runSerial=0;\n    status('Cleared. All tests are synthetic or localhost-only; no external instruments.');\n}\nfunction saveMetrics(){\n    try {\n        check(metricRows.length>0,'Run at least one test before exporting');\n        var csv='run,suite,task,points,bytes,native_ms,javascript_ms,ratio_js_over_native,verdict\\n';\n        for(var i=0;i<metricRows.length;i++){\n            var r=metricRows[i];\n            var columns=[r.run,r.suite,r.task,r.points,r.bytes,fmt(r.nativeMs),fmt(r.jsMs),\n                         r.nativeMs>0?fmt(r.jsMs/r.nativeMs):'',r.verdict];\n            csv+=columns.map(function(v){return '\"'+String(v).replace(/\"/g,'\"\"')+'\"';}).join(',')+'\\n';\n        }\n        var dest=FileIO.dataPath('binary_lab_metrics.csv');\n        FileIO.writeText(dest,csv);\n        status('Exported '+metricRows.length+' benchmark rows to '+dest);\n    }catch(e){fail('CSV export',e);}\n}\n// Network benchmark exercises the *real* QTcpSocket and Qt→QJSEngine boundary.\n// Both cases echo identical 200,009-byte SCPI-style frames over localhost.\n// Each elapsed time INCLUDES sending, receiving, and frame assembly; differences\n// are not a pure receive-conversion microbenchmark.\nfunction runTcpLoopback(){\n    if(tcpBusy)return status('Local TCP benchmark already running');\n    tcpBusy=true;activeRun=++runSerial;\n    var server=null,client=null,peers=[],results=[],frameN=null;\n    var finished=false,bytes=200000;\n    // The server-side QTcpSocket can report RemoteHostClosedError after the\n    // client intentionally closes a completed test. That is not a failed\n    // transfer. Keep peer state so premature closes are still failures.\n    function cleanup(){\n        var c=client;client=null;\n        if(c){try{c.close();}catch(_){}}\n        for(var p=0;p<peers.length;p++){\n            try{if(peers[p].info().valid)peers[p].close();}catch(_){}}\n        peers=[];\n        if(server){try{server.close();}catch(_){} server=null;}\n        if(frameN){try{frameN.release();}catch(_){} frameN=null;}\n        tcpBusy=false;\n    }\n    function abort(err){\n        if(finished)return;\n        finished=true;\n        var message=String(err&&err.message?err.message:err);\n        cleanup();\n        fail('Local TCP test',message);\n        ui.set('tcpResults','FAILED: '+message);\n    }\n    try{\n        var payload=Binary.wordPattern(100000);frameN=Binary.wrapIEEE(payload);payload.release();\n        check(frameN && frameN.length===200009,'framed TCP payload length');\n        var jsPayload=jsWordBytes(100000),jsFrame=jsFrameOf(jsPayload);\n        check(jsFrame.length===frameN.length,'loopback equal data');\n        server=TCP.createServer({host:'127.0.0.1',port:0});\n        server.on('error',function(e){abort('Listener: '+e);});\n        server.on('connection',function(peer){\n            if(finished){try{peer.close();}catch(_){}return;}\n            peers.push(peer);\n            var echoed=0,expected=jsFrame.length;\n            peer.on('binary',function(chunk){\n                if(finished)return;\n                try{\n                    echoed+=chunk.length;\n                    if(echoed>expected)return abort('Server received excess data: '+echoed+'/'+expected);\n                    var sent=peer.write(chunk);\n                    if(sent!==chunk.length)return abort('Server echo write incomplete: '+sent+'/'+chunk.length);\n                }catch(e){abort('Server echo: '+e);}\n            });\n            peer.on('error',function(e){\n                if(finished)return;\n                var message=String(e&&e.message?e.message:e);\n                // QTcpSocket reports this normal disconnect as an error on\n                // Windows. Accept it ONLY after the entire input was echoed.\n                if(echoed===expected && /remote host closed the connection/i.test(message))return;\n                abort('Server peer: '+message+' (echoed '+echoed+'/'+expected+' bytes)');\n            });\n            peer.on('close',function(){\n                if(finished)return;\n                if(echoed!==expected)abort('Server peer closed before complete echo: '+echoed+'/'+expected);\n            });\n        });\n        function trial(mode){\n            if(finished)return;\n            var received=0,rx=[],stream=Binary.stream(300000),start=0,complete=false;\n            var trialClient=TCP.create({host:'127.0.0.1',port:server.info().localPort});\n            client=trialClient;\n            trialClient.on('error',function(e){\n                if(!finished && !complete)abort(mode+' client: '+e);\n            });\n            trialClient.on('close',function(){\n                if(!finished && !complete)abort(mode+' client closed before complete response ('+received+'/'+jsFrame.length+')');\n            });\n            function finish(){\n                if(complete || finished)return;\n                complete=true;\n                var elapsed=(Binary.clockUs()-start)/1000,info=trialClient.info();\n                results.push(mode+': '+fmt(elapsed)+' ms  bytes='+received+\n                    '  callbacks='+(mode==='legacy'?info.legacyEvents:info.nativeEvents));\n                // Close may notify the *server* peer of RemoteHostClosedError.\n                // The peer's echoed-byte counter distinguishes expected close\n                // from lost data. Complete is set before closing the client.\n                trialClient.close();\n                if(client===trialClient)client=null;\n                stream.clear();\n                if(mode==='legacy')trial('native');\n                else {\n                    var summary='LOCALHOST TCP / 100k WORD / 200,009 bytes incl. IEEE frame\\n'+results.join('\\n');\n                    summary+='\\nBoth paths verified full payload. Includes TX, RX and frame processing.';\n                    summary+='\\nLegacy TCP.on(data) remains unchanged; native uses TCP.on(binary).';\n                    var a=parseFloat(results[0].split(' ')[1]),b=parseFloat(results[1].split(' ')[1]);\n                    metricRows.push({run:activeRun,suite:'TCP',task:'localhost 200009 byte round-trip',points:100000,bytes:200009,nativeMs:b,jsMs:a,verdict:'PASS'});\n                    finished=true;\n                    cleanup();\n                    ui.set('tcpResults',summary);lastTcp=summary;\n                    status('Local TCP loopback PASS — both receive paths');\n                    logLine(summary.split('\\n').join(' | '));\n                }\n            }\n            if(mode==='legacy')trialClient.on('data',function(chunk){\n                if(complete||finished)return;\n                try{\n                    for(var i=0;i<chunk.length;i++)rx.push(chunk[i]);\n                    received=rx.length;\n                    if(received===jsFrame.length){\n                        var result=jsPayloadOf(rx);\n                        check(result.length===bytes && result[0]===jsPayload[0] &&\n                            result[result.length-1]===jsPayload[jsPayload.length-1],'legacy loopback data');\n                        finish();\n                    }else if(received>jsFrame.length)abort('Legacy frame overflow');\n                }catch(e){abort('Legacy verification: '+e);}\n            });\n            else trialClient.on('binary',function(chunk){\n                if(complete||finished)return;\n                try{\n                    received+=chunk.length;\n                    if(received>jsFrame.length)return abort('Native frame overflow');\n                    if(!stream.append(chunk))return abort(stream.lastError);\n                    var decoded=stream.readIEEE();\n                    if(decoded){\n                        check(decoded.length===bytes && decoded.readU16LE(0)===1519,'native loopback data');\n                        check(decoded.readU16LE(199998)===((99999*73+1519)&65535),'last WORD');\n                        decoded.release();\n                        finish();\n                    }else if(stream.lastError)abort(stream.lastError);\n                }catch(e){abort('Native verification: '+e);}\n            });\n            trialClient.on('connect',function(){\n                if(finished||complete)return;\n                try{\n                    start=Binary.clockUs();\n                    for(var offset=0;offset<jsFrame.length;offset+=50000){\n                        var n=Math.min(50000,jsFrame.length-offset);\n                        var written=mode==='legacy'\n                            ? trialClient.write(jsFrame.slice(offset,offset+n))\n                            : trialClient.write(frameN.slice(offset,n));\n                        check(written===n,mode+' TCP write length');\n                    }\n                }catch(e){abort(mode+' request: '+e);}\n            });\n            trialClient.connect();\n        }\n        server.on('listening',function(){if(!finished)trial('legacy');});\n        server.listen();\n        status('Local TCP loopback running — 127.0.0.1 only; two sequential paths');\n    }catch(e){abort(e);}\n}\n\n// RC1.3 API exercises: native read+write, FileIO round-trip, framed packets,\n// DBC style Intel/Motorola signals, bulk numeric samples and plot-ready bins.\nfunction runCodec(){\n    try {\n        var lines=[],b=Binary.create(96);\n        check(b&&b.length===96,'create 96 bytes');\n        check(b.writeU8(0,254)&&b.readU8(0)===254,'U8');\n        check(b.writeI8(1,-12)&&b.readI8(1)===-12,'I8');\n        check(b.writeU16LE(2,0x1234)&&b.toHex(2,2)==='3412','U16LE wire');\n        check(b.writeU16BE(4,0x5678)&&b.readU16BE(4)===0x5678,'U16BE');\n        check(b.writeI16LE(6,-1234)&&b.readI16LE(6)===-1234,'I16LE');\n        check(b.writeI16BE(8,-2345)&&b.readI16BE(8)===-2345,'I16BE');\n        check(b.writeU32LE(10,0xFEDCBA98)&&b.readU32LE(10)===0xFEDCBA98,'U32LE');\n        check(b.writeU32BE(14,0x87654321)&&b.readU32BE(14)===0x87654321,'U32BE');\n        check(b.writeI32LE(18,-12345678)&&b.readI32LE(18)===-12345678,'I32LE');\n        check(b.writeI32BE(22,-2147483647)&&b.readI32BE(22)===-2147483647,'I32BE');\n        check(b.writeF32LE(26,3.125)&&b.readF32LE(26)===3.125,'F32LE');\n        check(b.writeF32BE(30,-1.5)&&b.readF32BE(30)===-1.5,'F32BE');\n        check(b.writeF64LE(34,Math.PI)&&Math.abs(b.readF64LE(34)-Math.PI)<1e-15,'F64LE');\n        check(b.writeF64BE(42,-Math.E)&&Math.abs(b.readF64BE(42)+Math.E)<1e-15,'F64BE');\n        check(b.writeU64LE(50,'18446744073709551615')&&\n              b.readU64LE(50)==='18446744073709551615','full 64-bit unsigned');\n        check(b.writeI64BE(58,'-9223372036854775808')&&\n              b.readI64BE(58)==='-9223372036854775808','full 64-bit signed');\n        check(b.writeUtf8(66,'WFScript')&&b.toUtf8(66,8)==='WFScript','UTF8');\n        var b64=b.toBase64(), back=Binary.fromBase64(b64);\n        check(back&&back.toHex(0,96)===b.toHex(0,96),'Base64 exact round trip');\n        var view=b.slice(2,4), before=b.readU8(2);\n        check(view.writeU8(0,77),'slice modification');\n        check(b.readU8(2)===before&&view.readU8(0)===77,'copy-on-write view');\n        var merged=Binary.concat([Binary.fromHex('AA55'),view]);\n        check(merged&&merged.length===6&&merged.toHex(0,2)==='aa55','concat');\n        check(b.writeU16BE(95,7)===false&&b.lastError.length>0,'write bounds rejection');\n        check(b.equals(back),'native equality');\n        check(b.indexOf(Binary.fromHex('3412'),0)===2,'native search');\n        var crcVector=Binary.fromUtf8('123456789');\n        check(crcVector.crc32()===0xCBF43926,'CRC32 known reference vector');\n        lines.push('PASS: integer U8/I8/U16/I16/U32/I32 (LE + BE)');\n        lines.push('PASS: IEEE F32/F64 (LE + BE), exact U64/I64 decimal strings');\n        lines.push('PASS: UTF-8, Base64, concat, bounds, shared views, CRC32, search');\n        lines.push('CRC16=' + b.crc16() + '  sum32=' + b.sum32());\n        ui.set('codecResults',lines.join('\\n'));status('RC1.3 codec round trips PASS');\n        crcVector.release();view.release();back.release();merged.release();b.release();\n    }catch(e){fail('RC1.3 codec',e);ui.set('codecResults','FAIL: '+e.message);}\n}\nfunction runFileBuffer(){\n    try{\n        var path=FileIO.dataPath('binary_rc13_roundtrip.bin');\n        check(!!path,'valid PanelData path');\n        var a=Binary.pattern(1024), tail=Binary.fromHex('0123456789abcdef');\n        check(FileIO.writeBuffer(path,a),'native binary file write');\n        check(FileIO.appendBuffer(path,tail),'native binary file append');\n        var read=FileIO.readBuffer(path);\n        check(read&&read.length===1032,'native binary file length');\n        check(read.sum32Range(0,1024)===a.sum32(),'disk read checksum');\n        check(read.toHex(1024,8)==='0123456789abcdef','disk append bytes');\n        ui.set('fileBufferResults','PASS: actual disk FileIO native read/write/append\\n'+\n              'Location: PanelData/binary_rc13_roundtrip.bin\\n'+\n              'Bytes: '+read.length+'; CRC16='+read.crc16()+'; round-trip equality PASS\\n'+\n              'Permission check unchanged; output is intentionally kept for inspection.');\n        status('RC1.3 native FileIO disk round-trip PASS');\n        read.release();tail.release();a.release();\n    }catch(e){fail('RC1.3 FileIO',e);ui.set('fileBufferResults','FAIL: '+e.message);}\n}\nfunction runFrames(){\n    try{\n        var rx=Binary.stream(1024), text=Binary.fromUtf8('STOP\\r\\n'), payload=Binary.fromHex('0102aabb');\n        check(rx.append(text),'append text');check(rx.readLine()==='STOP','text line');\n        var ieee=Binary.wrapIEEE(payload);\n        var one=ieee.slice(0,3), two=ieee.slice(3,ieee.length-3);\n        check(rx.append(one)&&rx.readIEEE()===null,'partial IEEE header');\n        check(rx.append(two),'IEEE remainder');\n        var decoded=rx.readIEEE();\n        check(decoded&&decoded.toHex(0,4)==='0102aabb','complete IEEE');\n        // 0x0004 little-endian length prefix + four payload bytes.\n        var lp=Binary.fromHex('04000102aabb');\n        check(rx.append(lp.slice(0,1))&&rx.readLengthPrefixed(2,'little',false)===null,'partial length prefix');\n        check(rx.append(lp.slice(1,4))&&rx.readLengthPrefixed(2,'little',false)===null,'partial payload');\n        check(rx.append(lp.slice(5,1)),'last byte');\n        var body=rx.readLengthPrefixed(2,'little',false);\n        check(body&&body.toHex(0,4)==='0102aabb','length-prefixed payload');\n        check(rx.append(Binary.fromHex('1020304050')),'fixed frame append');\n        var fixed=rx.readFixed(3);\n        check(fixed&&fixed.toHex(0,3)==='102030'&&rx.pending===2,'fixed frame preserves excess');\n        var delim=Binary.stream(16);\n        check(delim.append(Binary.fromHex('4142430044')),'delimited append');\n        var stop=delim.readUntil(Binary.fromHex('00'),false);\n        check(stop && stop.toUtf8(0,3)==='ABC' && delim.pending===1,'native delimiter frame');\n        stop.release();delim.clear();\n        ui.set('frameResults','PASS: mixed text SCPI line + IEEE #definite block\\n'+\n          'PASS: fragmented 16-bit length prefix and payload\\n'+\n          'PASS: fixed/delimited frames, partial headers and byte handling');\n        status('RC1.3 framing round trips PASS');\n        [one,two,decoded,body,fixed,ieee,payload,text,lp].forEach(function(b){b.release();});rx.clear();\n    }catch(e){fail('RC1.3 framing',e);ui.set('frameResults','FAIL: '+e.message);}\n}\nfunction jsWriteIntel(bytes,start,width,value){\n    for(var k=0;k<width;k++){\n        var bit=start+k,oct=bit>>3, mask=1<<(bit&7);\n        bytes[oct]=(bytes[oct]&~mask)|(((value>>k)&1)?mask:0);\n    }\n}\nfunction jsReadIntel(bytes,start,width){\n    var value=0;\n    for(var k=0;k<width;k++)value+=((bytes[(start+k)>>3]>>((start+k)&7))&1)*Math.pow(2,k);\n    return value;\n}\nfunction runCan(){\n    try {\n        var f=Binary.create(8);\n        check(f.writeBits(0,12,'intel',false,0xABC),'Intel write');\n        check(f.toHex(0,2)==='bc0a'&&f.readBits(0,12,'intel',false)===0xABC,'Intel expected wire');\n        f.fill(0,0,8);\n        check(f.writeBits(7,12,'motorola',false,0xABC),'Motorola write');\n        check(f.toHex(0,2)==='abc0'&&f.readBits(7,12,'motorola',false)===0xABC,'Motorola sawtooth wire');\n        f.fill(0,0,8);\n        check(f.writeSignal(0,16,'intel',true,0.1,-40,23.5),'scaled signed write');\n        check(Math.abs(f.readSignal(0,16,'intel',true,0.1,-40)-23.5)<1e-8,'scaled signed read');\n        check(f.writeBits(32,12,'intel',true,-100),'signed CAN write');\n        check(f.readBits(32,12,'intel',true)===-100,'signed CAN read');\n        f.fill(0,0,8);\n        check(f.writeBits64(0,64,'intel',false,'18446744073709551615'),'full uint64 DBC');\n        check(f.readBits64(0,64,'intel',false)==='18446744073709551615','exact uint64 DBC');\n        f.fill(0,0,8);\n        check(f.writeBits64(7,64,'motorola',true,'-123456789012345'),'signed motorola 64bit');\n        check(f.readBits64(7,64,'motorola',true)==='-123456789012345','exact Motorola 64bit');\n        var native=bench('native DBC 1000 writes',function(){\n            var b=Binary.create(8);for(var i=0;i<1000;i++)b.writeBits(0,12,'intel',false,i&4095);return b;\n        });\n        var pure=bench('JS DBC 1000 writes',function(){\n            var b=[0,0,0,0,0,0,0,0];for(var i=0;i<1000;i++)jsWriteIntel(b,0,12,i&4095);return b;\n        });\n        check(native.value.readBits(0,12,'intel',false)===jsReadIntel(pure.value,0,12),'DBC benchmark equal');\n        var result='PASS: CAN Intel 12-bit bytes bc 0a; Motorola 12-bit bytes ab c0\\n'+\n          'PASS: signed/scaled DBC fields and lossless 64-bit Intel/Motorola\\n'+\n          '1000 scalar write calls Native '+fmt(native.ms)+' ms / JS '+fmt(pure.ms)+\n          ' ms (crossing cost is expected; do not use scalar calls for DSP loops)\\n'+\n          'These are DBC bit-field primitives, NOT a DBC-file parser or CAN bus driver.';\n        ui.set('canResults',result);status('RC1.3 CAN/DBC bit-field round trips PASS');\n        native.value.release();f.release();\n    }catch(e){fail('RC1.3 CAN/DBC',e);ui.set('canResults','FAIL: '+e.message);}\n}\nfunction runSampleSeries(){\n    try{\n        var count=100000, raw=Binary.wordPattern(count);\n        var native=bench('native samples + bins',function(){\n            var x=raw.decodeSamples('u16le',0,count,0.001,-2.0);\n            var stats=x.stats(),bins=x.minMaxBins(400);\n            return {series:x,stats:stats,bins:bins};\n        });\n        var js=bench('JS samples + bins',function(){\n            var numbers=new Array(count),lo=Infinity,hi=-Infinity,sum=0,sum2=0;\n            for(var i=0;i<count;i++){\n                var v=((i*73+1519)&65535)*0.001-2;\n                numbers[i]=v;if(v<lo)lo=v;if(v>hi)hi=v;sum+=v;sum2+=v*v;\n            }\n            var bins=[];\n            for(var b=0;b<400;b++){\n                var start=Math.floor(b*count/400),end=Math.floor((b+1)*count/400),mn=numbers[start],mx=mn;\n                for(var k=start+1;k<end;k++){if(numbers[k]<mn)mn=numbers[k];if(numbers[k]>mx)mx=numbers[k];}\n                bins.push({start:start,end:end,min:mn,max:mx});\n            }\n            return {stats:{count:count,min:lo,max:hi,sum:sum,rms:Math.sqrt(sum2/count)},bins:bins};\n        });\n        check(native.value.stats.count===js.value.stats.count,'sample count');\n        check(closeEnough(native.value.stats.min,js.value.stats.min)&&\n            closeEnough(native.value.stats.max,js.value.stats.max)&&\n            closeEnough(native.value.stats.rms,js.value.stats.rms),'numeric stats');\n        check(native.value.bins.length===400,'native plot-ready bins');\n        for(var i=0;i<400;i++)check(closeEnough(native.value.bins[i].min,js.value.bins[i].min)&&\n            closeEnough(native.value.bins[i].max,js.value.bins[i].max),'bin '+i);\n        ui.set('sampleResults','PASS: 100,000 scaled u16 samples, stats + 400 min/max plot bins\\n'+\n            'Native '+fmt(native.ms)+' ms   /   JavaScript '+fmt(js.ms)+' ms\\n'+\n            'Native series length '+native.value.series.length+', min '+fmt(native.value.stats.min)+\n            ', max '+fmt(native.value.stats.max)+', RMS '+fmt(native.value.stats.rms)+'\\n'+\n            'Plot-ready 400 bins: small JS result; direct native plot binding is future work.');\n        status('RC1.3 native sample/bins comparison PASS');\n        native.value.series.release();raw.release();\n    }catch(e){fail('RC1.3 sample series',e);ui.set('sampleResults','FAIL: '+e.message);}\n}\n\nfunction onInitialize(){\n    status('READY — run synthetic benchmarks first. Binary is native; JS is baseline. No external hardware.');\n    ui.set('scpiResults',lastScpi);ui.set('packetResults',lastPacket);ui.set('tcpResults',lastTcp);\n    ui.set('codecResults','Not run');ui.set('fileBufferResults','Not run');ui.set('frameResults','Not run');\n    ui.set('canResults','Not run');ui.set('sampleResults','Not run');\n}\nfunction onShutdown(){tcpBusy=false;}\n",
+  "pages": [
+    {
+      "id": "binary_scpi",
+      "name": "01 SCPI / WORD Benchmarks",
+      "width": 1260,
+      "height": 820,
+      "controls": [
+        {
+          "id": "title1",
+          "type": "label",
+          "text": "NATIVE BINARY LAB  /  v0.2 CANDIDATE",
+          "x": 24,
+          "y": 14,
+          "width": 1210,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "intro1",
+          "type": "label",
+          "text": "Measure the native BinaryBuffer path against ordinary JavaScript arrays using IDENTICAL deterministic sample data. Synthetic SCPI IEEE 488.2 WORD responses; no instrument connection, configuration or output commands.",
+          "x": 24,
+          "y": 80,
+          "width": 1210,
+          "height": 93,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "pointSize",
+          "type": "option_selector",
+          "text": "SCOPE WORD POINTS",
+          "x": 30,
+          "y": 190,
+          "width": 320,
+          "height": 67,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "100,000|1,000,000",
+            "defaultIndex": 0,
+            "accent": "blue",
+            "tooltip": "Benchmark only; not a scope setting"
+          }
+        },
+        {
+          "id": "scpiRun",
+          "type": "button",
+          "text": "RUN SCPI / WORD COMPARISON",
+          "x": 370,
+          "y": 191,
+          "width": 440,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runScpi",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Runs local, reproducible benchmark; never controls external instruments"
+          }
+        },
+        {
+          "id": "clearRun",
+          "type": "button",
+          "text": "CLEAR RESULTS",
+          "x": 825,
+          "y": 191,
+          "width": 190,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "clearResults",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Runs local, reproducible benchmark; never controls external instruments"
+          }
+        },
+        {
+          "id": "saveMetrics",
+          "type": "button",
+          "text": "SAVE CSV",
+          "x": 1030,
+          "y": 191,
+          "width": 192,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "enabled": true,
+              "handler": "saveMetrics"
+            }
+          },
+          "properties": {
+            "tooltip": "Writes benchmark results into this Panel data directory only"
+          }
+        },
+        {
+          "id": "scpiHeading",
+          "type": "label",
+          "text": "SCPI SIMULATOR  /  generation · IEEE framing · parsing · WORD statistics · receive-chunk assembly",
+          "x": 24,
+          "y": 277,
+          "width": 1210,
+          "height": 43,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "scpiResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 330,
+          "width": 1210,
+          "height": 310,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "benchStatus",
+          "type": "label",
+          "text": "Ready — start the Panel in Simulation.",
+          "x": 24,
+          "y": 646,
+          "width": 1210,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "notes1",
+          "type": "label",
+          "text": "WHAT IS TIMED  •  wall-clock in the Panel worker using a native monotonic timer. Native code returns managed byte buffers and statistics; the JavaScript baseline uses arrays. Both must return matching results. Not a LAN or instrument benchmark.",
+          "x": 24,
+          "y": 705,
+          "width": 1210,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": "binary_protocol",
+      "name": "02 Protocol & TCP",
+      "width": 1260,
+      "height": 820,
+      "controls": [
+        {
+          "id": "title2",
+          "type": "label",
+          "text": "PROTOCOLS, FILE-LIKE DATA & LIVE LOCAL TCP",
+          "x": 24,
+          "y": 14,
+          "width": 1210,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "intro2",
+          "type": "label",
+          "text": "Two additional workloads: (1) 1 MiB file-style byte processing, 4096-byte Modbus CRC, endian fields; (2) actual localhost TCP echo of a 200,009-byte SCPI-like frame. No real instruments and no file permissions required.",
+          "x": 24,
+          "y": 80,
+          "width": 1210,
+          "height": 94,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "protoRun",
+          "type": "button",
+          "text": "RUN BINARY / FILE METRICS",
+          "x": 25,
+          "y": 192,
+          "width": 580,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runProtocols",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Runs local, reproducible benchmark; never controls external instruments"
+          }
+        },
+        {
+          "id": "tcpRun",
+          "type": "button",
+          "text": "RUN TCP LOOPBACK (127.0.0.1)",
+          "x": 629,
+          "y": 192,
+          "width": 590,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runTcpLoopback",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Runs local, reproducible benchmark; never controls external instruments"
+          }
+        },
+        {
+          "id": "protoHeading",
+          "type": "label",
+          "text": "NATIVE BUFFER VS PURE JS  /  file-style checksum · CRC-16 · binary fields",
+          "x": 24,
+          "y": 270,
+          "width": 1210,
+          "height": 39,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "packetResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 318,
+          "width": 1210,
+          "height": 222,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "tcpHeading",
+          "type": "label",
+          "text": "REAL TCP RECEIVE PATH  /  LEGACY on(data) vs NEW on(binary)",
+          "x": 24,
+          "y": 551,
+          "width": 1210,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "tcpResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 602,
+          "width": 1210,
+          "height": 170,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "benchStatus2",
+          "type": "label",
+          "text": "Ready — localhost only.",
+          "x": 24,
+          "y": 780,
+          "width": 1210,
+          "height": 34,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        }
+      ]
+    },
+    {
+      "id": "binary_toolkit",
+      "name": "03 Binary Read / Write",
+      "width": 1260,
+      "height": 820,
+      "controls": [
+        {
+          "id": "title3",
+          "type": "label",
+          "text": "BINARY TOOLKIT  /  READ, WRITE, FILEIO AND FRAMING",
+          "x": 24,
+          "y": 14,
+          "width": 1210,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "intro3",
+          "type": "label",
+          "text": "Exercise signed and unsigned integers, floating point, safe 64-bit decimal strings, byte order, copy-on-write views, UTF-8 and Base64. Save/reopen an actual native binary file inside the PanelData folder and assemble mixed SCPI text/binary or length-prefixed frames.",
+          "x": 24,
+          "y": 80,
+          "width": 1210,
+          "height": 94,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "codecRun",
+          "type": "button",
+          "text": "RUN FIELD / ENDIAN ROUND TRIPS",
+          "x": 24,
+          "y": 189,
+          "width": 390,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runCodec",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Local deterministic test. Never connects to external instruments."
+          }
+        },
+        {
+          "id": "fileRun",
+          "type": "button",
+          "text": "RUN REAL FILEIO ROUND TRIP",
+          "x": 433,
+          "y": 189,
+          "width": 390,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runFileBuffer",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Local deterministic test. Never connects to external instruments."
+          }
+        },
+        {
+          "id": "frameRun",
+          "type": "button",
+          "text": "RUN STREAM FRAMING",
+          "x": 842,
+          "y": 189,
+          "width": 390,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runFrames",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Local deterministic test. Never connects to external instruments."
+          }
+        },
+        {
+          "id": "codecResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 267,
+          "width": 1210,
+          "height": 150,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "fileBufferResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 429,
+          "width": 1210,
+          "height": 145,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "frameResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 586,
+          "width": 1210,
+          "height": 155,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": "binary_can_series",
+      "name": "04 CAN / Samples",
+      "width": 1260,
+      "height": 820,
+      "controls": [
+        {
+          "id": "title4",
+          "type": "label",
+          "text": "CAN DBC BIT PACKING / NATIVE WAVEFORM DATA",
+          "x": 24,
+          "y": 14,
+          "width": 1210,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "intro4",
+          "type": "label",
+          "text": "Compare Intel little-endian and Motorola sawtooth numbering. Round-trip signed/scaled signals in an 8-byte CAN payload. Native sample decoding converts WORD data into a retained C++ numeric series and outputs compact extrema bins for future plotting. No CAN hardware or external instrument is used.",
+          "x": 24,
+          "y": 80,
+          "width": 1210,
+          "height": 95,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "canRun",
+          "type": "button",
+          "text": "RUN CAN / DBC FIELD TESTS",
+          "x": 24,
+          "y": 189,
+          "width": 585,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runCan",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Local deterministic test. Never connects to external instruments."
+          }
+        },
+        {
+          "id": "samplesRun",
+          "type": "button",
+          "text": "RUN 100k NATIVE SAMPLE + PLOT BINS",
+          "x": 629,
+          "y": 189,
+          "width": 603,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "runSampleSeries",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "tooltip": "Local deterministic test. Never connects to external instruments."
+          }
+        },
+        {
+          "id": "canResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 267,
+          "width": 1210,
+          "height": 225,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "sampleResults",
+          "type": "label",
+          "text": "Not run",
+          "x": 24,
+          "y": 508,
+          "width": 1210,
+          "height": 254,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        }
+      ]
+    }
+  ]
+}

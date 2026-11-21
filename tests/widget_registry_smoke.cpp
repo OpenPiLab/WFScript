@@ -47,7 +47,7 @@ int main(int argc,char** argv) {
     auto& registry=WidgetRegistry::instance();
     for(const QString& required : {"button","label","slider","toggle","gauge","numeric","plot",
                                   "digital_display","precision_dial","status_beacon","segmented_bar",
-                                  "measurement_result","measurement_table"})
+                                  "measurement_result","measurement_table","communications_terminal"})
         CHECK(registry.typeIds().contains(required));
     CHECK(registry.registerFactory(std::make_unique<MockWidgetFactory>())); // first registration succeeds
     CHECK(!registry.registerFactory(std::make_unique<MockWidgetFactory>())); // duplicate rejected

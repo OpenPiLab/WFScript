@@ -15,7 +15,9 @@ Scope1.Trigger.Source.text = "Channel 1";
 Scope1.Trigger.Condition.text = "Rising";
 Scope1.Trigger.Level.value = 0;
 Scope1.Trigger.Hysteresis.value = 0.05;
-Wavegen1.run(); // Do not test its return value in portable scripts.
+Wavegen1.run();
+
+// Do not test its return value in portable scripts.
 // Example-only settling interval; this does not assert that the first-capture issue is fixed.
 if (!wait(0.15)) throw new Error("Interrupted during output settling");
 Scope1.single();

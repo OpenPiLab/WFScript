@@ -1,0 +1,441 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "libraries": [],
+  "testDefinition": {},
+  "testLibrary": "",
+  "description": "Generic Communications Terminal widget for PC Serial, TCP and UDP. Local TCP and UDP echoes require no hardware; text and binary send/receive, timestamps and display modes.",
+  "scriptName": "CommunicationsTerminalLab.js",
+  "activePageId": "term_tcp",
+  "script": "// ┌─ WFScript LEARNING LAB: Communications Terminal — Serial / TCP / UDP\n// │ Level: Beginner–Intermediate\n// │\n// │ GOAL: Reuse one native Terminal widget with TCP, UDP and optional PC Serial connections.\n// │ BEFORE RUN: TCP/UDP use localhost; the Serial Page needs a COM device or virtual port\n// │    pair.\n// │ TRY FIRST: On TCP, click START LOCAL TCP; send text and then a Hex bytes probe.\n// │ TRACE: `termTcp` sendRequested → `sendTcp(payload)` → `TCP.write()`; native socket\n// │    callbacks call `traffic()`.\n// │ EDIT SAFELY: Add a new INFO message or change the binary `probe` bytes; rerun localhost\n// │    echo.\n// │ REMEMBER: Terminal widgets display and request sends; JavaScript chooses the transport.\n// │    TX acceptance is not confirmed remote delivery.\n// │\n// │ EVENT TIP: Select `tcpStartTerm` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/CommunicationsTerminalLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/** WFScript v0.2-dev.7 — Communications Terminal workshop.\n * One generic communications_terminal widget per Page. Widget sendRequested\n * events deliberately route through the Panel's JavaScript connection object;\n * a terminal never opens a socket or sends data on its own.\n * TCP and UDP are fully self-contained localhost echo tests. Serial is optional.\n * Each terminal shows RX/TX as text, hex, or both, with timestamp and direction.\n * Mixed binary/text uses data(bytes), NOT the line parser: binary can contain LF.\n */\nlet tcpServer = null,\n    tcpClient = null,\n    tcpPeers = [];\nlet udpReceiver = null,\n    udpSender = null;\nlet serialPort = null,\n    serialName = '';\nconst probe = [0, 1, 2, 127, 128, 254, 255, 0];\nfunction info(id, protocol, message) {\n    ui.set(id, {\n        append: {\n            direction: 'INFO',\n            transport: protocol,\n            note: message\n        }\n    });\n    print('[CommTerminal ' + protocol + '] ' + message);\n}\nfunction traffic(id, protocol, direction, bytes, peer) {\n    ui.set(id, {\n        append: {\n            direction: direction,\n            transport: protocol,\n            data: bytes,\n            peer: peer || ''\n        }\n    });\n}\nfunction sentBytes(value) {\n    return value.mode === 'hex' ? value.bytes : value.text;\n}\n// In the examples we use the ORIGINAL payload bytes to show a TX preview.\n// TCP/serial write() accepting bytes does not guarantee the remote read them.\nfunction logAccepted(id, protocol, bytes, number) {\n    traffic(id, protocol, 'TX', bytes.slice(0, number));\n    info(id, protocol, 'Accepted ' + number + ' of ' + bytes.length + ' byte(s) for transmission');\n}\n/**\n * CORE LESSON — Starts the local TCP echo transport. The communications_terminal widget only\n * displays RX/TX and requests sends; it does not own the network socket.\n */\nfunction startTcp() {\n    if (tcpServer) {\n        info('termTcp', 'TCP', 'Already listening');\n        return;\n    }\n    try {\n        tcpServer = TCP.createServer({\n            host: '127.0.0.1',\n            port: 0\n        });\n        tcpServer.on('error', e => info('termTcp', 'TCP', 'Server error: ' + e));\n        tcpServer.on('connection', function (peer) {\n            tcpPeers.push(peer);\n            info('termTcp', 'TCP', 'Echo server accepted client');\n            peer.on('data', function (bytes) {\n                peer.write(bytes);\n            });\n            peer.on('error', e => info('termTcp', 'TCP', 'Peer error: ' + e));\n        });\n        tcpServer.on('listening', function () {\n            const port = tcpServer.info().localPort;\n            tcpClient = TCP.create({\n                host: '127.0.0.1',\n                port: port\n            });\n            tcpClient.on('connect', () => info('termTcp', 'TCP', 'Connected to localhost:' + port));\n            tcpClient.on('data', bytes => traffic('termTcp', 'TCP', 'RX', bytes));\n            tcpClient.on('error', e => info('termTcp', 'TCP', 'Client error: ' + e));\n            tcpClient.on('close', () => info('termTcp', 'TCP', 'Client closed'));\n            tcpClient.connect();\n        });\n        tcpServer.listen();\n    } catch (e) {\n        info('termTcp', 'TCP', String(e));\n        stopTcp();\n    }\n}\nfunction sendTcp(payload) {\n    if (!tcpClient || !tcpClient.info().open) {\n        info('termTcp', 'TCP', 'Start TCP and allow connection first');\n        return;\n    }\n    try {\n        const wire = sentBytes(payload);\n        const n = tcpClient.write(wire);\n        logAccepted('termTcp', 'TCP', payload.bytes, n);\n    }\n    catch (e) {\n        info('termTcp', 'TCP', 'TX error: ' + e);\n    }\n}\nfunction stopTcp() {\n    for (const conn of [tcpClient].concat(tcpPeers)) if (conn) {\n        try {\n            conn.close();\n        } catch (e) { }\n    }\n    if (tcpServer) try {\n        tcpServer.close();\n    } catch (e) { }\n    tcpClient = null;\n    tcpPeers = [];\n    tcpServer = null;\n    info('termTcp', 'TCP', 'Stopped');\n}\nfunction sendTcpProbe() {\n    sendTcp({\n        mode: 'hex',\n        bytes: probe\n    });\n}\n\nfunction startUdp() {\n    if (udpReceiver) {\n        info('termUdp', 'UDP', 'Already bound');\n        return;\n    }\n    try {\n        udpReceiver = UDP.create({\n            host: '127.0.0.1',\n            port: 0\n        });\n        udpSender = UDP.create({\n            host: '127.0.0.1',\n            port: 0\n        });\n        udpReceiver.on('error', e => info('termUdp', 'UDP', 'Receiver error: ' + e));\n        udpSender.on('error', e => info('termUdp', 'UDP', 'Sender error: ' + e));\n        udpReceiver.on('message', function (bytes, remote) {\n            // Separate native peer receives and echoes the exact datagram.\n            udpReceiver.send(bytes, remote.address, remote.port);\n        });\n        udpSender.on('message', function (bytes, remote) {\n            traffic('termUdp', 'UDP', 'RX', bytes, remote.address + ':' + remote.port);\n        });\n        udpReceiver.bind();\n        udpSender.bind();\n        info('termUdp', 'UDP', 'Local echo bound on port ' + udpReceiver.info().localPort);\n    } catch (e) {\n        info('termUdp', 'UDP', String(e));\n        stopUdp();\n    }\n}\nfunction sendUdp(payload) {\n    if (!udpReceiver || !udpSender) {\n        info('termUdp', 'UDP', 'Bind two UDP sockets first');\n        return;\n    }\n    try {\n        const wire = sentBytes(payload);\n        const n = udpSender.send(wire, '127.0.0.1', udpReceiver.info().localPort);\n        logAccepted('termUdp', 'UDP', payload.bytes, n);\n    } catch (e) {\n        info('termUdp', 'UDP', 'TX error: ' + e);\n    }\n}\nfunction stopUdp() {\n    if (udpSender) try {\n        udpSender.close();\n    } catch (e) { }\n    if (udpReceiver) try {\n        udpReceiver.close();\n    } catch (e) { }\n    udpSender = null;\n    udpReceiver = null;\n    info('termUdp', 'UDP', 'Stopped');\n}\nfunction sendUdpProbe() {\n    sendUdp({\n        mode: 'hex',\n        bytes: probe\n    });\n}\n\nfunction discoverSerial() {\n    const ports = Serial.ports();\n    if (!ports.length) {\n        info('termSerial', 'SERIAL', 'No COM ports available');\n        return;\n    }\n    if (!serialName) serialName = ports[0].port;\n    for (const p of ports) info('termSerial', 'SERIAL', p.port + ' — ' + p.description);\n}\nfunction selectSerial() {\n    Tool.getText('Windows COM port', serialName || 'COM5', function (result) {\n        if (!result.accepted) return;\n        serialName = String(result.value).trim();\n        info('termSerial', 'SERIAL', 'Selected ' + serialName + ' (not yet open)');\n    });\n}\nfunction openSerial() {\n    if (serialPort) {\n        info('termSerial', 'SERIAL', 'Already opened');\n        return;\n    }\n    if (!serialName) {\n        discoverSerial();\n        if (!serialName) return;\n    }\n    try {\n        serialPort = Serial.create({\n            port: serialName,\n            baudRate: 115200\n        });\n        serialPort.on('open', () => info('termSerial', 'SERIAL', 'Port opened: ' + serialName));\n        serialPort.on('data', bytes => traffic('termSerial', 'SERIAL', 'RX', bytes));\n        serialPort.on('error', e => info('termSerial', 'SERIAL', 'Error: ' + e));\n        serialPort.on('close', () => info('termSerial', 'SERIAL', 'Port closed'));\n        serialPort.open();\n    } catch (e) {\n        info('termSerial', 'SERIAL', 'Open failed: ' + e);\n        closeSerial();\n    }\n}\nfunction sendSerial(payload) {\n    if (!serialPort || !serialPort.info().open) {\n        info('termSerial', 'SERIAL', 'Select and open a COM port first');\n        return;\n    }\n    try {\n        const wire = sentBytes(payload);\n        const n = serialPort.write(wire);\n        logAccepted('termSerial', 'SERIAL', payload.bytes, n);\n    }\n    catch (e) {\n        info('termSerial', 'SERIAL', 'TX error: ' + e);\n    }\n}\nfunction closeSerial() {\n    if (serialPort) try {\n        serialPort.close();\n    } catch (e) { }\n    serialPort = null;\n}\nfunction sendSerialProbe() {\n    sendSerial({\n        mode: 'hex',\n        bytes: probe\n    });\n}\n\n// UI actions use Property Editor > Events (select a control, then Go to Handler).\n// Serial/TCP/UDP .on() below are transport callbacks, NOT widget events.\n\nfunction onInitialize() {\n    info('termTcp', 'TCP', 'Idle; press START LOCAL TCP to create the echo server and client');\n    info('termUdp', 'UDP', 'Idle; press START LOCAL UDP to bind two sockets');\n    info('termSerial', 'SERIAL', 'Idle; a COM device or virtual port pair is required');\n}\nfunction onShutdown() {\n    stopTcp();\n    stopUdp();\n    closeSerial();\n}\n",
+  "pages": [
+    {
+      "id": "term_tcp",
+      "name": "01 TCP — Local Echo",
+      "width": 1190,
+      "height": 770,
+      "controls": [
+        {
+          "id": "term_tcpTitle",
+          "type": "label",
+          "text": "01 TCP — Local Echo — Communications Terminal",
+          "x": 20,
+          "y": 16,
+          "width": 1150,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "term_tcpInfo",
+          "type": "label",
+          "text": "TCP: local server + client. Press START; type text and Send, or switch to Hex bytes. Echo is shown as RX. Display mode: Text / Hex / Both; send mode: Text+LF, Text raw, Hex bytes (00 7F 80 FF). No traffic occurs until explicit Start/Open.",
+          "x": 20,
+          "y": 80,
+          "width": 1150,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "tcpStartTerm",
+          "type": "button",
+          "text": "START LOCAL TCP",
+          "x": 20,
+          "y": 175,
+          "width": 375,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "startTcp",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "tcpBinaryTerm",
+          "type": "button",
+          "text": "SEND BINARY PROBE",
+          "x": 407,
+          "y": 175,
+          "width": 375,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "sendTcpProbe",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "tcpStopTerm",
+          "type": "button",
+          "text": "STOP TCP",
+          "x": 794,
+          "y": 175,
+          "width": 375,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "stopTcp",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "termTcp",
+          "type": "communications_terminal",
+          "text": "01 TCP — Local Echo · RX/TX",
+          "x": 20,
+          "y": 244,
+          "width": 1150,
+          "height": 490,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "sendRequested": {
+              "handler": "sendTcp",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "maxLines": 500,
+            "previewBytes": 256,
+            "displayMode": "Both",
+            "showTimestamp": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "term_udp",
+      "name": "02 UDP — Local Echo",
+      "width": 1190,
+      "height": 770,
+      "controls": [
+        {
+          "id": "term_udpTitle",
+          "type": "label",
+          "text": "02 UDP — Local Echo — Communications Terminal",
+          "x": 20,
+          "y": 16,
+          "width": 1150,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "term_udpInfo",
+          "type": "label",
+          "text": "UDP: sender and echo receiver bind to local ephemeral ports. Each datagram retains its boundaries. Display mode: Text / Hex / Both; send mode: Text+LF, Text raw, Hex bytes (00 7F 80 FF). No traffic occurs until explicit Start/Open.",
+          "x": 20,
+          "y": 80,
+          "width": 1150,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "udpStartTerm",
+          "type": "button",
+          "text": "START LOCAL UDP",
+          "x": 20,
+          "y": 175,
+          "width": 375,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "startUdp",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "udpBinaryTerm",
+          "type": "button",
+          "text": "SEND BINARY PROBE",
+          "x": 407,
+          "y": 175,
+          "width": 375,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "sendUdpProbe",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "udpStopTerm",
+          "type": "button",
+          "text": "STOP UDP",
+          "x": 794,
+          "y": 175,
+          "width": 375,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "stopUdp",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "termUdp",
+          "type": "communications_terminal",
+          "text": "02 UDP — Local Echo · RX/TX",
+          "x": 20,
+          "y": 244,
+          "width": 1150,
+          "height": 490,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "sendRequested": {
+              "handler": "sendUdp",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "maxLines": 500,
+            "previewBytes": 256,
+            "displayMode": "Both",
+            "showTimestamp": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "term_serial",
+      "name": "03 Serial — COM Port",
+      "width": 1190,
+      "height": 770,
+      "controls": [
+        {
+          "id": "term_serialTitle",
+          "type": "label",
+          "text": "03 Serial — COM Port — Communications Terminal",
+          "x": 20,
+          "y": 16,
+          "width": 1150,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "term_serialInfo",
+          "type": "label",
+          "text": "Serial: select a physical COM port or virtual pair. TX needs a loopback/peer for RX. The AD3 is not required. Display mode: Text / Hex / Both; send mode: Text+LF, Text raw, Hex bytes (00 7F 80 FF). No traffic occurs until explicit Start/Open.",
+          "x": 20,
+          "y": 80,
+          "width": 1150,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "serialDiscoverTerm",
+          "type": "button",
+          "text": "DISCOVER COM PORTS",
+          "x": 20,
+          "y": 175,
+          "width": 220,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "discoverSerial",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serialSelectTerm",
+          "type": "button",
+          "text": "SELECT COM",
+          "x": 252,
+          "y": 175,
+          "width": 220,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "selectSerial",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serialOpenTerm",
+          "type": "button",
+          "text": "OPEN SERIAL",
+          "x": 484,
+          "y": 175,
+          "width": 220,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "openSerial",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serialBinaryTerm",
+          "type": "button",
+          "text": "BINARY PROBE",
+          "x": 716,
+          "y": 175,
+          "width": 220,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "sendSerialProbe",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serialCloseTerm",
+          "type": "button",
+          "text": "CLOSE SERIAL",
+          "x": 948,
+          "y": 175,
+          "width": 220,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "closeSerial",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "termSerial",
+          "type": "communications_terminal",
+          "text": "03 Serial — COM Port · RX/TX",
+          "x": 20,
+          "y": 244,
+          "width": 1150,
+          "height": 490,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "sendRequested": {
+              "handler": "sendSerial",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "maxLines": 500,
+            "previewBytes": 256,
+            "displayMode": "Both",
+            "showTimestamp": true
+          }
+        }
+      ]
+    }
+  ]
+}

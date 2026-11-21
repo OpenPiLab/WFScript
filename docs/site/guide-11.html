@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 11: The native Test Executive · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="active">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 11 — The native Test Executive</h2>
+<p><img src="assets/sequence-editor.png" alt="The Visual Test Sequence Editor configured for a four-instrument test" /></p>
+<p>The native Test Executive is designed to make sequences editable, reproducible and reportable without requiring every developer to invent a scheduling engine. The <strong>Visual Test Sequence Editor</strong> stores a project-owned definition: step order, groups, parameters, limits, callbacks, repeat/sweep rules, conditions and report policy.</p>
+<h3>Three logical groups</h3>
+<p><strong>Setup</strong> establishes readiness and prepares a known state. <strong>Main</strong> performs measurements and controlled actions. <strong>Cleanup</strong> attempts to release equipment and record final state regardless of the normal path through Main. The Cleanup group is essential for test stations, though software alone cannot guarantee physical outputs OFF after a disconnected instrument.</p>
+<p>A test definition can contain action steps, numeric tests, grouped loops and branches. Numeric acceptance is evaluated by the native Test Executive, not by repeated ad-hoc JavaScript comparison code inside each instrument handler.</p>
+<h3>The operator script stays small</h3>
+<p>The Panel's main script typically shows status, starts or stops the TestRunner, handles operator inputs, and updates a few high-level displays. Reusable test procedures live in the project-owned <code>.mjs</code> Test Library. The visual editor selects those exported handlers by name.</p>
+<p>This is substantially clearer than reconstructing a hidden test sequence with <code>TestRunner.configure()</code> calls at startup. The project definition is the source of truth and can be inspected without following a maze of dynamic script setup functions.</p>
+<h3>Step configuration</h3>
+<p>For each step, choose an ID, display name, group, mode, optional handler, parameters, deadline and relevant acceptance rules. A numeric test may return a finite number, or a structured object with multiple named numeric paths. Named Results &amp; Limits in the editor determine which paths must pass.</p>
+<p>A callback handler receives a step context:</p>
+<pre><code class="language-javascript">// An embedded Test Library handler, not a built-in global function.
+export function verifyVoltage(step) {
+    var expected = Number(step.params.targetVoltage);
+    // Start an asynchronous instrument operation here.
+    // On completion, check TestRunner.isActive(step.token),
+    // then call TestRunner.complete(step.token, measuredVoltage).
+}
+</code></pre>
+<p>The comment is intentional: physical output methods differ by driver and should not be invented in a generic example. Use the named real instrument API in your actual test library.</p>
+<h3>Returning structured results</h3>
+<pre><code class="language-javascript">TestRunner.complete(step.token, {
+    sourceVoltage: 5.000,
+    meterVoltage: 4.997,
+    errorMilliVolts: 3.0
+});
+</code></pre>
+<p>The native definition can attach separate lower/upper bounds to each named result path, determine PASS/FAIL, and write the measurements to the report. The returned object is not a substitute for explicit limit definitions.</p>
+<h3>When to use immediate, poll or callback modes</h3>
+<p><strong>Once</strong> is appropriate for a result available immediately. <strong>Poll</strong> fits cooperative status checks that return progress over time. <strong>Callback</strong> is appropriate for delayed I/O and Promise chains; the handler schedules work and finishes only by calling <code>TestRunner.complete()</code> or <code>TestRunner.fail()</code> with the current token. The executive does not automatically await a returned JavaScript Promise.</p>
+<h3>Stop and abort are not equivalent</h3>
+<p>Normal test termination requests cooperative Cleanup. Emergency abort may skip sequence-level Cleanup. A pending external SCPI command can complete after a test token expires; stale callbacks must be rejected, and instrument wrappers must not silently issue more commands for a canceled step. The operator must still verify physical output state after faults.</p>
+<div class="pager"><a href="guide-10.html">← Previous chapter</a><a href="guide-12.html">Next chapter →</a></div></article></main></div></body></html>

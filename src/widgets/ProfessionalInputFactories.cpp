@@ -5,6 +5,7 @@
 #include "NumericStepperWidget.h"
 #include "OptionSelectorWidget.h"
 #include "StatusBannerWidget.h"
+#include "LabeledTextInputWidgetFactory.h"
 #include <QJsonObject>
 #include <cmath>
 #include <memory>
@@ -242,6 +243,7 @@ public:
 };
 }
 void registerProfessionalInputWidgets(WidgetRegistry& registry) {
+    registerLabeledTextInputWidgets(registry);
     registry.registerFactory(std::make_unique<ButtonFactory>(false));
     registry.registerFactory(std::make_unique<ButtonFactory>(true));
     registry.registerFactory(std::make_unique<RotaryFactory>());

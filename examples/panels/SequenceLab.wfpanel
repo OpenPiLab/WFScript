@@ -65,7 +65,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "selectionChanged": {
+              "handler": "seqInfo",
+              "enabled": true
+            }
+          },
           "properties": {
             "options": "Binary Counter|Gray Counter|Walking One",
             "defaultIndex": 0,
@@ -83,7 +88,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "selectionChanged": {
+              "handler": "seqInfo",
+              "enabled": true
+            }
+          },
           "properties": {
             "options": "250|500|1000|2000|5000|10000",
             "defaultIndex": 2,
@@ -135,7 +145,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "seqStart",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -149,7 +164,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "seqStop",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -163,7 +183,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "onSeqCaptureClicked",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -177,7 +202,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "onSeqVerifyClicked",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -191,7 +221,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "seqPreview",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -231,11 +266,11 @@
             "showLegend": false,
             "xAuto": true,
             "yAuto": true,
-            "lineWidth": 2.0,
+            "lineWidth": 2,
             "xLog": false,
             "showCursors": true,
-            "cursorA": 1.0,
-            "cursorB": 2.0
+            "cursorA": 1,
+            "cursorB": 2
           }
         },
         {
@@ -258,5 +293,5 @@
       ]
     }
   ],
-  "script": "/**\n * WFScript Example: Multi-Channel Sequence Lab\n * Generate and verify binary, Gray and walking-one multi-pin sequences.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: DIO0 → 1 kΩ → DIO3, DIO1 → 1 kΩ → DIO4, DIO2 → 1 kΩ → DIO5.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 16 SEQUENCE LAB — SYNCHRONIZED, REPEATING CUSTOM DIGITAL BIT STRINGS\n// ============================================================================\n// All channels use ONE native DigitalOut timebase and a single start command.\n// WaveForms-style channel properties remain available for single clocks.\n// runSequence is a WFScript-specific extension, not native WaveForms syntax.\n// Preview never drives outputs. Starting and verifying are explicit actions.\nfunction seqSettings() {\n  const preset=String(ui.get('seqPreset'));\n  const bitRate=Number(ui.get('seqBitRate'));\n  if(!isFinite(bitRate) || bitRate<10 || bitRate>1000000) throw Error('Invalid bit rate');\n  const choices={\n    'Binary Counter':['01010101','00110011','00001111'],\n    'Gray Counter':['01100110','00111100','00001111'],\n    'Walking One':['10000000','00100000','00001000']\n  };\n  if(!choices[preset])throw Error('Invalid pattern preset: '+preset);\n  return {preset:preset,bitRate:bitRate,bits:choices[preset]};\n}\nfunction seqInfo() {\n  const s=seqSettings();\n  ui.set('seqInfo',s.preset+' | '+s.bitRate+' bit/s | 8 bits per sequence (period '+\n         (8000/s.bitRate).toFixed(3)+' ms) | '+s.bits.join(' / '));\n}\nfunction seqPreview() {\n  const s=seqSettings(),x=[],lanes=[[],[],[]];\n  for(let i=0;i<512;i++) {\n    x.push(i*1000/(s.bitRate*16));\n    const index=Math.floor(i/16)%8;\n    for(let k=0;k<3;k++)lanes[k].push(Number(s.bits[k].charAt(index)));\n  }\n  plots.clear('seqChart');\n  for(let k=0;k<3;k++)plots.setSeries('seqChart','PREVIEW DIO'+k,x,lanes[k]);\n  ui.set('seqStatus','MATHEMATICAL PREVIEW ONLY — NO AD3 OUTPUT');\n}\nfunction seqStart() {\n  try {\n    const s=seqSettings();\n    if(Patterns1.running && !Patterns1.stop())throw Error('Previous Patterns stop failed: '+Patterns1.lastError);\n    if(!StaticIO.stop())throw Error('StaticIO release failed: '+StaticIO.lastError);\n    if(!Patterns1.runSequence([0,1,2],s.bits,s.bitRate))throw Error(Patterns1.lastError);\n    const st=Patterns1.status();\n    ui.set('seqStatus',(st.simulation?'SIMULATION ONLY':'RUNNING HARDWARE')+' | '+s.preset+\n           ' / '+st.sequenceActualBitRateHz.toFixed(3)+' bit/s / repeat '+st.sequenceRepeatFactor);\n    print('Sequence started: '+s.preset+' '+st.sequenceActualBitRateHz.toFixed(3)+' bits/s '+\n          (st.simulation?'SIMULATION':'PHYSICAL'));\n  } catch(e) {\n    const safe=Patterns1.stop();\n    const msg='SEQUENCE START ERROR: '+String(e)+(safe?' / output release requested':' / OUTPUT STOP FAILED: '+Patterns1.lastError);\n    ui.set('seqStatus',msg);print(msg);\n  }\n}\nfunction seqStop() {\n  const safe=Patterns1.stop();\n  ui.set('seqStatus',safe?'SEQUENCE STOPPED / OUTPUTS Z':'DANGER: stop not confirmed: '+Patterns1.lastError);\n  print('Sequence stop: '+(safe?'OUTPUTS RELEASED':'FAILED: '+Patterns1.lastError));\n}\n// Search for the repeating bit period using the middle of each bit cell.\n// Since DigitalIn can start at any point in the cycle, search phase offsets\n// across the entire 8-bit period, never assuming input/output trigger sync.\nfunction seqAnalyze(words,rate,st) {\n  const bits=st.sequenceBitStrings,bitRate=st.sequenceActualBitRateHz;\n  const n=words.length,spb=rate/bitRate,period=spb*bits[0].length;\n  if(n<128 || !isFinite(spb) || spb<8)throw Error('DigitalIn sampling must be >=8× bit rate');\n  const x=[],lanes=[[],[],[]];let matches=0,changes=0,secondChanges=0;\n  for(let i=0;i<n;i++) {\n    const word=Number(words[i]);x.push(i*1000/rate);\n    for(let k=0;k<3;k++) {\n      const input=(word>>>(k+3))&1;\n      lanes[k].push(input);\n      if(input===((word>>>k)&1))matches++;\n      if(i>0 && input!==lanes[k][i-1]) {\n        changes++;if(i>=n/2)secondChanges++;\n      }\n    }\n  }\n  plots.clear('seqChart');\n  for(let k=0;k<3;k++)plots.setSeries('seqChart','DIO'+(k+3)+' / physical',x,lanes[k]);\n  const agreement=100*matches/(3*n);\n  const checks=Math.min(40,Math.floor((n-period-2)/spb));\n  if(checks<8)throw Error('Capture too short for a sequence validation');\n  let best=-1,phaseBest=0;\n  const end=Math.min(Math.floor(period),Math.floor(n-(checks+1)*spb));\n  for(let phase=0;phase<=end;phase++) {\n    let valid=0;\n    for(let j=0;j<checks;j++) {\n      const index=Math.round(phase+j*spb);\n      if(index<0 || index>=n)continue;\n      for(let k=0;k<3;k++)if(lanes[k][index]===Number(bits[k].charAt(j%bits[k].length)))valid++;\n    }\n    if(valid>best){best=valid;phaseBest=phase;}\n  }\n  const patternMatch=100*best/(3*checks);\n  const pass=agreement>=99 && patternMatch>=97 && changes>=12 && secondChanges>=4;\n  const status=(pass?'PASS':'CHECK')+' | '+st.sequenceActualBitRateHz.toFixed(2)+' bit/s'+\n     ' | loopback '+agreement.toFixed(2)+'% | pattern match '+patternMatch.toFixed(1)+'%'+\n     ' | transitions '+changes+' (second half '+secondChanges+') | phase '+phaseBest;\n  print('Sequence: '+status);\n  return status;\n}\nfunction seqCapture(verify) {\n  if(Patterns1.simulation){seqPreview();print('Sequence: SIMULATION ONLY / no physical verification');return;}\n  let result='';\n  try {\n    if(verify) {\n      const s=seqSettings();\n      if(Patterns1.running && !Patterns1.stop())throw Error('Previous Pattern stop failed: '+Patterns1.lastError);\n      if(!StaticIO.stop())throw Error('StaticIO release failed: '+StaticIO.lastError);\n      if(!Patterns1.runSequence([0,1,2],s.bits,s.bitRate))throw Error(Patterns1.lastError);\n    } else if(!Patterns1.running || Patterns1.status().mode!=='Sequence')\n      throw Error('Press START SEQUENCE first');\n    const st=Patterns1.status();\n    if(st.mode!=='Sequence' || !st.running)throw Error('Sequence is not running');\n    if(st.sdkStatusAvailable && !st.sdkRunning)throw Error('DigitalOut not Running: '+st.sdkStateName);\n    const actual=st.sequenceActualBitRateHz;\n    Logic1.Time.Rate.value=Math.min(1000000,Math.max(20000,Math.round(actual*32)));\n    Logic1.Time.Samples.value=4096;\n    if(!Logic1.single())throw Error('DigitalIn arm failed: '+Logic1.lastError);\n    if(!Logic1.wait(6))throw Error('DigitalIn wait failed: '+Logic1.lastError);\n    const diag=Logic1.captureDiagnostics();\n    print('Sequence DigitalIn: '+diag.samplesReturned+'/'+diag.requestedSamples+\n          ' samples, '+diag.bytesRequested+' requested bytes, first/second transitions '+\n          diag.firstHalfChanges+'/'+diag.secondHalfChanges);\n    result=seqAnalyze(Logic1.samples(),Logic1.sampleRateHz,st);\n    const after=Patterns1.status();\n    if(after.sdkStatusAvailable && !after.sdkRunning)result='CHECK: generator stopped during capture / '+result;\n  }catch(e){Logic1.stop();result='ERROR: '+String(e);print('Sequence error: '+String(e));}\n  finally {\n    if(verify) {\n      const stopped=Patterns1.stop();\n      result+=stopped?' / ALL OUTPUTS RELEASED':' / DANGER: STOP NOT CONFIRMED: '+Patterns1.lastError;\n    }\n    ui.set('seqStatus',result);print('Sequence test: '+result);\n  }\n}\nui.on('seqStart','clicked',seqStart);\nui.on('seqStop','clicked',seqStop);\nui.on('seqCapture','clicked',function(){seqCapture(false);});\nui.on('seqVerify','clicked',function(){seqCapture(true);});\nui.on('seqPreview','clicked',seqPreview);\nui.on('seqPreset','selectionChanged',seqInfo);\nui.on('seqBitRate','selectionChanged',seqInfo);\nseqInfo();\n"
+  "script": "// ┌─ WFScript LEARNING LAB: Multi-Channel Sequence Lab\n// │ Level: Advanced  |  Mode: hardware-capable\n// │\n// │ GOAL: Generate synchronized binary, Gray and walking-one sequences on several digital\n// │    pins.\n// │ BEFORE RUN: Simulation first; physical test uses DIO0→DIO3, DIO1→DIO4 and DIO2→DIO5,\n// │    each through 1 kΩ.\n// │ TRY FIRST: Choose a PATTERN PRESET and BIT RATE.\n// │ TRACE: `seqStart` → `Patterns1.runSequence()`; `seqVerify` → captured DIO samples and\n// │    expected sequence matching.\n// │ EDIT SAFELY: Compare Binary Counter and Gray Counter; note how many bits change at a\n// │    state transition.\n// │ REMEMBER: Pattern preview is software-only; hardware verification uses a separate input\n// │    capture.\n// │\n// │ EVENT TIP: Select `seqPreset` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/SequenceLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * WFScript Example: Multi-Channel Sequence Lab\n * Generate and verify binary, Gray and walking-one multi-pin sequences.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: DIO0 → 1 kΩ → DIO3, DIO1 → 1 kΩ → DIO4, DIO2 → 1 kΩ → DIO5.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 16 SEQUENCE LAB — SYNCHRONIZED, REPEATING CUSTOM DIGITAL BIT STRINGS\n// ============================================================================\n// All channels use ONE native DigitalOut timebase and a single start command.\n// WaveForms-style channel properties remain available for single clocks.\n// runSequence is a WFScript-specific extension, not native WaveForms syntax.\n// Preview never drives outputs. Starting and verifying are explicit actions.\n/**\n * CORE LESSON — Maps the selected Binary, Gray or Walking One preset to three synchronized bit\n * strings and a validated bit rate.\n */\nfunction seqSettings() {\n    const preset = String(ui.get('seqPreset'));\n    const bitRate = Number(ui.get('seqBitRate'));\n    if (!isFinite(bitRate) || bitRate < 10 || bitRate > 1000000) throw Error('Invalid bit rate');\n    const choices = {\n        'Binary Counter': ['01010101', '00110011', '00001111'],\n        'Gray Counter': ['01100110', '00111100', '00001111'],\n        'Walking One': ['10000000', '00100000', '00001000']\n    };\n    if (!choices[preset]) throw Error('Invalid pattern preset: ' + preset);\n    return {\n        preset: preset,\n        bitRate: bitRate,\n        bits: choices[preset]\n    };\n}\nfunction seqInfo() {\n    const s = seqSettings();\n    ui.set('seqInfo', s.preset + ' | ' + s.bitRate + ' bit/s | 8 bits per sequence (period ' +\n        (8000 / s.bitRate).toFixed(3) + ' ms) | ' + s.bits.join(' / '));\n}\nfunction seqPreview() {\n    const s = seqSettings(),\n        x = [],\n        lanes = [[], [], []];\n    for (let i = 0; i < 512; i++) {\n        x.push(i * 1000 / (s.bitRate * 16));\n        const index = Math.floor(i / 16) % 8;\n        for (let k = 0; k < 3; k++)lanes[k].push(Number(s.bits[k].charAt(index)));\n    }\n    plots.clear('seqChart');\n    for (let k = 0; k < 3; k++)plots.setSeries('seqChart', 'PREVIEW DIO' + k, x, lanes[k]);\n    ui.set('seqStatus', 'MATHEMATICAL PREVIEW ONLY — NO AD3 OUTPUT');\n}\nfunction seqStart() {\n    try {\n        const s = seqSettings();\n        if (Patterns1.running && !Patterns1.stop()) throw Error('Previous Patterns stop failed: ' + Patterns1.lastError);\n        if (!StaticIO.stop()) throw Error('StaticIO release failed: ' + StaticIO.lastError);\n        if (!Patterns1.runSequence([0, 1, 2], s.bits, s.bitRate)) throw Error(Patterns1.lastError);\n        const st = Patterns1.status();\n        ui.set('seqStatus', (st.simulation ? 'SIMULATION ONLY' : 'RUNNING HARDWARE') + ' | ' + s.preset +\n            ' / ' + st.sequenceActualBitRateHz.toFixed(3) + ' bit/s / repeat ' + st.sequenceRepeatFactor);\n        print('Sequence started: ' + s.preset + ' ' + st.sequenceActualBitRateHz.toFixed(3) + ' bits/s ' +\n            (st.simulation ? 'SIMULATION' : 'PHYSICAL'));\n    } catch (e) {\n        const safe = Patterns1.stop();\n        const msg = 'SEQUENCE START ERROR: ' + String(e) + (safe ? ' / output release requested' : ' / OUTPUT STOP FAILED: ' + Patterns1.lastError);\n        ui.set('seqStatus', msg);\n        print(msg);\n    }\n}\nfunction seqStop() {\n    const safe = Patterns1.stop();\n    ui.set('seqStatus', safe ? 'SEQUENCE STOPPED / OUTPUTS Z' : 'DANGER: stop not confirmed: ' + Patterns1.lastError);\n    print('Sequence stop: ' + (safe ? 'OUTPUTS RELEASED' : 'FAILED: ' + Patterns1.lastError));\n}\n// Search for the repeating bit period using the middle of each bit cell.\n// Since DigitalIn can start at any point in the cycle, search phase offsets\n// across the entire 8-bit period, never assuming input/output trigger sync.\nfunction seqAnalyze(words, rate, st) {\n    const bits = st.sequenceBitStrings,\n        bitRate = st.sequenceActualBitRateHz;\n    const n = words.length,\n        spb = rate / bitRate,\n        period = spb * bits[0].length;\n    if (n < 128 || !isFinite(spb) || spb < 8) throw Error('DigitalIn sampling must be >=8× bit rate');\n    const x = [],\n        lanes = [[], [], []];\n    let matches = 0,\n        changes = 0,\n        secondChanges = 0;\n    for (let i = 0; i < n; i++) {\n        const word = Number(words[i]);\n        x.push(i * 1000 / rate);\n        for (let k = 0; k < 3; k++) {\n            const input = (word >>> (k + 3)) & 1;\n            lanes[k].push(input);\n            if (input === ((word >>> k) & 1)) matches++;\n            if (i > 0 && input !== lanes[k][i - 1]) {\n                changes++;\n                if (i >= n / 2) secondChanges++;\n            }\n        }\n    }\n    plots.clear('seqChart');\n    for (let k = 0; k < 3; k++)plots.setSeries('seqChart', 'DIO' + (k + 3) + ' / physical', x, lanes[k]);\n    const agreement = 100 * matches / (3 * n);\n    const checks = Math.min(40, Math.floor((n - period - 2) / spb));\n    if (checks < 8) throw Error('Capture too short for a sequence validation');\n    let best = -1,\n        phaseBest = 0;\n    const end = Math.min(Math.floor(period), Math.floor(n - (checks + 1) * spb));\n    for (let phase = 0; phase <= end; phase++) {\n        let valid = 0;\n        for (let j = 0; j < checks; j++) {\n            const index = Math.round(phase + j * spb);\n            if (index < 0 || index >= n) continue;\n            for (let k = 0; k < 3; k++)if (lanes[k][index] === Number(bits[k].charAt(j % bits[k].length))) valid++;\n        }\n        if (valid > best) {\n            best = valid;\n            phaseBest = phase;\n        }\n    }\n    const patternMatch = 100 * best / (3 * checks);\n    const pass = agreement >= 99 && patternMatch >= 97 && changes >= 12 && secondChanges >= 4;\n    const status = (pass ? 'PASS' : 'CHECK') + ' | ' + st.sequenceActualBitRateHz.toFixed(2) + ' bit/s' +\n        ' | loopback ' + agreement.toFixed(2) + '% | pattern match ' + patternMatch.toFixed(1) + '%' +\n        ' | transitions ' + changes + ' (second half ' + secondChanges + ') | phase ' + phaseBest;\n    print('Sequence: ' + status);\n    return status;\n}\nfunction seqCapture(verify) {\n    if (Patterns1.simulation) {\n        seqPreview();\n        print('Sequence: SIMULATION ONLY / no physical verification');\n        return;\n    }\n    let result = '';\n    try {\n        if (verify) {\n            const s = seqSettings();\n            if (Patterns1.running && !Patterns1.stop()) throw Error('Previous Pattern stop failed: ' + Patterns1.lastError);\n            if (!StaticIO.stop()) throw Error('StaticIO release failed: ' + StaticIO.lastError);\n            if (!Patterns1.runSequence([0, 1, 2], s.bits, s.bitRate)) throw Error(Patterns1.lastError);\n        } else if (!Patterns1.running || Patterns1.status().mode !== 'Sequence')\n            throw Error('Press START SEQUENCE first');\n        const st = Patterns1.status();\n        if (st.mode !== 'Sequence' || !st.running) throw Error('Sequence is not running');\n        if (st.sdkStatusAvailable && !st.sdkRunning) throw Error('DigitalOut not Running: ' + st.sdkStateName);\n        const actual = st.sequenceActualBitRateHz;\n        Logic1.Time.Rate.value = Math.min(1000000, Math.max(20000, Math.round(actual * 32)));\n        Logic1.Time.Samples.value = 4096;\n        if (!Logic1.single()) throw Error('DigitalIn arm failed: ' + Logic1.lastError);\n        if (!Logic1.wait(6)) throw Error('DigitalIn wait failed: ' + Logic1.lastError);\n        const diag = Logic1.captureDiagnostics();\n        print('Sequence DigitalIn: ' + diag.samplesReturned + '/' + diag.requestedSamples +\n            ' samples, ' + diag.bytesRequested + ' requested bytes, first/second transitions ' +\n            diag.firstHalfChanges + '/' + diag.secondHalfChanges);\n        result = seqAnalyze(Logic1.samples(), Logic1.sampleRateHz, st);\n        const after = Patterns1.status();\n        if (after.sdkStatusAvailable && !after.sdkRunning) result = 'CHECK: generator stopped during capture / ' + result;\n    } catch (e) {\n        Logic1.stop();\n        result = 'ERROR: ' + String(e);\n        print('Sequence error: ' + String(e));\n    }\n    finally {\n        if (verify) {\n            const stopped = Patterns1.stop();\n            result += stopped ? ' / ALL OUTPUTS RELEASED' : ' / DANGER: STOP NOT CONFIRMED: ' + Patterns1.lastError;\n        }\n        ui.set('seqStatus', result);\n        print('Sequence test: ' + result);\n    }\n}\n\n\nfunction onSeqCaptureClicked() {\n    seqCapture(false);\n}\nfunction onSeqVerifyClicked() {\n    seqCapture(true);\n}\n\n\n\nseqInfo();\n"
 }

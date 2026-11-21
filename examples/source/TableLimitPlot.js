@@ -1,3 +1,21 @@
+// ┌─ WFScript LEARNING LAB: Table-to-Plot — Limits and Observations
+// │ Level: Intermediate
+// │
+// │ GOAL: Turn operator-edited data into observed, nominal and tolerance-limit plots.
+// │ BEFORE RUN: No hardware. Values are entered in the table.
+// │ TRY FIRST: Edit an observation or limit in the profile table.
+// │ TRACE: `limitInputTable` → `onLimitInputTableValueChanged(rows)`; `plotEnteredData` →
+// │    `onPlotEnteredDataClicked()`.
+// │ EDIT SAFELY: Increase one observation beyond its upper bound and rerun validation to see
+// │    a failure.
+// │ REMEMBER: Keep raw operator data separate from derived PASS/FAIL calculations and
+// │    charts.
+// │
+// │ EVENT TIP: Select `limitInputTable` in Design mode → Properties → Events → Go to Handler.
+// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.
+// │ FULL LAB GUIDE: examples/guides/TableLimitPlot.md (in the complete source ZIP).
+// └────────────────────────────────────────────────────────────────────────────
+
 /**
  * WFScript Example: Table-to-Plot — Limits and Observations
  * Device: Simulation ONLY. No AD3 instrument is configured or enabled.
@@ -45,12 +63,15 @@ function readAndValidate() {
     if (table.length > 40)
         throw Error('The example supports up to 40 data rows.');
     const parsed = [];
-    table.forEach(function(row, index) {
+    table.forEach(function (row, index) {
         const number = index + 1;
         if (!Array.isArray(row) || row.length !== 5)
             throw Error('Row ' + number + ' requires five cells (X, nominal, observed, lower, upper).');
-        if (row.every(function(cell) { return cell === null || cell === undefined || String(cell).trim() === ''; }))
-            return; // an entirely blank row is intentional and safely ignored
+        if (row.every(function (cell) {
+            return cell === null || cell === undefined || String(cell).trim() === '';
+        }))
+            return;
+        // an entirely blank row is intentional and safely ignored
         const x = numericCell(row[0], number, 'X');
         const nominal = numericCell(row[1], number, 'Nominal');
         const observed = numericCell(row[2], number, 'Observed');
@@ -60,16 +81,25 @@ function readAndValidate() {
             throw Error('Row ' + number + ': lower limit is greater than upper limit.');
         if (nominal < lower || nominal > upper)
             throw Error('Row ' + number + ': nominal value must lie within its limits.');
-        parsed.push({ sourceRow: number, x, nominal, observed, lower, upper,
-                      inLimit: observed >= lower && observed <= upper });
+        parsed.push({
+            sourceRow: number,
+            x,
+            nominal,
+            observed,
+            lower,
+            upper,
+            inLimit: observed >= lower && observed <= upper
+        });
     });
     if (parsed.length < 2)
         throw Error('Enter at least two complete data rows.');
-    parsed.sort(function(a, b) { return a.x - b.x; });
+    parsed.sort(function (a, b) {
+        return a.x - b.x;
+    });
     for (let i = 1; i < parsed.length; ++i)
         if (parsed[i].x === parsed[i - 1].x)
             throw Error('Duplicate X value: ' + parsed[i].x + ' (rows ' +
-                        parsed[i - 1].sourceRow + ' and ' + parsed[i].sourceRow + ').');
+                parsed[i - 1].sourceRow + ' and ' + parsed[i].sourceRow + ').');
     return parsed;
 }
 
@@ -83,26 +113,52 @@ function drawAndSummarize(points) {
         title: 'Entered data — observed vs. limits',
         xLabel: 'X (user-defined)',
         yLabel: 'Value (user-defined)',
-        showGrid: true, showLegend: true, xAuto: true, yAuto: true
+        showGrid: true,
+        showLegend: true,
+        xAuto: true,
+        yAuto: true
     });
     plots.setSeries('limitCurve', 'Upper limit', x, points.map(p => p.upper),
-                    { color: '#efa46b', width: 1.5 });
+        {
+            color: '#efa46b',
+            width: 1.5
+        });
     plots.setSeries('limitCurve', 'Nominal', x, points.map(p => p.nominal),
-                    { color: '#8fa9f2', width: 2.0 });
+        {
+            color: '#8fa9f2',
+            width: 2.0
+        });
     plots.setSeries('limitCurve', 'Lower limit', x, points.map(p => p.lower),
-                    { color: '#efa46b', width: 1.5 });
+        {
+            color: '#efa46b',
+            width: 1.5
+        });
     plots.setSeries('limitCurve', 'Observed (entered)', x, points.map(p => p.observed),
-                    { color: '#46cfb8', width: 2.3, markerSize: 6 });
+        {
+            color: '#46cfb8',
+            width: 2.3,
+            markerSize: 6
+        });
     const bad = points.filter(p => !p.inLimit);
     if (bad.length)
         plots.setSeries('limitCurve', 'Out-of-limit points', bad.map(p => p.x),
-                        bad.map(p => p.observed),
-                        { color: '#ff5e81', width: 0.5, markerSize: 9 });
+            bad.map(p => p.observed),
+            {
+                color: '#ff5e81',
+                width: 0.5,
+                markerSize: 9
+            });
 
-    const results = points.map(function(p) {
-        return [String(p.sourceRow), String(p.x), p.nominal.toFixed(3),
-                p.observed.toFixed(3), p.lower.toFixed(3), p.upper.toFixed(3),
-                p.inLimit ? 'IN LIMITS' : 'OUTSIDE'];
+    const results = points.map(function (p) {
+        return [
+            String(p.sourceRow),
+            String(p.x),
+            p.nominal.toFixed(3),
+            p.observed.toFixed(3),
+            p.lower.toFixed(3),
+            p.upper.toFixed(3),
+            p.inLimit ? 'IN LIMITS' : 'OUTSIDE'
+        ];
     });
     ui.set('limitResults', results);
     ui.set('pointCount', points.length);
@@ -111,8 +167,8 @@ function drawAndSummarize(points) {
         Math.max(max, Math.abs(p.observed - p.nominal)), 0);
     ui.set('largestDeviation', maxDeviation);
     status('EVALUATED ' + points.length + ' point(s): ' +
-           (points.length - bad.length) + ' in limits, ' + bad.length +
-           ' outside. These are user-entered observations, NOT hardware measurements.');
+        (points.length - bad.length) + ' in limits, ' + bad.length +
+        ' outside. These are user-entered observations, NOT hardware measurements.');
 }
 
 function validateAndPlot() {
@@ -132,35 +188,57 @@ function resetValues() {
     validateAndPlot();
 }
 
-function safeClick(id, action) {
-    ui.on(id, 'clicked', function() {
-        try { action(); }
-        catch (error) { status('ERROR: ' + String(error)); }
+function performLimitAction(id, fn) {
+    try {
+        fn();
+    }
+    catch (error) {
+        status('ERROR: ' + String(error));
+    }
+}
+
+// Designer event: plotEnteredData / clicked
+/**
+ * CORE LESSON — Validates user-entered rows, then produces numerical results and a limit chart
+ * from the same input dataset.
+ */
+function onPlotEnteredDataClicked() {
+    performLimitAction('plotEnteredData', validateAndPlot);
+}
+// Designer event: restoreLimitData / clicked
+function onRestoreLimitDataClicked() {
+    performLimitAction('restoreLimitData', resetValues);
+}
+// Designer event: clearLimitResults / clicked
+function onClearLimitResultsClicked() {
+    performLimitAction('clearLimitResults', function () {
+        current = [];
+        inputDirty = true;
+        plots.clear('limitCurve');
+        ui.set('limitResults', []);
+        ui.set('pointCount', 0);
+        ui.set('outsideCount', 0);
+        ui.set('largestDeviation', 0);
+        status('Plot and analysis cleared. Your entered table values were kept.');
     });
 }
 
-safeClick('plotEnteredData', validateAndPlot);
-safeClick('restoreLimitData', resetValues);
-safeClick('clearLimitResults', function() {
-    current = []; inputDirty = true;
-    plots.clear('limitCurve');
-    ui.set('limitResults', []);
-    ui.set('pointCount', 0);
-    ui.set('outsideCount', 0);
-    ui.set('largestDeviation', 0);
-    status('Plot and analysis cleared. Your entered table values were kept.');
-});
-
-ui.on('limitInputTable', 'valueChanged', function(rows) {
+// Designer event: select limitInputTable -> Properties -> Events -> valueChanged
+function onLimitInputTableValueChanged(rows) {
     // An incomplete edit should not be evaluated until the operator commits it.
-    current = []; inputDirty = true;
+    current = [];
+    inputDirty = true;
     plots.clear('limitCurve');
     ui.set('limitResults', []);
     ui.set('pointCount', 0);
     ui.set('outsideCount', 0);
     ui.set('largestDeviation', 0);
     status('EDITED ' + rows.length + ' table row(s). Press VALIDATE & PLOT to refresh the graph.');
-});
+}
 
-try { validateAndPlot(); }
-catch (error) { status('ERROR: ' + String(error)); }
+try {
+    validateAndPlot();
+}
+catch (error) {
+    status('ERROR: ' + String(error));
+}

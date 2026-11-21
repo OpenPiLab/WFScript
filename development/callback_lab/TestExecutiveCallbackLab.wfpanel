@@ -1,0 +1,327 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Hardware-free native callback test demonstrating one reusable parameterized numeric procedure, token-bound completion, and cleanup.",
+  "scriptName": "CallbackTestLab.js",
+  "activePageId": "callbackLab",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": true
+  },
+  "pages": [
+    {
+      "id": "callbackLab",
+      "name": "Callback Lab",
+      "width": 1320,
+      "height": 935,
+      "controls": [
+        {
+          "id": "heading",
+          "type": "label",
+          "text": "PARAMETERIZED CALLBACK TEST LAB — No instrument required",
+          "x": 22,
+          "y": 20,
+          "width": 1260,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "instructions",
+          "type": "label",
+          "text": "One reusable voltage procedure. Each step passes its own JSON parameters. The native executive waits for TestRunner.complete(token, result), checks limits, and archives results.",
+          "x": 22,
+          "y": 80,
+          "width": 1260,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "stationPass",
+          "type": "button",
+          "text": "RUN CALLBACK TEST",
+          "x": 25,
+          "y": 160,
+          "width": 365,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackRun",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "stationFail",
+          "type": "button",
+          "text": "STOP + CLEANUP",
+          "x": 420,
+          "y": 160,
+          "width": 365,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackStop",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "stationReset",
+          "type": "button",
+          "text": "RESET",
+          "x": 815,
+          "y": 160,
+          "width": 365,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackReset",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "stationSummary",
+          "type": "label",
+          "text": "READY — Edit callback step parameters in Visual Test Sequence Editor.",
+          "x": 20,
+          "y": 830,
+          "width": 1260,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "stationSequence",
+          "type": "test_sequence",
+          "text": "Controller Functional Test",
+          "x": 20,
+          "y": 245,
+          "width": 400,
+          "height": 555,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "defaultSteps": "Initialize test station|Verify V+ supply|Verify V− supply|Verify clock frequency|Verify PWM duty cycle|Finalize test summary|Restore station state",
+            "maxSteps": 64,
+            "showProgress": true,
+            "showElapsed": true,
+            "showNumbers": true,
+            "autoScroll": true,
+            "compactMode": false
+          }
+        },
+        {
+          "id": "stationTable",
+          "type": "measurement_table",
+          "text": "Measurement Results",
+          "x": 430,
+          "y": 245,
+          "width": 475,
+          "height": 555,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "decimals": 3,
+            "maxRows": 100,
+            "headers": "Measurement|Actual|Acceptance limits|Result"
+          }
+        },
+        {
+          "id": "stationLog",
+          "type": "event_log",
+          "text": "Test Station Event Log",
+          "x": 915,
+          "y": 245,
+          "width": 365,
+          "height": 555,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// One small operator script. All test logic lives in CallbackTestSteps.mjs.\nfunction onCallbackRun(){if(!TestRunner.run())print('TEST RUN: '+TestRunner.lastError);}\nfunction onCallbackStop(){if(!TestRunner.terminate())print('TEST STOP: '+TestRunner.lastError);}\nfunction onCallbackReset(){if(!TestRunner.reset())print('TEST RESET: '+TestRunner.lastError);}\nTestRunner.onFinished(function(summary){\n    ui.set('stationSummary',String(summary.state).toUpperCase()+' — '+\n        summary.passedMeasurements+' passed measurements / '+summary.totalSteps+' steps');\n    print('Callback Test Lab finished '+JSON.stringify(summary));\n});\n",
+  "libraries": [
+    {
+      "name": "CallbackTestSteps.mjs",
+      "source": "// Hardware-free demonstration of the RC1.5.9 native callback contract.\n// The editor defines the step parameters, result limits, timing and sequence.\nexport function setup(step) {\n    // Simulate asynchronous preparation; completing an action with true.\n    setTimeout(function(){\n        if (!TestRunner.isActive(step.token)) return;\n        TestRunner.complete(step.token, true);\n    }, 50);\n}\n\nexport function readVoltage(step) {\n    var voltage=Number(step.params.voltage);\n    setTimeout(function(){\n        // Never issue follow-up commands from an old or canceled callback.\n        if (!TestRunner.isActive(step.token)) return;\n        // Here a real driver would return its measured voltage.\n        TestRunner.complete(step.token, voltage - 0.001);\n    }, 120);\n}\n\nexport function cleanup(step) {\n    // In physical tests: send output OFF and verify the actual OFF readback.\n    setTimeout(function(){\n        if (!TestRunner.isActive(step.token)) return;\n        TestRunner.complete(step.token, true);\n    }, 60);\n}\n"
+    }
+  ],
+  "testDefinition": {
+    "schemaVersion": 1,
+    "id": "callback-lab-159",
+    "title": "Parameterized Callback Test Lab",
+    "config": {
+      "sequenceId": "stationSequence",
+      "tableId": "stationTable",
+      "logId": "stationLog",
+      "summaryId": "stationSummary",
+      "stopOnFailure": true,
+      "totalTimeoutMs": 10000
+    },
+    "steps": [
+      {
+        "id": "prepare",
+        "name": "SETUP — Prepare test station",
+        "group": "setup",
+        "type": "action",
+        "mode": "callback",
+        "handler": "setup",
+        "timeoutMs": 5000
+      },
+      {
+        "id": "measure_500",
+        "name": "Read 5.00 V",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "readVoltage",
+        "parameters": {
+          "voltage": 5.0
+        },
+        "limits": {
+          "low": 4.95,
+          "high": 5.05
+        },
+        "timeoutMs": 2500,
+        "unit": "V"
+      },
+      {
+        "id": "measure_475",
+        "name": "Read 4.75 V",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "readVoltage",
+        "parameters": {
+          "voltage": 4.75
+        },
+        "limits": {
+          "low": 4.7,
+          "high": 4.8
+        },
+        "timeoutMs": 2500,
+        "unit": "V"
+      },
+      {
+        "id": "measure_450",
+        "name": "Read 4.50 V",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "readVoltage",
+        "parameters": {
+          "voltage": 4.5
+        },
+        "limits": {
+          "low": 4.45,
+          "high": 4.55
+        },
+        "timeoutMs": 2500,
+        "unit": "V"
+      },
+      {
+        "id": "measure_425",
+        "name": "Read 4.25 V",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "readVoltage",
+        "parameters": {
+          "voltage": 4.25
+        },
+        "limits": {
+          "low": 4.2,
+          "high": 4.3
+        },
+        "timeoutMs": 2500,
+        "unit": "V"
+      },
+      {
+        "id": "measure_400",
+        "name": "Read 4.00 V",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "readVoltage",
+        "parameters": {
+          "voltage": 4.0
+        },
+        "limits": {
+          "low": 3.95,
+          "high": 4.05
+        },
+        "timeoutMs": 2500,
+        "unit": "V"
+      },
+      {
+        "id": "off",
+        "name": "CLEANUP — Verify outputs OFF",
+        "group": "cleanup",
+        "type": "action",
+        "mode": "callback",
+        "handler": "cleanup",
+        "timeoutMs": 3000
+      }
+    ]
+  },
+  "testLibrary": "CallbackTestSteps.mjs",
+  "runInformation": {},
+  "reportStorage": {
+    "autoSave": false,
+    "directory": ""
+  }
+}

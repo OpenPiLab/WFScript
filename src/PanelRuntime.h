@@ -18,10 +18,16 @@
 #include <memory>
 #include <utility>
 
+class ProtocolBridge;
 class PlotBridge;
 class ConsoleBridge;
 class ScriptLibraryBridge;
 class TestRunnerBridge;
+class ScriptTimerManager;
+class ScriptUtilityBridge;
+class SqliteBridge;
+class CommunicationBridge;
+class BinaryBridge;
 
 // One persistent JS engine and one DWF handle, both living on an isolated QThread.
 // Never accesses QWidget pointers. UI changes cross by queued signals.
@@ -40,9 +46,11 @@ public slots:
                const QJsonObject& testDefinition = {}, const QString& testLibrary = {},
                const QJsonObject& runInformation = {},
                const QVariantMap& runInformationInput = {},
-               const QJsonObject& reportStorage = {});
+               const QJsonObject& reportStorage = {},
+               const QJsonArray& panelData = {});
     void eventFromPanel(const QString& id,const QString& name,const QVariant& value);
     void stop();
+    void completeUtilityDialog(int id, const QVariantMap& result);
 signals:
     void printed(const QString& text);
     void consoleClearRequested();
@@ -54,6 +62,8 @@ signals:
     void lifecycleChanged(const QString& state, const QString& detail);
     void stopped();
     void controlUpdate(const QString& id,const QVariant& value);
+    void panelDataUpdate(const QString& name,const QVariant& value);
+    void utilityDialogRequested(int id,const QString& kind,const QVariantMap& options);
     void scopeFrameReady(const ScopeFrame& frame);
     void plotCommandReady(const PlotCommand& command);
 private:
@@ -68,7 +78,14 @@ private:
     QMutex m_engineMutex; // protects pointer during cross-thread interrupt
     PanelUiBridge* m_ui=nullptr;
     TestRunnerBridge* m_testRunner=nullptr;
+    ScriptTimerManager* m_timers=nullptr;
+    ScriptUtilityBridge* m_scriptUtility=nullptr;
+    SqliteBridge* m_database=nullptr;
+    CommunicationBridge* m_communications=nullptr;
+    BinaryBridge* m_binary=nullptr;
+    ProtocolBridge* m_protocol=nullptr;
     QSet<QString> m_runInformationIds;
+    QSet<QString> m_uartTerminalIds; // native receive subscribers on any Page
     ScopeBridge* m_scope=nullptr;
     PlotBridge* m_plots=nullptr;
     WavegenBridge* m_wavegen=nullptr;

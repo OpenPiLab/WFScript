@@ -5,10 +5,14 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const source=fs.readFileSync(path.join(root,'examples/source/AD3HardwareTestStation.js'),'utf8');
+const panel=JSON.parse(fs.readFileSync(path.join(root,'examples/panels/AD3HardwareTestStation.wfpanel'),'utf8'));
 const handlers=new Map(); const fields=new Map();
 let runs=0,resets=0,terminations=0,exports=0,finished;
 let status='idle';
-const ui={on(id,event,handler){handlers.set(id+':'+event,handler)},set(id,val){fields.set(id,val)},get(){return null}};
+const ui={
+ on(){throw Error('This example uses saved designer events, not ui.on()');},
+ set(id,val){fields.set(id,val)},get(){return null}
+};
 const TestRunner={lastError:'',run(){runs++;status='running';return true},
  terminate(){terminations++;status='aborted';return true},
  reset(){resets++;status='idle';return true},
@@ -17,7 +21,19 @@ const TestRunner={lastError:'',run(){runs++;status='running';return true},
  report(){return {executionId:runs>0?'run-001':'',instrument:{mode:'hardware'},steps:[],measurements:[],runInfo:{uutId:'TEST1'}}},
  archiveInfo(){return {status:'saved',path:'C:/test/reports/run-001.json'}},
  exportReport(kind){exports++;return 'C:/test/reports/export.'+kind}}
-vm.runInNewContext(source,{ui,TestRunner,print(){},String,Object}, {filename:'AD3HardwareTestStation.js'});
+const context=vm.createContext({ui,TestRunner,print(){},String,Object});
+vm.runInContext(source,context,{filename:'AD3HardwareTestStation.js'});
+// Dispatch through the same saved control.events mappings the native Panel uses.
+for(const page of panel.pages)for(const ctrl of page.controls){
+ for(const [event,binding] of Object.entries(ctrl.events||{})){
+  if(!binding.enabled)continue;
+  const handler=context[binding.handler];
+  assert.equal(typeof handler,'function',ctrl.id+':'+event+' -> '+binding.handler);
+  const key=ctrl.id+':'+event;
+  assert.ok(!handlers.has(key),'duplicate event: '+key);
+  handlers.set(key,handler);
+ }
+}
 for(const id of ['uutRun','stationRun','stationStop','uutReset','stationReset','stationReportButton','reportRefresh','reportExportJson','reportExportCsv'])assert.ok(handlers.has(id+':clicked'),id);
 assert.equal(runs,0,'Startup must not automatically run a test');
 handlers.get('uutRun:clicked')();assert.equal(runs,1);

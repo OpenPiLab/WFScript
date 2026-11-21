@@ -1,4 +1,5 @@
 #include "PanelLabelWidget.h"
+#include "InstrumentVisuals.h"
 
 #include <QPainter>
 #include <QPaintEvent>
@@ -40,7 +41,7 @@ void PanelLabelWidget::paintEvent(QPaintEvent* event) {
     if(!m_borderVisible || width() < 2 || height() < 2)
         return;
 
-    const bool light = parentWidget() && parentWidget()->property("wfPanelLight").toBool();
+    const bool light = InstrumentVisuals::light(this);
     const QColor border = light ? QColor("#a4b9cb") : QColor("#56718a");
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, m_cornerRadius > 0);

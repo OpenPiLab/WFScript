@@ -1,0 +1,1012 @@
+{
+  "schemaVersion": 1,
+  "id": "rigol-loopback-065",
+  "title": "Rigol Four-Instrument Voltage and Waveform Verification",
+  "config": {
+    "sequenceId": "rigolTestSequence",
+    "tableId": "rigolTestTable",
+    "logId": "rigolTestLog",
+    "stopOnFailure": false,
+    "totalTimeoutMs": 480000
+  },
+  "steps": [
+    {
+      "id": "preflight",
+      "name": "SETUP · verify wiring, four connections and outputs OFF",
+      "description": "No output is changed. Requires operator wiring acknowledgement and reads physical CH1 OFF states.",
+      "group": "setup",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 40000,
+      "handlers": {
+        "start": "preflight",
+        "poll": "pollPreflight"
+      }
+    },
+    {
+      "id": "psu_500",
+      "name": "DP932A CH1 5.00 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.9,
+        "high": 5.1
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power500",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_500",
+      "name": "DM858 DCV at 5.00 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.925,
+        "high": 5.075
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm500",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_475",
+      "name": "DP932A CH1 4.75 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.65,
+        "high": 4.85
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power475",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_475",
+      "name": "DM858 DCV at 4.75 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.675,
+        "high": 4.825
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm475",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_450",
+      "name": "DP932A CH1 4.50 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.4,
+        "high": 4.6
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power450",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_450",
+      "name": "DM858 DCV at 4.50 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.425,
+        "high": 4.575
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm450",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_425",
+      "name": "DP932A CH1 4.25 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.15,
+        "high": 4.35
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power425",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_425",
+      "name": "DM858 DCV at 4.25 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4.175,
+        "high": 4.325
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm425",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_400",
+      "name": "DP932A CH1 4.00 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.9,
+        "high": 4.1
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power400",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_400",
+      "name": "DM858 DCV at 4.00 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.925,
+        "high": 4.075
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm400",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_375",
+      "name": "DP932A CH1 3.75 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.65,
+        "high": 3.85
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power375",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_375",
+      "name": "DM858 DCV at 3.75 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.675,
+        "high": 3.825
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm375",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_350",
+      "name": "DP932A CH1 3.50 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.4,
+        "high": 3.6
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power350",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_350",
+      "name": "DM858 DCV at 3.50 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.425,
+        "high": 3.575
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm350",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_325",
+      "name": "DP932A CH1 3.25 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.15,
+        "high": 3.35
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power325",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_325",
+      "name": "DM858 DCV at 3.25 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 3.175,
+        "high": 3.325
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm325",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_300",
+      "name": "DP932A CH1 3.00 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.9,
+        "high": 3.1
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power300",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_300",
+      "name": "DM858 DCV at 3.00 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.925,
+        "high": 3.075
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm300",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_275",
+      "name": "DP932A CH1 2.75 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.65,
+        "high": 2.85
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power275",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_275",
+      "name": "DM858 DCV at 2.75 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.675,
+        "high": 2.825
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm275",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_250",
+      "name": "DP932A CH1 2.50 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.4,
+        "high": 2.6
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power250",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_250",
+      "name": "DM858 DCV at 2.50 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.425,
+        "high": 2.575
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm250",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_225",
+      "name": "DP932A CH1 2.25 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.15,
+        "high": 2.35
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power225",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_225",
+      "name": "DM858 DCV at 2.25 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 2.175,
+        "high": 2.325
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm225",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_200",
+      "name": "DP932A CH1 2.00 V readback",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 1.9,
+        "high": 2.1
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "power200",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "dmm_200",
+      "name": "DM858 DCV at 2.00 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 1.925,
+        "high": 2.075
+      },
+      "unit": "V",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 35000,
+      "handlers": {
+        "start": "dmm200",
+        "poll": "pollValue"
+      }
+    },
+    {
+      "id": "psu_off",
+      "name": "DP932A CH1 OFF (readback verified)",
+      "description": "Remove PSU CH1 output before starting generator/scope tests.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 32000,
+      "handlers": {
+        "start": "powerOff",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "capture_sine_1Vpp_1000Hz",
+      "name": "Sine 1 Vpp @ 1000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_sine_1Vpp_1000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_sine_1Vpp_1000Hz",
+      "name": "Sine 1 Vpp @ 1000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.85,
+        "high": 1.15
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_sine_1Vpp_1000Hz"
+    },
+    {
+      "id": "frequency_sine_1Vpp_1000Hz",
+      "name": "Sine 1 Vpp @ 1000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 970.0,
+        "high": 1030.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_sine_1Vpp_1000Hz"
+    },
+    {
+      "id": "shape_sine_1Vpp_1000Hz",
+      "name": "Sine 1 Vpp @ 1000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.32,
+        "high": 0.4
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_sine_1Vpp_1000Hz"
+    },
+    {
+      "id": "capture_sine_1Vpp_5000Hz",
+      "name": "Sine 1 Vpp @ 5000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_sine_1Vpp_5000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_sine_1Vpp_5000Hz",
+      "name": "Sine 1 Vpp @ 5000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.85,
+        "high": 1.15
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_sine_1Vpp_5000Hz"
+    },
+    {
+      "id": "frequency_sine_1Vpp_5000Hz",
+      "name": "Sine 1 Vpp @ 5000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4850.0,
+        "high": 5150.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_sine_1Vpp_5000Hz"
+    },
+    {
+      "id": "shape_sine_1Vpp_5000Hz",
+      "name": "Sine 1 Vpp @ 5000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.32,
+        "high": 0.4
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_sine_1Vpp_5000Hz"
+    },
+    {
+      "id": "capture_sine_2Vpp_1000Hz",
+      "name": "Sine 2 Vpp @ 1000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_sine_2Vpp_1000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_sine_2Vpp_1000Hz",
+      "name": "Sine 2 Vpp @ 1000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 1.7,
+        "high": 2.3
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_sine_2Vpp_1000Hz"
+    },
+    {
+      "id": "frequency_sine_2Vpp_1000Hz",
+      "name": "Sine 2 Vpp @ 1000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 970.0,
+        "high": 1030.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_sine_2Vpp_1000Hz"
+    },
+    {
+      "id": "shape_sine_2Vpp_1000Hz",
+      "name": "Sine 2 Vpp @ 1000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.32,
+        "high": 0.4
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_sine_2Vpp_1000Hz"
+    },
+    {
+      "id": "capture_sine_2Vpp_5000Hz",
+      "name": "Sine 2 Vpp @ 5000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_sine_2Vpp_5000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_sine_2Vpp_5000Hz",
+      "name": "Sine 2 Vpp @ 5000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 1.7,
+        "high": 2.3
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_sine_2Vpp_5000Hz"
+    },
+    {
+      "id": "frequency_sine_2Vpp_5000Hz",
+      "name": "Sine 2 Vpp @ 5000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4850.0,
+        "high": 5150.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_sine_2Vpp_5000Hz"
+    },
+    {
+      "id": "shape_sine_2Vpp_5000Hz",
+      "name": "Sine 2 Vpp @ 5000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.32,
+        "high": 0.4
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_sine_2Vpp_5000Hz"
+    },
+    {
+      "id": "capture_square_1Vpp_1000Hz",
+      "name": "Square 1 Vpp @ 1000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_square_1Vpp_1000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_square_1Vpp_1000Hz",
+      "name": "Square 1 Vpp @ 1000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.85,
+        "high": 1.15
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_square_1Vpp_1000Hz"
+    },
+    {
+      "id": "frequency_square_1Vpp_1000Hz",
+      "name": "Square 1 Vpp @ 1000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 970.0,
+        "high": 1030.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_square_1Vpp_1000Hz"
+    },
+    {
+      "id": "shape_square_1Vpp_1000Hz",
+      "name": "Square 1 Vpp @ 1000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.43,
+        "high": 0.55
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_square_1Vpp_1000Hz"
+    },
+    {
+      "id": "capture_square_1Vpp_5000Hz",
+      "name": "Square 1 Vpp @ 5000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_square_1Vpp_5000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_square_1Vpp_5000Hz",
+      "name": "Square 1 Vpp @ 5000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.85,
+        "high": 1.15
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_square_1Vpp_5000Hz"
+    },
+    {
+      "id": "frequency_square_1Vpp_5000Hz",
+      "name": "Square 1 Vpp @ 5000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4850.0,
+        "high": 5150.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_square_1Vpp_5000Hz"
+    },
+    {
+      "id": "shape_square_1Vpp_5000Hz",
+      "name": "Square 1 Vpp @ 5000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.43,
+        "high": 0.55
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_square_1Vpp_5000Hz"
+    },
+    {
+      "id": "capture_square_2Vpp_1000Hz",
+      "name": "Square 2 Vpp @ 1000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_square_2Vpp_1000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_square_2Vpp_1000Hz",
+      "name": "Square 2 Vpp @ 1000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 1.7,
+        "high": 2.3
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_square_2Vpp_1000Hz"
+    },
+    {
+      "id": "frequency_square_2Vpp_1000Hz",
+      "name": "Square 2 Vpp @ 1000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 970.0,
+        "high": 1030.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_square_2Vpp_1000Hz"
+    },
+    {
+      "id": "shape_square_2Vpp_1000Hz",
+      "name": "Square 2 Vpp @ 1000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.43,
+        "high": 0.55
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_square_2Vpp_1000Hz"
+    },
+    {
+      "id": "capture_square_2Vpp_5000Hz",
+      "name": "Square 2 Vpp @ 5000 Hz · configure / capture CH1",
+      "description": "Enable DG902 CH1, configure MHO954 CH1, acquire fresh STOPped 1000-point capture.",
+      "group": "main",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 120000,
+      "handlers": {
+        "start": "capture_square_2Vpp_5000Hz",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "amplitude_square_2Vpp_5000Hz",
+      "name": "Square 2 Vpp @ 5000 Hz · peak-to-peak",
+      "description": "Scope-derived extrema; ±15% voltage acceptance.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 1.7,
+        "high": 2.3
+      },
+      "unit": "Vpp",
+      "mode": "once",
+      "handler": "actual_vpp_square_2Vpp_5000Hz"
+    },
+    {
+      "id": "frequency_square_2Vpp_5000Hz",
+      "name": "Square 2 Vpp @ 5000 Hz · frequency",
+      "description": "Scope waveform rising-edge hysteretic period estimate; ±3%.",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 4850.0,
+        "high": 5150.0
+      },
+      "unit": "Hz",
+      "mode": "once",
+      "handler": "actual_hz_square_2Vpp_5000Hz"
+    },
+    {
+      "id": "shape_square_2Vpp_5000Hz",
+      "name": "Square 2 Vpp @ 5000 Hz · AC RMS / Vpp",
+      "description": "Waveform sanity check: sine ≈0.354, square ≈0.500 (no DC).",
+      "group": "main",
+      "type": "numeric",
+      "limits": {
+        "low": 0.43,
+        "high": 0.55
+      },
+      "unit": "ratio",
+      "mode": "once",
+      "handler": "actual_shape_square_2Vpp_5000Hz"
+    },
+    {
+      "id": "cleanup_gen",
+      "name": "CLEANUP · DG902 CH1 OFF + verify",
+      "description": "Always attempt this on completed, failed or gracefully stopped runs.",
+      "group": "cleanup",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 32000,
+      "handlers": {
+        "start": "cleanupGen",
+        "poll": "pollDone"
+      }
+    },
+    {
+      "id": "cleanup_psu",
+      "name": "CLEANUP · DP932A CH1 OFF + verify",
+      "description": "Attempted independently even if generator cleanup fails.",
+      "group": "cleanup",
+      "type": "action",
+      "mode": "poll",
+      "intervalMs": 80,
+      "timeoutMs": 32000,
+      "handlers": {
+        "start": "cleanupPsu",
+        "poll": "pollDone"
+      }
+    }
+  ]
+}

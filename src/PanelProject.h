@@ -31,6 +31,7 @@ public:
     QString scriptName = QStringLiteral("Panel Script.js");
     QString script;
     QJsonArray libraries;
+    QJsonArray panelData; // typed project-owned shared variables (defaults only)
     // One authoritative, data-only native test definition per project.
     QJsonObject testDefinition;
     QJsonObject runInformation; // UUT/operator field schema; no per-run values

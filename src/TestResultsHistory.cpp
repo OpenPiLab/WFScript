@@ -13,7 +13,7 @@
 #include <algorithm>
 
 namespace {
-constexpr qint64 kMaxReportBytes=16LL*1024*1024;
+constexpr qint64 kMaxReportBytes=128LL*1024*1024;
 bool fail(QString* error,const QString& why) {
     if(error)*error=why;
     return false;
@@ -66,11 +66,11 @@ bool TestResultsHistory::read(const QString& filePath,QJsonObject* record,QStrin
     if(!info.isFile() || !info.isReadable() || info.suffix().compare(QStringLiteral("json"),Qt::CaseInsensitive)!=0)
         return fail(error,QStringLiteral("Not a readable JSON report: %1").arg(filePath));
     if(info.size()<=0 || info.size()>kMaxReportBytes)
-        return fail(error,QStringLiteral("Report size exceeds the 16 MB history viewer limit: %1").arg(filePath));
+        return fail(error,QStringLiteral("Report size exceeds the 128 MB history viewer limit: %1").arg(filePath));
     QFile file(filePath);
     if(!file.open(QIODevice::ReadOnly))return fail(error,QStringLiteral("Cannot open report: %1").arg(file.errorString()));
     const QByteArray bytes=file.read(kMaxReportBytes+1);
-    if(bytes.size()>kMaxReportBytes)return fail(error,QStringLiteral("Report exceeds 16 MB limit"));
+    if(bytes.size()>kMaxReportBytes)return fail(error,QStringLiteral("Report exceeds 128 MB limit"));
     QJsonParseError parse;
     const QJsonDocument doc=QJsonDocument::fromJson(bytes,&parse);
     if(parse.error!=QJsonParseError::NoError || !doc.isObject())

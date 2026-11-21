@@ -3,8 +3,13 @@
 #include <QString>
 #include <QVariantMap>
 #include <QVector>
+#include <QHash>
+#include <QJSValue>
+#include <QElapsedTimer>
 #include <QtGlobal>
 class DwfRuntime;
+class QJSEngine;
+class QTimer;
 class StaticIOBridge;
 
 // Cached value is the REQUESTED output: 0 low, 1 high, 2 high impedance.
@@ -111,6 +116,7 @@ class StaticIOBridge final : public QObject {
     Q_PROPERTY(QObject* Channel1 READ channel1 CONSTANT)
     Q_PROPERTY(QString lastError READ lastError)
     Q_PROPERTY(bool simulation READ simulation CONSTANT)
+    Q_PROPERTY(bool monitoring READ monitoring NOTIFY monitoringChanged)
 public:
     explicit StaticIOBridge(DwfRuntime* runtime,QObject* parent=nullptr);
     QObject* channel0(){return &m_ch0;}
@@ -125,8 +131,49 @@ public:
     Q_INVOKABLE QVariantMap status();
     Q_INVOKABLE QVariantMap capabilities();
     Q_INVOKABLE bool stop();
+    // v0.2-dev.4: opt-in, read-only host-polled DIO input events.
+    // Registering a callback never starts polling; startMonitor() is explicit.
+    Q_INVOKABLE bool onChange(int pin, const QJSValue& callback, const QVariantMap& options=QVariantMap());
+    Q_INVOKABLE void clearOnChange(int pin);
+    Q_INVOKABLE void clearAllOnChange();
+    Q_INVOKABLE bool startMonitor(const QVariantMap& options=QVariantMap());
+    Q_INVOKABLE void stopMonitor();
+    Q_INVOKABLE QVariantMap monitorStats() const;
+    bool monitoring() const;
+    // Only the persistent PanelRuntime may install an event loop-backed JS engine.
+    void setScriptEngine(QJSEngine* engine) { m_engine=engine; }
+    void shutdownMonitor(); // Release JS references before engine destruction.
+signals:
+    void monitoringChanged();
+    void inputChanged(int pin, int value, int previous, const QVariantMap& event);
+    void monitorFailed(const QString& reason);
+    void callbackStarted();
+    void callbackFinished();
+    void callbackFailed(const QString& context, const QJSValue& error);
 private:
+    struct Watch {
+        QJSValue callback;
+        QString edge;
+        int debounceMs=30;
+        int raw=0;
+        int stable=0;
+        qint64 rawSinceMs=0;
+    };
+    void pollMonitor();
+    bool readMonitorSnapshot(quint32* mask);
     DwfRuntime* m_runtime=nullptr;
+    QJSEngine* m_engine=nullptr; // borrowed, owner PanelRuntime; never accessed by GUI
+    QTimer* m_monitorTimer=nullptr; // created only on explicit startMonitor
+    QElapsedTimer m_monitorClock;
+    QHash<int,Watch> m_watches;
+    quint32 m_lastMonitorMask=0;
+    int m_pollIntervalMs=0;
+    quint64 m_monitorPolls=0;
+    quint64 m_monitorChanges=0;
+    quint64 m_monitorCallbacks=0;
+    quint64 m_monitorFailures=0;
+    qint64 m_lastPollUsec=0;
+    bool m_monitorShutdown=false;
     StaticIOGroup m_ch0;
     StaticIOGroup m_ch1;
     bool m_touched=false;

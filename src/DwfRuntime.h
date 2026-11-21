@@ -121,6 +121,12 @@ public:
     int logicLastValidSamples() const { return m_logicLastValidSamples; }
     int logicLastStateCode() const { return m_logicLastStateCode; }
     int logicLastBytesRequested() const { return m_logicLastBytesRequested; }
+    // Native SDK digital protocols. The owner is exclusive with Patterns,
+    // StaticIO output drivers, and an active Logic acquisition.
+    bool protocolExecute(const QString& protocol,const QString& action,
+                         const QVariantMap& args,QVariantMap* result,QString* error);
+    bool protocolStop(QString* error);
+    QString protocolOwner() const { return m_protocolOwner; }
     bool setupLogic(int samples, double requestedRateHz, double* effectiveRateHz, QString* error);
     bool logicStart(QString* error);
     bool logicStop(QString* error);
@@ -130,6 +136,8 @@ private:
     using H = int;
     QLibrary m_lib;
     H m_handle = 0;
+    QString m_protocolOwner;
+    bool m_logicActive = false;
     QString m_name;
     QString m_serial;
     int m_scopeSamples = 0;

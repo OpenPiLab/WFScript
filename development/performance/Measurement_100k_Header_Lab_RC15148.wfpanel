@@ -1,0 +1,219 @@
+{
+  "canvasHeight": 930,
+  "canvasWidth": 1360,
+  "controls": [
+    {
+      "id": "heading",
+      "type": "label",
+      "x": 30,
+      "y": 12,
+      "width": 1260,
+      "height": 44,
+      "text": "MEASUREMENT TABLE  ·  BUILT-IN HEADER & 100,000-RESULT STRESS LAB  ·  RC1.5.14.8",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "subTitle",
+      "type": "label",
+      "x": 30,
+      "y": 50,
+      "width": 1290,
+      "height": 32,
+      "text": "Test title, PASS/FAIL filter, selected-row Copy, CSV export and 100,000-result streaming. No hardware or TestRunner.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "startButton",
+      "type": "button",
+      "x": 30,
+      "y": 94,
+      "width": 190,
+      "height": 43,
+      "text": "STREAM TO 100,000",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "startStreaming"
+        }
+      }
+    },
+    {
+      "id": "stopButton",
+      "type": "button",
+      "x": 236,
+      "y": 94,
+      "width": 170,
+      "height": 43,
+      "text": "STOP STREAM",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "stopStreaming"
+        }
+      }
+    },
+    {
+      "id": "clearButton",
+      "type": "button",
+      "x": 422,
+      "y": 94,
+      "width": 175,
+      "height": 43,
+      "text": "RESET RESULTS",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "resetResults"
+        }
+      }
+    },
+    {
+      "id": "sampleButton",
+      "type": "button",
+      "x": 613,
+      "y": 94,
+      "width": 178,
+      "height": 43,
+      "text": "APPEND 1,000",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "appendManual"
+        }
+      }
+    },
+    {
+      "id": "verifyButton",
+      "type": "button",
+      "x": 807,
+      "y": 94,
+      "width": 180,
+      "height": 43,
+      "text": "CHECK LIMIT",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "checkLimit"
+        }
+      }
+    },
+    {
+      "id": "status",
+      "type": "label",
+      "x": 30,
+      "y": 147,
+      "width": 1290,
+      "height": 38,
+      "text": "READY — choose STREAM TO 100,000 or APPEND 1,000",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "notes",
+      "type": "label",
+      "x": 30,
+      "y": 187,
+      "width": 1290,
+      "height": 48,
+      "text": "Measurement Table toolbar: use the result filter (All, PASS, FAIL), select rows and Copy, export CSV. Clear View is hidden by default for native TestRunner safety. Scroll while streaming.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "measurementTable",
+      "type": "measurement_table",
+      "x": 30,
+      "y": 240,
+      "width": 1290,
+      "height": 530,
+      "text": "Measurement history - streaming validation",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "decimals": 3,
+        "maxRows": 100,
+        "headers": "Measurement|Actual|Limits|Result",
+        "showToolbar": true,
+        "showRowCount": true,
+        "showFilter": true,
+        "showCopyButton": true,
+        "showExportButton": true,
+        "showClearButton": false,
+        "autoScroll": true
+      }
+    },
+    {
+      "id": "diagnostics",
+      "type": "event_log",
+      "x": 30,
+      "y": 780,
+      "width": 1290,
+      "height": 135,
+      "text": "Stream Diagnostics",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "autoScroll": true,
+        "maxEntries": 4000,
+        "showSource": true,
+        "showTimestamp": true,
+        "title": "Measurement Diagnostics"
+      }
+    }
+  ],
+  "description": "RC1.5.14.8 Measurement Table header/toolbar, PASS/FAIL filtering, Copy, Export CSV and 100k streaming smoke; hardware-free.",
+  "format": "WFScriptPanel",
+  "libraries": [],
+  "script": "// RC1.5.14.8 Measurement Table header / virtual stress lab, hardware-free.\n// The production TestRunner normally owns this table. Here we send the\n// same incremental {append: ...} and {reset: true} updates directly.\n// Browser validation uses the separate archived .json fixture in this package.\nvar active=false, timer=0, sent=0, batches=0, run=0, errors=0;\nvar LIMIT=100000, PER_BATCH=1000;\nfunction log(level,message){\n    ui.set('diagnostics',{append:{level:level,source:'MeasureLab',message:message}});\n}\nfunction update(){\n    ui.set('status',(active?'STREAMING':'STOPPED')+'  |  sent='+sent+'/'+LIMIT+\n        '  |  batches='+batches+'  |  errors='+errors+'  |  TestRunner not required');\n}\nfunction makeBatch(count){\n    var start=sent,rows=[];\n    for(var j=0;j<count;++j){\n        var n=start+j, v=(n%200===0 ? 3.48 : 3.3+Math.sin(n/60)*0.018);\n        rows.push({name:'Voltage point '+n, value:Number(v.toFixed(5)),\n                   low:3.2,high:3.4,unit:'V'});\n    }\n    return rows;\n}\nfunction addBatch(count){\n    if(sent>=LIMIT)return false;\n    count=Math.min(count,LIMIT-sent);\n    var rows=makeBatch(count);\n    if(!ui.set('measurementTable',{append:rows})){\n        errors++;log('ERROR','append rejected near '+sent);\n        stopStreaming();return false;\n    }\n    sent+=count;batches++;\n    if(sent%10000<count || sent==LIMIT){\n        log('INFO','PROGRESS run='+run+' total='+sent+'/'+LIMIT+\n            ' callbackEpochMs='+Date.now());\n        update();\n    }\n    return true;\n}\nfunction tick(){\n    if(!active)return;\n    for(var k=0;k<2;++k){\n        if(!addBatch(PER_BATCH)){stopStreaming();return;}\n    }\n    if(sent>=LIMIT){stopStreaming();log('PASS','Reached 100000 measurements; expected 500 FAIL, 99500 PASS. Test title/filter, Copy and Export CSV.');}\n}\nfunction startStreaming(){\n    if(active)return;\n    if(sent>=LIMIT){log('WARN','Already at capacity; Reset Results before another run.');return;}\n    active=true;run++;\n    log('INFO','RUN '+run+' start at row '+sent);\n    timer=setInterval(tick,35);\n    update();\n}\nfunction stopStreaming(){\n    if(timer){clearInterval(timer);timer=0;}\n    active=false;\n    update();\n    log('PASS','STOP with '+sent+' measurements; errors='+errors+' callbackEpochMs='+Date.now());\n}\nfunction resetResults(){\n    stopStreaming();\n    ui.set('measurementTable',{reset:true});\n    sent=0;batches=0;errors=0;\n    log('INFO','RESET: no full-array replacement; history cleared');\n    update();\n}\nfunction appendManual(){\n    if(sent>=LIMIT){log('WARN','100000-measurement limit reached');return;}\n    addBatch(PER_BATCH);\n    update();\n}\nfunction checkLimit(){\n    var expected=Math.min(LIMIT,sent);\n    // Do not call ui.get() or ui.tableRowCount() on measurement_table: unlike\n    // experiment_table, this widget is normally a display sink for TestRunner.\n    log('INFO','Submitted '+expected+' native measurement rows; verify last row in the table, then test archived fixture.');\n    print('Submitted measurements '+expected+'; use visual row range to verify native display');\n}\nfunction onStartup(){\n    ui.set('measurementTable',{reset:true});\n    log('INFO','Ready: toolbar title, All/PASS/FAIL filter, Copy, Export CSV; 500 deterministic FAIL at 100k rows.');\n    update();\n}\nfunction onShutdown(){stopStreaming();}\n",
+  "scriptName": "MeasurementTable_100k_Archive_Lab_RC15147.js",
+  "version": 1
+}

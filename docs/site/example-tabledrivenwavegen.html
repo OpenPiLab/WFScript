@@ -1,0 +1,101 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 14 — Table-Driven Wavegen — Multi-Trace Sweep · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 14 — Table-Driven Wavegen — Multi-Trace Sweep</h1>
+<p><strong>Level:</strong> Advanced<br />
+<strong>Category:</strong> Tables &amp; Data<br />
+<strong>Pages:</strong> 00 Edit Frequency Recipe → 01 Apply Wavegen Settings → 02 Results &amp; JavaScript</p>
+<h2>What you will build or observe</h2>
+<p>Use an editable frequency recipe to generate preview traces or deliberately drive W1 and capture CH1.</p>
+<h2>Before you run</h2>
+<p>Begin in Simulation. For a physical experiment verify W1 → CH1+ and AD3 GND → CH1− with a safe circuit and appropriate range.</p>
+<h2>Follow along</h2>
+<ol>
+<li>On Edit Frequency Recipe inspect the rows and click VALIDATE &amp; READ TABLE.</li>
+<li>Use PREVIEW ALL (NO I/O) before applying any real output.</li>
+<li>Inspect Apply Wavegen Settings and Results &amp; JavaScript.</li>
+<li>Only with verified wiring, deliberately choose physical mode and initiate the capture action.</li>
+</ol>
+<h2>Follow the JavaScript</h2>
+<p><code>recipeTable</code> → validation; <code>runAll</code> → <code>onRunAllClicked()</code> → per-row W1 configuration, CH1 capture and trace retention.</p>
+<p>All entries below come from <strong>saved widget Properties → Events</strong> bindings in this <code>.wfpanel</code> (not from manual <code>ui.on()</code> calls). The script contains the named functions.</p>
+<table>
+<thead>
+<tr>
+  <th>Page</th>
+  <th>Control (ID)</th>
+  <th>Event</th>
+  <th>JavaScript function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>00 Edit Frequency Recipe</td>
+  <td><code>recipeTable</code> (experiment_table)</td>
+  <td><code>valueChanged</code></td>
+  <td><code>onRecipeTableValueChanged()</code></td>
+</tr>
+<tr>
+  <td>00 Edit Frequency Recipe</td>
+  <td><code>validateRecipe</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onValidateRecipeClicked()</code></td>
+</tr>
+<tr>
+  <td>00 Edit Frequency Recipe</td>
+  <td><code>addRecipeRow</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAddRecipeRowClicked()</code></td>
+</tr>
+<tr>
+  <td>00 Edit Frequency Recipe</td>
+  <td><code>resetRecipe</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onResetRecipeClicked()</code></td>
+</tr>
+<tr>
+  <td>00 Edit Frequency Recipe</td>
+  <td><code>previewRecipe</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onPreviewRecipeClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Apply Wavegen Settings</td>
+  <td><code>resetCursor</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onResetCursorClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Apply Wavegen Settings</td>
+  <td><code>applyNext</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onApplyNextClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Apply Wavegen Settings</td>
+  <td><code>runAll</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onRunAllClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Apply Wavegen Settings</td>
+  <td><code>stopW1</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onStopW1Clicked()</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Make one small change</h2>
+<p>Change one recipe frequency within the configured bounds and observe its MODEL ONLY preview first.</p>
+<p>To modify the example in the app, choose <strong>Stop / Design</strong>, open the Script Editor, find the named function or constant, make one change, and run the Panel again. When you like it, use <strong>Save As</strong> to keep your own project.</p>
+<h2>Why this works</h2>
+<p>Preview data and actual measured CH1 traces are intentionally labelled differently; failures must stop W1.</p>
+<h2>Safety and scope</h2>
+<p>This example can energize an AD3 output. Preview first, check wiring, observe voltage limits and stop W1 when done.</p>
+<h2>If something does not work</h2>
+<p>If a row is rejected, look at its seven required columns and Run? flag. Do not bypass validation.</p>
+<h2>Related files</h2>
+<ul>
+<li><strong>Editable project:</strong> <code>examples/panels/TableDrivenWavegen.wfpanel</code></li>
+<li><strong>Readable JavaScript:</strong> <code>examples/source/TableDrivenWavegen.js</code></li>
+<li>The <code>.wfpanel</code> embeds the script, Pages and event assignments; opening it in WFScript does not require the <code>.js</code> file alongside it.</li>
+<li>In the complete source tree run <code>python tools/build_examples.py</code> after modifying the readable <code>.js</code> version.</li>
+</ul>
+<p class="doc-footnote">Source: <code>examples/guides/TableDrivenWavegen.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

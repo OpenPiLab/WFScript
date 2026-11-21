@@ -5,6 +5,7 @@
 #include <QJsonDocument>
 #include "EducationWidgets.h"
 #include "ExperimentWidgets.h"
+#include "TextInputValidation.h"
 #include <QSet>
 #include <cmath>
 #include <utility>
@@ -16,6 +17,7 @@ QJsonObject encode(const PanelControl& c) {
         {"width",c.geometry.width()},{"height",c.geometry.height()},
         {"value",c.value},{"min",c.minimum},{"max",c.maximum},
         {"events",c.events}};
+    if(!c.bindings.isEmpty()) result.insert("bindings",c.bindings);
     if(!c.properties.isEmpty()) result.insert("properties",c.properties);
     return result;
 }
@@ -33,6 +35,11 @@ bool decode(const QJsonObject& o,PanelControl* output,QString* error) {
         return false;
     }
     d.events=o.value("events").toObject();
+    if(o.contains("bindings") && !o.value("bindings").isObject()){
+        if(error)*error=QStringLiteral("Invalid Panel Data bindings on %1").arg(d.id);
+        return false;
+    }
+    d.bindings=o.value("bindings").toObject();
     if(o.contains("properties") && !o.value("properties").isObject()) {
         if(error)*error=QStringLiteral("Invalid widget properties on %1").arg(d.id);
         return false;
@@ -53,9 +60,23 @@ bool decode(const QJsonObject& o,PanelControl* output,QString* error) {
             if(error)*error=QStringLiteral("Image metadata too large on %1").arg(d.id);
             return false;
         }
-    } else if(QJsonDocument(d.properties).toJson(QJsonDocument::Compact).size()>16384) {
+    } else if(QJsonDocument(d.properties).toJson(QJsonDocument::Compact).size()>
+              (d.type==QStringLiteral("experiment_table") ? ExperimentTableLimits::MaxPropertyBytes : 16384)) {
         if(error)*error=QStringLiteral("Widget properties too large on %1").arg(d.id);
         return false;
+    }
+    if(d.type==QStringLiteral("text_input") || d.type==QStringLiteral("ip_address_input")) {
+        const QString initial=d.properties.value(QStringLiteral("defaultText")).toString();
+        const int cap=d.properties.value(QStringLiteral("maxLength")).toInt(
+            d.type==QStringLiteral("ip_address_input") ? 15 : 256);
+        // Empty initial values are valid even for Required controls: the operator
+        // is expected to enter them at Run time.  Nonempty IP defaults must be
+        // complete canonical dotted decimal literals.
+        if(initial.size()>cap || (d.type==QStringLiteral("ip_address_input") &&
+            !initial.isEmpty() && !TextInputValidation::ipv4(initial))) {
+            if(error)*error=QStringLiteral("Invalid initial text for %1").arg(d.id);
+            return false;
+        }
     }
     if(d.type==QStringLiteral("equation")) {
         QString mathError;
@@ -67,23 +88,46 @@ bool decode(const QJsonObject& o,PanelControl* output,QString* error) {
         }
     }
     if(d.type==QStringLiteral("experiment_table")) {
-        const QStringList headers=d.properties.value(QStringLiteral("columns")).toString().split('|',Qt::KeepEmptyParts);
+        const QStringList headers=d.properties.value(QStringLiteral("columns")).toString()
+            .split('|',Qt::KeepEmptyParts);
         const QString rows=d.properties.value(QStringLiteral("initialRows")).toString();
-        const int cap=d.properties.value(QStringLiteral("maxRows")).toInt(250);
-        bool validHeaders=!headers.isEmpty() && headers.size()<=8;
-        for(const auto& heading:headers)if(heading.trimmed().isEmpty() || heading.size()>100)validHeaders=false;
+        const int cap=d.properties.value(QStringLiteral("maxRows"))
+            .toInt(ExperimentTableLimits::DefaultRows);
+        if(headers.isEmpty() || headers.size()>ExperimentTableLimits::MaxColumns) {
+            if(error)*error=QStringLiteral("Experiment table %1 has %2 columns; allowed 1-%3 (separate headers with |)")
+                .arg(d.id).arg(headers.size()).arg(ExperimentTableLimits::MaxColumns);
+            return false;
+        }
+        for(const auto& heading:headers) {
+            if(heading.trimmed().isEmpty() || heading.size()>ExperimentTableLimits::MaxHeaderCharacters) {
+                if(error)*error=QStringLiteral("Invalid or oversized column heading in experiment table %1").arg(d.id);
+                return false;
+            }
+        }
+        if(cap<1 || cap>ExperimentTableLimits::MaxRows) {
+            if(error)*error=QStringLiteral("Experiment table %1 maximum rows must be 1-%2")
+                .arg(d.id).arg(ExperimentTableLimits::MaxRows);
+            return false;
+        }
+        if(rows.size()>ExperimentTableLimits::MaxInitialRowsCharacters) {
+            if(error)*error=QStringLiteral("Experiment table %1 initial data exceeds the %2-character limit")
+                .arg(d.id).arg(ExperimentTableLimits::MaxInitialRowsCharacters);
+            return false;
+        }
         const QStringList data=rows.split('\n',Qt::SkipEmptyParts);
-        if(!validHeaders || cap<1 || cap>250 || data.size()>cap || rows.size()>12000) {
-            if(error)*error=QStringLiteral("Invalid experiment table dimensions or headers on %1").arg(d.id);
+        if(data.size()>cap) {
+            if(error)*error=QStringLiteral("Experiment table %1 has %2 initial rows but its row limit is %3")
+                .arg(d.id).arg(data.size()).arg(cap);
             return false;
         }
         for(const auto& row:data) {
             const QStringList fields=row.split('|',Qt::KeepEmptyParts);
             if(fields.size()!=headers.size()) {
-                if(error)*error=QStringLiteral("Experiment table row column count on %1 does not match headers").arg(d.id);
+                if(error)*error=QStringLiteral("Experiment table %1 row has %2 cells but %3 headers")
+                    .arg(d.id).arg(fields.size()).arg(headers.size());
                 return false;
             }
-            for(const QString& field:fields)if(field.size()>256){
+            for(const QString& field:fields)if(field.size()>ExperimentTableLimits::MaxCellCharacters){
                 if(error)*error=QStringLiteral("Experiment table cell too long on %1").arg(d.id);
                 return false;
             }
@@ -91,7 +135,7 @@ bool decode(const QJsonObject& o,PanelControl* output,QString* error) {
     }
     // Register all linked factories before validating factory-declared events.
     const auto* registeredFactory=WidgetRegistry::instance().factory(d.type);
-    if(registeredFactory) for(const WidgetProperty& field:registeredFactory->properties()) {
+    if(registeredFactory) for(const WidgetProperty& field:WidgetRegistry::instance().properties(d.type)) {
         if(field.id=="text" || field.id=="geometry" || field.id=="value" ||
            field.id=="min" || field.id=="max" || !d.properties.contains(field.id)) continue;
         const QJsonValue v=d.properties.value(field.id);

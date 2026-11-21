@@ -1,0 +1,22 @@
+{
+  "baseline": "v0.2-dev.7.4.1",
+  "examples": {
+    "AD3HardwareTestStation": 9,
+    "AnalogCharts": 3,
+    "AutomatedTestBench": 3,
+    "AutomatedTestStation": 10,
+    "CalibrationTable": 6,
+    "ChartTechniques": 4,
+    "DigitalInputMonitor": 19,
+    "DigitalTimingCharts": 2,
+    "ProtocolUartAsync": 19,
+    "SignalLab": 8,
+    "TableDrivenWavegen": 9,
+    "TableLimitPlot": 4
+  },
+  "totalPhase3": 96,
+  "exceptions": {
+    "StaticDigitalIO": "16 intentionally dynamic ui.on selector handlers; 3 visual operator actions converted in Phase 2",
+    "EducationalVisuals": "static educational content, no interactive events"
+  }
+}

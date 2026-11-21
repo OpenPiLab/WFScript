@@ -1,0 +1,179 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "libraries": [],
+  "testDefinition": {},
+  "testLibrary": "",
+  "description": "No other machine needed. Two localhost UDP sockets bind to ephemeral ports; server echoes datagrams unchanged.",
+  "scriptName": "UdpCommsLab.js",
+  "activePageId": "udp_main",
+  "script": "// ┌─ WFScript LEARNING LAB: UDP Local Datagram Echo — Text & Binary\n// │ Level: Beginner–Intermediate\n// │\n// │ GOAL: Use two localhost UDP sockets to exchange individual datagrams.\n// │ BEFORE RUN: No hardware or outside network.\n// │ TRY FIRST: Click BIND TWO SOCKETS.\n// │ TRACE: `udpStart` → `startLocal()` → `UDP.bind()`; `on(\"message\")` handles received\n// │    datagrams.\n// │ EDIT SAFELY: Change the binary payload and verify that the returned byte array is\n// │    identical.\n// │ REMEMBER: Unlike TCP, UDP preserves datagram boundaries but provides no delivery\n// │    guarantee.\n// │\n// │ EVENT TIP: Select `udpStart` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/UdpCommsLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/** WFScript v0.2-dev.6 — UDP localhost datagram echo.\n * Both sender and receiver are bound to ephemeral localhost ports.\n * Separate byte-array message and decoded UTF-8 text event examples.\n * Each UDP callback corresponds to ONE datagram. Datagram delivery not guaranteed.\n */\nlet rx = null,\n    tx = null;\nconst packet = [0, 1, 2, 127, 128, 254, 255, 0];\nfunction log(msg, level) {\n    print('[UDP] ' + msg);\n    ui.set('udpEvents', {\n        append: {\n            level: level || 'INFO',\n            source: 'UDP Loopback',\n            message: String(msg)\n        }\n    });\n}\nfunction status(s) {\n    ui.set('udpStatus', s);\n}\n/**\n * CORE LESSON — Binds two localhost UDP endpoints. Message callbacks receive complete datagrams;\n * delivery on an actual network is not guaranteed.\n */\nfunction startLocal() {\n    if (rx) {\n        log('UDP sockets already running', 'WARN');\n        return;\n    }\n    rx = UDP.create({\n        host: '127.0.0.1',\n        port: 0\n    });\n    tx = UDP.create({\n        host: '127.0.0.1',\n        port: 0\n    });\n    rx.on('error', e => log('RX UDP error: ' + e, 'ERROR'));\n    tx.on('error', e => log('TX UDP error: ' + e, 'ERROR'));\n    rx.on('message', function (bytes, remote) {\n        log('Receiver got ' + bytes.length + ' bytes from ' + remote.address + ':' + remote.port);\n        // Echo complete datagram unchanged.\n        rx.send(bytes, remote.address, remote.port);\n    });\n    rx.on('text', function (text) {\n        if (text.startsWith('HELLO')) log('Received text: ' + JSON.stringify(text));\n    });\n    tx.on('message', function (bytes) {\n        const same = bytes.length === packet.length && bytes.every((v, i) => v === packet[i]);\n        if (same) log('Binary echo [' + bytes.join(',') + '] PASS', 'PASS');\n        else log('Reply bytes: [' + bytes.join(',') + ']');\n    });\n    tx.on('text', function (text) {\n        if (text.startsWith('HELLO')) log('Text reply: ' + JSON.stringify(text), 'PASS');\n    });\n    rx.bind();\n    tx.bind();\n    status('UDP bound, receiver port ' + rx.info().localPort + ', sender port ' + tx.info().localPort);\n    log('Localhost UDP sockets ready', 'PASS');\n}\nfunction textTest() {\n    if (!rx || !tx) {\n        log('Start UDP first', 'WARN');\n        return;\n    }\n    const text = 'HELLO UDP from WFScript';\n    tx.send(text, '127.0.0.1', rx.info().localPort);\n    log('TX text: ' + JSON.stringify(text));\n}\nfunction binaryTest() {\n    if (!rx || !tx) {\n        log('Start UDP first', 'WARN');\n        return;\n    }\n    tx.send(packet, '127.0.0.1', rx.info().localPort);\n    log('TX binary [' + packet.join(',') + ']');\n}\nfunction stopLocal() {\n    if (tx) try {\n        tx.close();\n    } catch (e) { }\n    if (rx) try {\n        rx.close();\n    } catch (e) { }\n    tx = null;\n    rx = null;\n    status('UDP stopped');\n    log('UDP sockets closed');\n}\n\n// UI actions use Property Editor > Events (select a control, then Go to Handler).\n// Serial/TCP/UDP .on() below are transport callbacks, NOT widget events.\nfunction onInitialize() {\n    status('UDP stopped — press BIND TWO SOCKETS');\n    log('Local test sends both text and raw bytes without external equipment.');\n}\nfunction onShutdown() {\n    stopLocal();\n}\n",
+  "pages": [
+    {
+      "id": "udp_main",
+      "name": "01 Local UDP Datagrams",
+      "width": 1170,
+      "height": 800,
+      "controls": [
+        {
+          "id": "udpTitle",
+          "type": "label",
+          "text": "Local UDP Datagrams — Text & Binary",
+          "x": 22,
+          "y": 18,
+          "width": 1120,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "udpIntro",
+          "type": "label",
+          "text": "No other machine needed. Two localhost UDP sockets bind to ephemeral ports; server echoes datagrams unchanged.",
+          "x": 22,
+          "y": 86,
+          "width": 1120,
+          "height": 85,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "udpStart",
+          "type": "button",
+          "text": "BIND TWO SOCKETS",
+          "x": 22,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "startLocal",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "udpText",
+          "type": "button",
+          "text": "SEND TEXT",
+          "x": 302,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "textTest",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "udpBinary",
+          "type": "button",
+          "text": "SEND BINARY",
+          "x": 582,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "binaryTest",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "udpStop",
+          "type": "button",
+          "text": "STOP UDP",
+          "x": 862,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "stopLocal",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "udpStatus",
+          "type": "label",
+          "text": "Not started",
+          "x": 22,
+          "y": 272,
+          "width": 1120,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "udpEvents",
+          "type": "event_log",
+          "text": "",
+          "x": 22,
+          "y": 348,
+          "width": 1120,
+          "height": 258,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 150
+          }
+        }
+      ]
+    }
+  ]
+}

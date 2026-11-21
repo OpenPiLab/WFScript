@@ -4,10 +4,17 @@
 #include <QVariant>
 #include <QVector>
 #include <QString>
+#include <QHash>
 
 class QLabel;
 class QProgressBar;
 class QScrollArea;
+class QFrame;
+class QShowEvent;
+class QTableView;
+class QAbstractTableModel;
+class QPushButton;
+class QEvent;
 
 // Visual test-progress display. This is NOT a test scheduler: JavaScript owns
 // test execution, timeouts, retries and any hardware control.
@@ -43,12 +50,41 @@ public:
     QString overallState() const;
     const QVector<Step>& steps() const { return m_steps; }
 
+protected:
+    void changeEvent(QEvent* event) override;
 private:
+    void applyTheme();
     static bool parseStep(const QVariantMap& map, Step* step, bool partial=false);
-    bool replaceSteps(const QVariantList& data);
+    bool replaceSteps(const QVariantList& data,bool nativeWindow=false);
     bool updateStep(const QVariant& patch);
-    void rebuild();
+    void rebuild();                 // definition/layout changes only
+    void refreshRow(int index);    // in-place updates; never replaces row widgets
+    void refreshOverview();
+    void showEvent(QShowEvent* event) override;
+    bool eventFilter(QObject* watched,QEvent* event) override;
+    void followCurrent();
 
+    struct RowWidgets {
+        QFrame* frame=nullptr;
+        QLabel* icon=nullptr;
+        QLabel* order=nullptr;
+        QLabel* name=nullptr;
+        QLabel* detail=nullptr;
+        QLabel* elapsed=nullptr;
+        QLabel* status=nullptr;
+    };
+    QVector<RowWidgets> m_rows;
+    QTableView* m_virtualView=nullptr;
+    QAbstractTableModel* m_virtualModel=nullptr;
+    QPushButton* m_followButton=nullptr;
+    QHash<QString,int> m_stepIndex;
+    bool m_virtualMode=false,m_followLive=true,m_programScroll=false;
+    int m_localCompleted=0;
+    int m_runningIndex=-1,m_lastCompletedIndex=-1;
+    bool m_rowsDirty=false;       // coalesce updates while a Page is hidden
+    bool m_hasExternalProgress=false;
+    int m_windowStart=0,m_globalTotal=0,m_globalCompleted=0;
+    QString m_globalState;
     QVector<Step> m_steps;
     QString m_title = QStringLiteral("Test Sequence");
     bool m_showProgress = true;

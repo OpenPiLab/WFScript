@@ -1,0 +1,231 @@
+{
+  "baseline": "v0.2-dev.8.9.3.2",
+  "format": "WFScript student-facing JS v1",
+  "description": "Only whitespace and comments are allowed to change in this revision; identical TypeScript syntax-tree shapes and token streams were checked.",
+  "scripts": {
+    "ACNetworkLaboratory.js": {
+      "tokenSHA256": "212e80d0e2bccce12b8ff927574f2e8ed1d4bb2fb446d3657ff719f24dfc116d",
+      "sha256": "48bd11a86bd996eae7b56cdacef49fbbd9aa3771cef319bdd65fe6b3589e2593"
+    },
+    "AD3HardwareTestStation.js": {
+      "tokenSHA256": "ebaf43b50d62290e54a065f7b45d005c71a7678f98499441ec1c20881a677493",
+      "sha256": "5d275b38e938c4f3cb4c43fa4df99ba4f1e0b799619ecdd0d6dfa0d24a51dbc5"
+    },
+    "AD3ScopeExplorer.js": {
+      "tokenSHA256": "b001c5fb288a8192229fc46a10d647db4de88f896f0e3bfdc38ce37aae7d3766",
+      "sha256": "d54789a83ead1206f361f36b296784d416f39bf66cf3b0dd90d5f34a1474e320"
+    },
+    "AnalogCharts.js": {
+      "tokenSHA256": "ea2997ec7f46d5ecf44d8e328c14acca9ab8bb418ff71405630b628d7f457e65",
+      "sha256": "6080745777cc3077b065257d4fef9c2733dd76192bde12b5c3f82ddbbd5fef02"
+    },
+    "AutomatedTestBench.js": {
+      "tokenSHA256": "d7b4beac62dcf1390a91a8379e8350979d332f8102194529ef075da4de08169d",
+      "sha256": "89cd01c8c350ab650fb672a29ebce4b0edf99a14fbc12e315da5837f976681ba"
+    },
+    "AutomatedTestStation.js": {
+      "tokenSHA256": "a868e9fa1b9442c2281a9fb9ef9005e501eed9c0f1e7e6c17ea75af9c139e975",
+      "sha256": "d8476eb3bf3c686ce517c0879fc7e9927919137bfe2a685f69c974812b4da260"
+    },
+    "CalibrationTable.js": {
+      "tokenSHA256": "02363d6dd84744aedc4f1a2788336b0b58b7746acf038d85a82e00ea820b6c6b",
+      "sha256": "0ed7e931cf4758421b713b34a6a889787498fc71e14c55ff7aa3ce9cf0ddd569"
+    },
+    "ChartTechniques.js": {
+      "tokenSHA256": "243e482bda0d84a1650fde4148141f6c58d5e4d791e4e229e758f90fb2f098a2",
+      "sha256": "3ad24a3829fbc74d4c79c5b30e8396e0f4dc5796aa60d1aa416da94957bbf2ee"
+    },
+    "ClockPWM.js": {
+      "tokenSHA256": "295edd2b4898606c719177a021cf7b74e4a8ac46e3b7f82e4be92af2d30d05c9",
+      "sha256": "741a0b61b7bccaf8d25f415b25f40dc38cb48dbd554a7a1f4e858dd86862e71d"
+    },
+    "CommunicationsTerminalLab.js": {
+      "tokenSHA256": "55623a89bc1dcd415cc8b7df4234ea6c503458eedd84573d97df87628681895f",
+      "sha256": "67c952dce283367d4e1d772e804ba663b6c1dcee2c7de240d87ce94607b1bf9a"
+    },
+    "DigitalInputMonitor.js": {
+      "tokenSHA256": "eb2db98a744fdf4bde50d34369d182d9217810413faa678e82683858820a631a",
+      "sha256": "33a21ccbc65595e75ad89a84a5875a2925946209e92cfc448baf7987af680d5d"
+    },
+    "DigitalTimingCharts.js": {
+      "tokenSHA256": "e695e9a9f36cf8659382299d2308a0ac4f0002b4633a5be082cea7545a0f8599",
+      "sha256": "ca7a9135fa91ef9da83b9832f46916757b3b4f095cc505db247154341db141fb"
+    },
+    "EducationalVisuals.js": {
+      "tokenSHA256": "c19a19c420d0f5d55e61bbbbe8ed395a7bb9ffddb9f8d5ef897344563b21c9f1",
+      "sha256": "8a8c0c4d56ab67bc9ad838176661ce6bbe6d402455483331bc881023d189942c"
+    },
+    "EquationExperimentLab.js": {
+      "tokenSHA256": "42f0ce2774afc4be41e51606da6c4c3a863a49d090bf26fa332a541e4c6661a9",
+      "sha256": "a01087b191a094cdb4c16ea71838cf52ef204f4525e070cf6342e4663ab500e6"
+    },
+    "GettingStarted.js": {
+      "tokenSHA256": "4945a6fe005a1017cdeafaa47ea7c8258fd32d2accbb1ab48ed5bfdd49acefd9",
+      "sha256": "cad6015aa1d675b81c9a73a9fc6501be7ba082fcf16d9461480dc75119cca1d2"
+    },
+    "JavaScriptDSPStudio.js": {
+      "tokenSHA256": "f1675fcdfd81e40fd2c9e20711b1add6b058e1cd63bf27f000048315aa609e08",
+      "sha256": "cf8d7ca2dde8759873fab6ef91f3cfe6a40ff759fba129cf776dde6626493b11"
+    },
+    "LabelFormatting.js": {
+      "tokenSHA256": "d44c7ad6c462421e1bb2f85707ee43b2e1bd88e7175708c88c3ffcbb068f1844",
+      "sha256": "e68a8d5a8b003792930794dbe91bf606a09bd961de37ffcc116c8af71b2274da"
+    },
+    "LogicAnalyzer.js": {
+      "tokenSHA256": "590ad0c365c5507c1a6d6df4eb8fb6fd0b3b9218e79012ae65c3f8ac3cf4bb4e",
+      "sha256": "b8cc00673ba0ca58ccae6287d28d2137d9924b44ba1ab8cd7a1677002e64ae66"
+    },
+    "PanelDataLab.js": {
+      "tokenSHA256": "f746b8ffb7d6198f5ca1258ddfd3f250ffeec50f6182582ca53ba1cabd9796e1",
+      "sha256": "e582da88c102bfe70f32a98d587fffa5ecf04c841af0232758b8460c6dd39de3"
+    },
+    "PanelTimers.js": {
+      "tokenSHA256": "5ae9112b0014096d9b686ff9aad39932989e464d962e49a307699eb22bd90bd8",
+      "sha256": "c51d8114c0bfbad2b5dd7d030c467fa9d9725a74ecfae2121fa443a589ce616f"
+    },
+    "PowerSupplies.js": {
+      "tokenSHA256": "beff6e74cc49d94e88a48d082552cd3cbd6686af009603ef617ec76c71131809",
+      "sha256": "21ee79c15c7bf9d6f58d47c058fbcc7f6d600ed5f49edef73431711d3c344949"
+    },
+    "ProtocolCAN.js": {
+      "tokenSHA256": "6042a50f8505e37276424a3a1e4bf40feeb20e076a821ba155c10c511db899f2",
+      "sha256": "beafe935ba7e6705e34f44c389ff9f8ce9235cd0e8cd905103abd3989cec59c0"
+    },
+    "ProtocolI2C.js": {
+      "tokenSHA256": "8191f66b8c64603ac372e6a3bfb64d27fbd7042a5e9397926aa00e893a342ecf",
+      "sha256": "cbf3921a140e4d94958f666ab3e10db85a58963fcaab8fd9faea81d3f0a29337"
+    },
+    "ProtocolSPI.js": {
+      "tokenSHA256": "82423cd773f15b2561680cba8bb655069b5706c1b97d74cc6cc3279d1ab1d550",
+      "sha256": "eeed4be7065d578b94aaa7cf296a1a8ab6478fa3d0ccdd14967728996eb23d7e"
+    },
+    "ProtocolSWD.js": {
+      "tokenSHA256": "65933ac0fbdc6e1054fba28019368777b69cc75010eb883a47046918fb034f7e",
+      "sha256": "e8923498121ce1c53af5b0f79b5cd2d405fcc2a1ce66f51d80c7386bde8cb764"
+    },
+    "ProtocolUART.js": {
+      "tokenSHA256": "47000233dcbbc15ddde954fa7b611470b0f355484928250d618f9857b403a366",
+      "sha256": "76b0bdc96ffa6457f682c694334a6680b7a1e3a07ae90479e132a8fafb317fcc"
+    },
+    "ProtocolUartAsync.js": {
+      "tokenSHA256": "d3b04d45b25f92ec5d8296f1fdd31abd8f903ce0e83cd2d15568e668a5e2909b",
+      "sha256": "7801b68ef79a3345b6287e133d529067c9a3cc208be84a24b92e4ee112c5d516"
+    },
+    "QuadratureEncoder.js": {
+      "tokenSHA256": "42bd802f60d4b403209d9814bb7b7c51a93b7c04b6f6e861aa6f48f38ba9afc6",
+      "sha256": "7c24ff141dac6fdf512e2c756c8676f1180c94ae58ed21063443ba2eb3b095fe"
+    },
+    "RCStepResponseLaboratory.js": {
+      "tokenSHA256": "9a9807befd40aedd7f8a58be7040a927a66990a8865a660b418486063f68997a",
+      "sha256": "e5bb364fee5f3d72f3ad6b08b53b57e9a172181ea32904f97bca58b1ab919690"
+    },
+    "SQLiteDataLab.js": {
+      "tokenSHA256": "b7a3feabac10c2419fd5fcd2b501f59f095ce3d1f3963bcf7152a0013c55a2c5",
+      "sha256": "6ad93290e49d3a43762d876da7ae8f20fbc84f3bdd16def2833eda342e488038"
+    },
+    "ScriptUtilityLab.js": {
+      "tokenSHA256": "719ac21b5b837b75766f27110d3bd2e122e5055d4d25253d7cf3dfd9f155725b",
+      "sha256": "436b098221ff931b59e9d80f37133ebccfe70eca0eba30535285ce4faf5a8796"
+    },
+    "SequenceLab.js": {
+      "tokenSHA256": "50bcb094e12756ff6cc0d0a908fe245a1d4efeb4d0af42221150300a96ad1c6e",
+      "sha256": "68432430777fa80c9c90a1e61ebfd1b05ffea28c5cf31c9c54653af98497d62e"
+    },
+    "SerialCommsLab.js": {
+      "tokenSHA256": "002781f3d6813ee8bed82b00a58bc0f5253a1a26feb440325f01fc982d4e3652",
+      "sha256": "840c66d177dc387185720c0b63a6bd73b7b862b392a7ee45eeefaed5f2ba4606"
+    },
+    "SignalLab.js": {
+      "tokenSHA256": "3d0e5785fd000545d2ba308d68a1322222eb096a811f7b87ab25cd32b1bf718e",
+      "sha256": "041eac025c052144afb8cc1dd3794f9db97cfe89dde3bdbd22751e0254b032c7"
+    },
+    "StaticDigitalIO.js": {
+      "tokenSHA256": "6078de001b267a494eeb83e7e0e047a672dfb5706ce9a5d07e6cb7e7391632bd",
+      "sha256": "1f787f14c8c46e04b5b51899d21049a57c54c1266fd1c7422d647660e448efe3"
+    },
+    "TableDrivenWavegen.js": {
+      "tokenSHA256": "3a8b1e7783a8c2ea826a89f98ebbb60307474cf4f8a0c5a98a8323afc936da73",
+      "sha256": "75b0e09a02cce08a27afe135b7986a320cb0915c4b41545c4caf050cd18bd609"
+    },
+    "TableLimitPlot.js": {
+      "tokenSHA256": "d98ad09696c215a1d5e623e48d02cbfd5ebd0246f844b517781ac22400bb7497",
+      "sha256": "176797c40a7f9c97c63d6fb8a3cbb294dbbd6c23c6e87a02b17ad6e86dd605a4"
+    },
+    "TcpCommsLab.js": {
+      "tokenSHA256": "b4b74367d348684e9c37a205013e2c04cb6f1b9db8f0bfc393383146f4b33134",
+      "sha256": "f748c5769bdfbdc0c956bea4270dc19ba2e5cc610d4dd2f9b6d60eca7e3d0afd"
+    },
+    "UdpCommsLab.js": {
+      "tokenSHA256": "c640d83eeb47af92680cb4fcf563910688de7210ff9e864afcf81809ca43210a",
+      "sha256": "ed34fb35db76fffebf399f310f5f71bea16e1788775d15f049da97709f5701e3"
+    },
+    "WidgetPlayground.js": {
+      "tokenSHA256": "a6db284779e551ea24d3afa8116df27c350061b55ce89894b4e3c070268d2d71",
+      "sha256": "1d4219463644775ff9a5d591e244ac7a1dce8e3c07488836a153362c18e5b797"
+    }
+  },
+  "modules": {
+    "AD3LoopbackSteps.mjs": {
+      "tokenSHA256": "35c7df424fc0f4961370e1b4f51139ea0dc9455e6c98654e157606c33e0de387",
+      "sha256": "7367a34d3a003a76432c19e743381b1da7cae38a6a56e2a5767e40f60521610b"
+    },
+    "CaptureAnalysis.mjs": {
+      "tokenSHA256": "0065687ff3acb201f7d2b7e672039fddcf9750cfff011cf4cf2d3a8d635d5570",
+      "sha256": "3f9b2b4e99fd84bf76dbe3ff49dafdcbfaee98030ca21b0f9ef940d4ba8c000e"
+    },
+    "CircuitLab.mjs": {
+      "tokenSHA256": "8aaf29b42b4ef7a26eefb07bf35f218dfd49a3369644267fa1fdb74597b1c9b2",
+      "sha256": "47cc3f2fe1398b17397c4ebf20e60855cbb79aaf6935d866c34877172cf7990c"
+    },
+    "DSPCore.mjs": {
+      "tokenSHA256": "c8d31259d178b67cc4550ba9af455148782cbfabd72e839e1482297c0474f118",
+      "sha256": "4cd98ca30d1153568b508abb3c94b89f083f382c4149806c25361f9020ca0f0e"
+    },
+    "DigitalMonitorTestSteps.mjs": {
+      "tokenSHA256": "221698176dee49687457741ef3988d976249cd1ff0e4a3c989f73a9bc90eabe5",
+      "sha256": "35178d86810292ac727c7e8457a9758a87ad87e0e3f7828f99a7f4c07b1fe7eb"
+    },
+    "RCStepAnalysis.mjs": {
+      "tokenSHA256": "b18b31cf1ac7f3b1420e735e494c8708234ea87b965b478d52c8cf1b8265c218",
+      "sha256": "b0c9949ef6e4138da23a7ae0704ae618aaf05ed97e30280acf7e03f09febdf03"
+    },
+    "SignalPackage.mjs": {
+      "tokenSHA256": "bb513eaa7941f461624208cdc4ceba7d479687764a4abe63dc6b231aaf9ba0e2",
+      "sha256": "c4aac88e1ea849ca5c7be20bd7cbca15208c34b16ea4bc05bf19aeb05c442060"
+    },
+    "TestStationSequence.mjs": {
+      "tokenSHA256": "56f352cb445e28227cb7a65cb16f89c9686c369189b3f26613126266b64e7be2",
+      "sha256": "3fe8057ac4709b4db3f28cb19f402549e08e30a1cf8ea212165588d458cb037c"
+    },
+    "TestStationSteps.mjs": {
+      "tokenSHA256": "b8eed27decfdef2e0a4aa1d91ff189327953a6921f7affc18e19e195aafb3aea",
+      "sha256": "d3c893ca4d4ca1b6af470db9d2d2a6b1d4966a9e97407733fcd35f62f8d811a8"
+    },
+    "TestSteps.mjs": {
+      "tokenSHA256": "97e8b4128d3482830bf10ee2d8b171a22d640e590b4e04cb1c050f396d939cdb",
+      "sha256": "fd011378e3a7e22f70b3acdd57a2ba5150456452f732ab19ff83a26b1d304ad6"
+    },
+    "UARTEchoTestSteps.mjs": {
+      "tokenSHA256": "3f946c4adca4cfaad66698c74a6d0365c226e90024d834b7ce05c16a46e01a73",
+      "sha256": "283566cd15f7e92e85f912094cdaf86968aabed2d47e4ab6c9e86e1de7b18712"
+    }
+  },
+  "waveformsCompatible": {
+    "feedback_control.js": {
+      "tokenSHA256": "256246c5a034b59b3677671b5356b70b52119b4478ba1e9a5b98dc483e16d837",
+      "sha256": "f80864aa7733f041acffcb460e3bdb6a08690dbc4430ee2a084109ae3fd82903"
+    },
+    "feedback_control_repeated.js": {
+      "tokenSHA256": "2ccde550a48f96d4b8f7f6f070c82d6b14a5de30b63d6f8b612147225daf07a5",
+      "sha256": "745d9f2b59bfc4fc0b809b4b26cb506e3d2d8728b6b32cf5050efecf6b835443"
+    },
+    "scope_capture.js": {
+      "tokenSHA256": "bfedcdd7ee5fb30b28c7c52509157ec4728648fec1db8923fe743d73d83f637e",
+      "sha256": "d05c5278f747e8c77bb050543e2a14a7bd722a316b597358761c7d449badc3dd"
+    },
+    "wavegen_loopback.js": {
+      "tokenSHA256": "4ffd6b40e15f9404c059169470f01188911fb850cdd7ef85dfda5bb888deea92",
+      "sha256": "7fa8d5b1f35d844afce517eda006a06ba2ced3efa0c2032c31e5be0254f49071"
+    }
+  }
+}

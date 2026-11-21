@@ -70,7 +70,7 @@ QVector<Issue> analyze(const QString& source) {
     if(source.size()>300000) return issues; // bound interactive costs
     const QString code=codeOnly(source);
     static const QRegularExpression rx(QStringLiteral(
-        R"(\b(Scope1|Scope|Wavegen1|Wavegen|Logic1|Logic|Supplies1|Supplies|StaticIO|Patterns1|Patterns|Device)(?:\s*\.\s*[A-Za-z_$][\w$]*)+)"));
+        R"(\b(Scope1|Scope|Wavegen1|Wavegen|Logic1|Logic|Supplies1|Supplies|StaticIO|Patterns1|Patterns|Protocol1|Protocol|Device)(?:\s*\.\s*[A-Za-z_$][\w$]*)+)"));
     auto matches=rx.globalMatch(code);
     while(matches.hasNext()) {
         const auto m=matches.next();

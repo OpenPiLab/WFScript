@@ -1,3 +1,5 @@
+// LEARNING TIP: to practice a FAIL, change verifyPwm() from 50.1 to 47.5 and rerun. The allowed limits and step order belong to Test Sequence.
+
 /**
  * TestSteps.mjs — the ONLY test implementation file.
  *
@@ -20,7 +22,8 @@ export function beginClock() {
 }
 
 export function pollClock(stepElapsedMs) {
-    if (stepElapsedMs < 180) return undefined; // Still measuring.
+    if (stepElapsedMs < 180) return undefined;
+    // Still measuring.
     return 999.8;      // Numeric result: C++ checks saved limits.
 }
 

@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 38 — JavaScript DSP Studio: Import, Analyze, Package · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 38 — JavaScript DSP Studio: Import, Analyze, Package</h1>
+<p><strong>Level:</strong> Intermediate | <strong>Category:</strong> Graphics &amp; Charts | <strong>Pages:</strong> One</p>
+<p><strong>Safety:</strong> Simulation only. This example does not use any instrument outputs or sample real hardware.</p>
+<h2>Objective</h2>
+<p>Turn WFScript into a small signal-processing application using <em>reusable JavaScript modules</em>. Compare a clean signal with noise/harmonics, apply a two-pole Butterworth lowpass filter, view the FFT spectrum, and package a complete signal in a portable lossless string.</p>
+<h2>Try it</h2>
+<ol>
+<li>Open <strong>Examples → Graphics &amp; Charts → JavaScript DSP Studio — Third-Party Libraries</strong> and Run Panel in Simulation.</li>
+<li>The top chart shows raw and digitally filtered sample values. Change <strong>WAVEFORM</strong> from Sine to Square or Triangle.</li>
+<li>Increase <strong>3rd HARMONIC</strong> and observe the new spectral peak near three times the tone frequency (subject to Nyquist and sampling).</li>
+<li>Increase <strong>NOISE FLOOR</strong> and watch the spectral background rise.</li>
+<li>Decrease <strong>LOWPASS CUTOFF</strong> to reduce high-frequency content. The bottom chart shows the predicted magnitude response of the <em>digital biquad</em>, not an analog physical filter.</li>
+<li>Use <strong>NEW NOISE</strong> to produce a different seeded noise sequence.</li>
+<li>Use <strong>PACK + VERIFY</strong> to test the imported Pako and base64-js modules. Compression and exact round-trip verification run entirely in JavaScript. The Panel reports compressed bytes relative to the original JSON bytes.</li>
+<li>In Design mode, choose a Button and inspect <strong>Properties → Events</strong> to open its JavaScript handler; inspect <code>DSPCore.mjs</code> and <code>SignalPackage.mjs</code> in Library Manager.</li>
+</ol>
+<h2>What each third-party library actually does</h2>
+<ul>
+<li><strong>Fraction.js</strong> gives a rational samples/cycle ratio (<code>16384/440 = 2048/55</code> exactly), which avoids displaying an approximate frequency-grid ratio as an exact integer.</li>
+<li><strong>Pako</strong> performs actual Deflate compression and decompression on a JSON capture.</li>
+<li><strong>base64-js</strong> converts compressed bytes into text suitable for JSON/transport and back.</li>
+</ul>
+<p><code>DSPCore.mjs</code> contains <strong>WFScript-authored</strong> FFT and filter demonstrations. They are not redistributed FFT.js or Fili and are not certified for metrology. The modules are stored inside the <code>.wfpanel</code>, so the example doesn't require installing Node.js or npm.</p>
+<h2>Explore the package</h2>
+<pre><code class="language-javascript">var DSP = modules.load('DSPCore.mjs');
+var Package = modules.load('SignalPackage.mjs');
+
+// The Package module itself uses relative ES imports:
+// import Fraction from './vendor/fraction.mjs';
+// import { deflate, inflate } from './vendor/pako.mjs';
+// import { fromByteArray, toByteArray } from './vendor/base64.mjs';
+</code></pre>
+<p>The <code>modules.load()</code> return value is a namespace of named exports. The example intentionally avoids manual <code>ui.on()</code> wiring: its Button/input events are stored in the Designer's event properties.</p>
+<h2>Next experiment</h2>
+<p>Replace <code>DSPCore.mjs</code> with a vetted third-party FFT or filter library, preserving the same small interface. Compare numerical outputs and CPU timing against the educational implementation, then repeat using real AD3 samples once a dedicated acquisition adapter has been validated.</p>
+<p>Full implementation notes: <code>docs/JAVASCRIPT_DSP_STUDIO_V02_DEV8_6.md</code>.</p>
+<p class="doc-footnote">Source: <code>examples/guides/JavaScriptDSPStudio.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

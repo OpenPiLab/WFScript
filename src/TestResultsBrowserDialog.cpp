@@ -1,4 +1,5 @@
 #include "TestResultsBrowserDialog.h"
+#include "TestResultsTableModels.h"
 
 #include <QColor>
 #include <QComboBox>
@@ -18,7 +19,10 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QSplitter>
-#include <QTableWidget>
+#include <QTableView>
+#include <QAbstractItemView>
+#include <QItemSelectionModel>
+#include <QSignalBlocker>
 #include <QTabWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -42,29 +46,24 @@ QString stateLabel(const QString& state) {
     if(state==QStringLiteral("aborted"))return QStringLiteral("ABORTED");
     return state.toUpper();
 }
-QColor stateColor(const QString& state) {
-    if(state==QStringLiteral("passed"))return QColor(QStringLiteral("#2b9b70"));
-    if(state==QStringLiteral("failed") || state==QStringLiteral("error"))
-        return QColor(QStringLiteral("#d95b69"));
-    return QColor(QStringLiteral("#c18a37"));
-}
-QTableWidget* makeTable(const QString& objectName,const QStringList& headers,QWidget* parent) {
-    auto* table=new QTableWidget(parent);
+QTableView* makeTable(const QString& objectName,QAbstractTableModel* model,QWidget* parent) {
+    auto* table=new QTableView(parent);
     table->setObjectName(objectName);
-    table->setColumnCount(headers.size());
-    table->setHorizontalHeaderLabels(headers);
+    table->setModel(model);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
     table->setAlternatingRowColors(true);
+    table->setWordWrap(false);
+    table->setSortingEnabled(false); // the archive index is already sorted by completion time
     table->verticalHeader()->hide();
+    table->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    table->verticalHeader()->setDefaultSectionSize(25);
     table->horizontalHeader()->setStretchLastSection(true);
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
+    table->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+    table->setVerticalScrollMode(QAbstractItemView::ScrollPerItem);
     return table;
-}
-void cell(QTableWidget* table,int row,int column,const QString& value) {
-    auto* item=new QTableWidgetItem(value);
-    item->setToolTip(value);
-    table->setItem(row,column,item);
 }
 QString summarize(const QJsonObject& record,const QString& path) {
     const QJsonObject instrument=record.value(QStringLiteral("instrument")).toObject();
@@ -141,17 +140,17 @@ TestResultsBrowserDialog::TestResultsBrowserDialog(const QString& initialDirecto
     root->addWidget(m_status);
 
     auto* splitter=new QSplitter(Qt::Vertical,this);
-    m_history=makeTable(QStringLiteral("historyTable"),
-        {QStringLiteral("Completed (local)"),QStringLiteral("UUT"),QStringLiteral("Result"),
-         QStringLiteral("Test"),QStringLiteral("Duration"),QStringLiteral("Mode"),
-         QStringLiteral("Execution ID")},splitter);
-    m_history->horizontalHeader()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
-    m_history->horizontalHeader()->setSectionResizeMode(1,QHeaderView::ResizeToContents);
-    m_history->horizontalHeader()->setSectionResizeMode(2,QHeaderView::ResizeToContents);
+    m_historyModel=new ArchivedRunsModel(this);
+    m_history=makeTable(QStringLiteral("historyTable"),m_historyModel,splitter);
     m_history->horizontalHeader()->setSectionResizeMode(3,QHeaderView::Stretch);
-    m_history->horizontalHeader()->setSectionResizeMode(4,QHeaderView::ResizeToContents);
-    m_history->horizontalHeader()->setSectionResizeMode(5,QHeaderView::ResizeToContents);
-    connect(m_history,&QTableWidget::itemSelectionChanged,this,&TestResultsBrowserDialog::selectHistory);
+    m_history->setColumnWidth(0,170);
+    m_history->setColumnWidth(1,135);
+    m_history->setColumnWidth(2,90);
+    m_history->setColumnWidth(4,100);
+    m_history->setColumnWidth(5,115);
+    m_history->setColumnWidth(6,235);
+    connect(m_history->selectionModel(),&QItemSelectionModel::currentRowChanged,
+        this,[this](const QModelIndex&,const QModelIndex&){selectHistory();});
     splitter->addWidget(m_history);
 
     auto* inspection=new QWidget(splitter);
@@ -168,22 +167,39 @@ TestResultsBrowserDialog::TestResultsBrowserDialog(const QString& initialDirecto
     m_overview->setReadOnly(true);
     m_overview->setObjectName(QStringLiteral("historyOverview"));
     m_details->addTab(m_overview,QStringLiteral("Overview"));
-    m_steps=makeTable(QStringLiteral("historySteps"),
+    m_stepsModel=new ArchivedRecordRowsModel(
          {QStringLiteral("Group"),QStringLiteral("Step"),QStringLiteral("Type"),
-          QStringLiteral("Status"),QStringLiteral("ms"),QStringLiteral("Detail")},m_details);
+          QStringLiteral("Status"),QStringLiteral("ms"),QStringLiteral("Detail")},
+         {QStringLiteral("group"),QStringLiteral("name"),QStringLiteral("type"),
+          QStringLiteral("status"),QStringLiteral("elapsedMs"),QStringLiteral("detail")},this);
+    m_steps=makeTable(QStringLiteral("historySteps"),m_stepsModel,m_details);
+    m_steps->horizontalHeader()->setSectionResizeMode(1,QHeaderView::Stretch);
+    m_steps->setColumnWidth(0,75);m_steps->setColumnWidth(2,75);m_steps->setColumnWidth(3,95);
     m_details->addTab(m_steps,QStringLiteral("Sequence Steps"));
-    m_measurements=makeTable(QStringLiteral("historyMeasurements"),
+    m_measurementsModel=new ArchivedRecordRowsModel(
          {QStringLiteral("Name"),QStringLiteral("Step ID"),QStringLiteral("Actual"),
           QStringLiteral("Low"),QStringLiteral("High"),QStringLiteral("Unit"),
-          QStringLiteral("Result")},m_details);
+          QStringLiteral("Result")},
+         {QStringLiteral("name"),QStringLiteral("stepId"),QStringLiteral("value"),
+          QStringLiteral("low"),QStringLiteral("high"),QStringLiteral("unit"),
+          QStringLiteral("status")},this);
+    m_measurements=makeTable(QStringLiteral("historyMeasurements"),m_measurementsModel,m_details);
+    m_measurements->horizontalHeader()->setSectionResizeMode(0,QHeaderView::Stretch);
+    m_measurements->setColumnWidth(1,125);m_measurements->setColumnWidth(2,85);
+    m_measurements->setColumnWidth(3,75);m_measurements->setColumnWidth(4,75);
+    m_measurements->setColumnWidth(5,55);m_measurements->setColumnWidth(6,95);
     m_details->addTab(m_measurements,QStringLiteral("Measurements"));
-    m_runInfo=makeTable(QStringLiteral("historyRunInfo"),
-        {QStringLiteral("Run Information field"),QStringLiteral("Value")},m_details);
+    m_runInfoModel=new ArchivedRecordRowsModel(
+        {QStringLiteral("Run Information field"),QStringLiteral("Value")},
+        {QStringLiteral("key"),QStringLiteral("value")},this);
+    m_runInfo=makeTable(QStringLiteral("historyRunInfo"),m_runInfoModel,m_details);
+    m_runInfo->horizontalHeader()->setSectionResizeMode(1,QHeaderView::Stretch);
     m_details->addTab(m_runInfo,QStringLiteral("Run Information"));
     m_json=new QPlainTextEdit(m_details);
     m_json->setObjectName(QStringLiteral("historyRawJson"));
     m_json->setReadOnly(true);
     m_details->addTab(m_json,QStringLiteral("Original JSON"));
+    connect(m_details,&QTabWidget::currentChanged,this,[this](int){renderRawJsonIfNeeded();});
     inspectionLayout->addWidget(m_details,1);
     splitter->addWidget(inspection);
     splitter->setStretchFactor(0,3);
@@ -218,127 +234,85 @@ void TestResultsBrowserDialog::refresh() {
     QString error;
     m_entries=TestResultsHistory::scan(m_directory,5000,&error);
     m_status->setProperty("scanWarning",error);
+    m_historyModel->setEntries(&m_entries);
     applyFilters();
-    // Keep the previous selection when refreshing an archive folder.
+    // Preserve selection by immutable archive path, not a mutable view row.
     if(!previous.isEmpty()) {
-        for(int row=0;row<m_history->rowCount();++row) {
-            const auto* item=m_history->item(row,0);
-            if(item && item->data(Qt::UserRole).toString()==previous) {
-                m_history->selectRow(row);
-                return;
-            }
-        }
+        const int row=m_historyModel->rowForPath(previous);
+        if(row>=0)m_history->selectRow(row);
     }
 }
 void TestResultsBrowserDialog::applyFilters() {
     const QString needle=m_search->text().trimmed();
     const QString verdict=m_verdict->currentData().toString();
     const QString selected=m_loadedPath;
-    m_history->blockSignals(true);
-    m_history->setSortingEnabled(false);
-    m_history->clearContents();
-    m_history->setRowCount(0);
-    int visible=0;
-    int pass=0,fail=0,error=0,aborted=0;
-    for(const ArchivedTestSummary& entry:m_entries) {
-        if((verdict!=QStringLiteral("all") && entry.state!=verdict) ||
-           (!needle.isEmpty() && !entry.searchText.contains(needle,Qt::CaseInsensitive)))continue;
-        const int row=m_history->rowCount();
-        m_history->insertRow(row);
-        cell(m_history,row,0,timeLocal(entry.finishedAtUtc));
-        m_history->item(row,0)->setData(Qt::UserRole,entry.path);
-        cell(m_history,row,1,entry.uutId);
-        cell(m_history,row,2,stateLabel(entry.state));
-        m_history->item(row,2)->setForeground(stateColor(entry.state));
-        cell(m_history,row,3,entry.testName);
-        cell(m_history,row,4,QString::number(entry.elapsedMs)+QStringLiteral(" ms"));
-        cell(m_history,row,5,entry.instrumentMode);
-        cell(m_history,row,6,entry.executionId);
-        ++visible;
-        if(entry.state==QStringLiteral("passed"))++pass;
-        else if(entry.state==QStringLiteral("failed"))++fail;
-        else if(entry.state==QStringLiteral("error"))++error;
-        else if(entry.state==QStringLiteral("aborted"))++aborted;
-    }
-    m_history->setSortingEnabled(true);
-    m_history->sortItems(0,Qt::DescendingOrder);
-    m_history->blockSignals(false);
-    bool restored=false;
-    for(int row=0;row<m_history->rowCount();++row) {
-        const auto* item=m_history->item(row,0);
-        if(item && item->data(Qt::UserRole).toString()==selected) {
-            m_history->selectRow(row);restored=true;break;
+    const QSignalBlocker block(m_history->selectionModel());
+    m_historyModel->filter(needle,verdict);
+    const int visible=m_historyModel->rowCount();
+    int row=m_historyModel->rowForPath(selected);
+    if(row<0 && visible>0)row=0;
+    if(row>=0)m_history->selectRow(row);
+    else m_history->clearSelection();
+    // Selection is blocked while filtering to avoid re-reading the same JSON
+    // archive during every keystroke; resolve exactly once after the filter.
+    if(row>=0) {
+        const QString path=m_historyModel->pathAt(row);
+        if(path!=m_loadedPath || m_record.isEmpty()) {
+            QJsonObject record;QString error;
+            if(TestResultsHistory::read(path,&record,&error))showDetail(record,path);
+            else clearDetail(error);
         }
-    }
-    if(!restored) {
-        if(m_history->rowCount()>0)m_history->selectRow(0);
-        else clearDetail(QStringLiteral("No matching archived executions."));
-    }
+    } else clearDetail(QStringLiteral("No matching archived executions."));
     const QString warning=m_status->property("scanWarning").toString();
     QString summary=QStringLiteral("%1 of %2 archived runs shown  |  %3 PASS, %4 FAIL, %5 ERROR, %6 ABORTED")
-        .arg(visible).arg(m_entries.size()).arg(pass).arg(fail).arg(error).arg(aborted);
+        .arg(visible).arg(m_entries.size())
+        .arg(m_historyModel->countForState(QStringLiteral("passed")))
+        .arg(m_historyModel->countForState(QStringLiteral("failed")))
+        .arg(m_historyModel->countForState(QStringLiteral("error")))
+        .arg(m_historyModel->countForState(QStringLiteral("aborted")));
     if(!warning.isEmpty())summary+=QStringLiteral("\n")+warning;
     if(!QDir(m_directory).exists() && !m_directory.isEmpty())
         summary+=QStringLiteral("\nThe folder will appear after the first archived run.");
     m_status->setText(summary);
 }
 void TestResultsBrowserDialog::selectHistory() {
-    const auto selected=m_history->selectedItems();
-    if(selected.isEmpty())return;
-    const int row=selected.first()->row();
-    const auto* item=m_history->item(row,0);
-    if(!item)return;
-    const QString path=item->data(Qt::UserRole).toString();
-    if(path==m_loadedPath && !m_record.isEmpty())return;
-    QJsonObject record;
-    QString error;
+    const QModelIndex index=m_history->currentIndex();
+    if(!index.isValid())return;
+    const QString path=m_historyModel->pathAt(index.row());
+    if(path.isEmpty() || (path==m_loadedPath && !m_record.isEmpty()))return;
+    QJsonObject record;QString error;
     if(!TestResultsHistory::read(path,&record,&error)) {
         clearDetail(error);return;
     }
     showDetail(record,path);
 }
 void TestResultsBrowserDialog::clearDetail(const QString& message) {
-    m_record={};m_loadedPath.clear();
+    m_record={};m_loadedPath.clear();m_jsonRendered=false;
     m_recordHeader->setText(message);
     m_overview->clear();m_json->clear();
-    m_steps->setRowCount(0);m_measurements->setRowCount(0);m_runInfo->setRowCount(0);
+    m_stepsModel->setRows({});
+    m_measurementsModel->setRows({});
+    m_runInfoModel->setRows({});
     m_openFile->setEnabled(false);m_exportJson->setEnabled(false);m_exportCsv->setEnabled(false);
 }
 void TestResultsBrowserDialog::showDetail(const QJsonObject& record,const QString& path) {
-    m_record=record;m_loadedPath=path;
+    m_record=record;m_loadedPath=path;m_jsonRendered=false;
     m_recordHeader->setText(QStringLiteral("%1 — %2 — %3")
         .arg(stateLabel(record.value(QStringLiteral("state")).toString()),
              record.value(QStringLiteral("title")).toString(),
              record.value(QStringLiteral("executionId")).toString()));
     m_overview->setPlainText(summarize(record,path));
-    const QJsonArray steps=record.value(QStringLiteral("steps")).toArray();
-    m_steps->setRowCount(steps.size());
-    for(int row=0;row<steps.size();++row) {
-        const QJsonObject s=steps.at(row).toObject();
-        for(int col=0;col<6;++col) {
-            const QStringList keys={QStringLiteral("group"),QStringLiteral("name"),QStringLiteral("type"),
-                QStringLiteral("status"),QStringLiteral("elapsedMs"),QStringLiteral("detail")};
-            cell(m_steps,row,col,displayValue(s.value(keys.at(col))));
-        }
-    }
-    const QJsonArray measurements=record.value(QStringLiteral("measurements")).toArray();
-    m_measurements->setRowCount(measurements.size());
-    const QStringList measurementFields={QStringLiteral("name"),QStringLiteral("stepId"),QStringLiteral("value"),
-        QStringLiteral("low"),QStringLiteral("high"),QStringLiteral("unit"),QStringLiteral("status")};
-    for(int row=0;row<measurements.size();++row) {
-        const QJsonObject measurement=measurements.at(row).toObject();
-        for(int col=0;col<measurementFields.size();++col)
-            cell(m_measurements,row,col,displayValue(measurement.value(measurementFields.at(col))));
-    }
-    const QJsonObject info=record.value(QStringLiteral("runInfo")).toObject();
-    m_runInfo->setRowCount(info.size());
-    int row=0;
-    for(auto it=info.constBegin();it!=info.constEnd();++it,++row) {
-        cell(m_runInfo,row,0,it.key());
-        cell(m_runInfo,row,1,displayValue(it.value()));
-    }
-    m_json->setPlainText(QString::fromUtf8(QJsonDocument(record).toJson(QJsonDocument::Indented)));
+    m_stepsModel->setRows(record.value(QStringLiteral("steps")).toArray());
+    m_measurementsModel->setRows(record.value(QStringLiteral("measurements")).toArray());
+    m_runInfoModel->setObjectPairs(record.value(QStringLiteral("runInfo")).toObject());
+    m_json->clear(); // formatting large JSON is deliberately lazy
+    renderRawJsonIfNeeded();
     m_openFile->setEnabled(true);m_exportJson->setEnabled(true);m_exportCsv->setEnabled(true);
+}
+void TestResultsBrowserDialog::renderRawJsonIfNeeded() {
+    if(m_jsonRendered || m_record.isEmpty() || m_details->currentWidget()!=m_json)return;
+    m_jsonRendered=true;
+    m_json->setPlainText(QString::fromUtf8(QJsonDocument(m_record).toJson(QJsonDocument::Indented)));
 }
 void TestResultsBrowserDialog::chooseFolder() {
     const QString selected=QFileDialog::getExistingDirectory(this,QStringLiteral("Select archived test results folder"),m_directory);

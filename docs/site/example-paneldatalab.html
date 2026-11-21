@@ -1,0 +1,112 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 37 — Panel Data: Live Workbench · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 37 — Panel Data: Live Workbench</h1>
+<p><strong>Level:</strong> Beginner–Intermediate<br />
+<strong>Category:</strong> Getting Started<br />
+<strong>Pages:</strong> One — <strong>Live Workbench</strong><br />
+<strong>Hardware:</strong> None. All values are simulated.</p>
+<h2>What you will learn</h2>
+<p>The controls and live readouts are side by side so you can see a data binding respond immediately. The seven project-owned shared variables are named <code>Motor.TargetRPM</code>, <code>Motor.ActualRPM</code>, <code>Motor.LoadPct</code>, <code>Motor.Ready</code>, <code>Motor.Mode</code>, <code>Motor.Status</code> and derived <code>Motor.TargetRPS</code>. These are <strong>in-memory runtime values</strong>, unrelated to the disk folder named <code>PanelData</code> used by FileIO/SQLite.</p>
+<h2>Follow along</h2>
+<ol>
+<li>Open <strong>Examples → Panel Data Lab</strong>. In Design mode, open <strong>Properties → Panel Data</strong> and inspect the six entries. The column is labelled <strong>Initial Value</strong> because the Panel isn't running.</li>
+<li>Look at <code>targetInput</code>, <code>loadSlider</code>, <code>readySwitch</code> and <code>modeSelector</code> on the <strong>left</strong>. Each has an optional <strong>Properties → Value Binding</strong>. The right-hand <code>targetReadout</code>, <code>loadMeter</code>, and <code>readyBeacon</code> use the same variables.</li>
+<li>Select <code>speedDisplay</code>, <code>speedDial</code>, and <code>speedGauge</code> on the <strong>right</strong>. All three bind to <code>Motor.ActualRPM</code>. The <code>targetReadout</code> display instead binds to the <strong>computed</strong> <code>Motor.TargetRPS</code> variable. No separate JavaScript widget assignments are needed.</li>
+<li>Before running, find <code>Data.computed('Motor.TargetRPS', ['Motor.TargetRPM'], ...)</code> near the beginning of the script. This formula divides Target RPM by 60, converts it to revolutions per second and updates the <code>targetReadout</code> display automatically. Click <strong>Run Panel</strong>. The <strong>LIVE RESULTS</strong> subtitle immediately displays the initial target from <code>Data.onChange(...,{immediate:true})</code>. Enable <strong>READY</strong>, adjust <strong>Target RPM</strong>, and press <strong>START SIMULATION</strong>. Watch the three speed displays change together <strong>without switching Pages</strong>. The slower first-order response gives you time to observe the effect.</li>
+<li>While running, reopen the Properties pane (automatic Focus hides it) and select <strong>Panel Data</strong>. The third column reads <strong>Live Value</strong>; values follow changes, including variables you create yourself before running.</li>
+<li>While the simulated motor runs, turn <strong>READY OFF</strong>. A <code>Data.onChange('Motor.Ready',...)</code> subscriber safely stops the <em>simulation</em> without requiring a separate Button event. Re-enable READY and START if desired. Click <strong>STOP</strong> to stop the model timer, then <strong>RESET ALL</strong> to restore the simulated values. Click <strong>Stop / Design</strong> on the toolbar to exit the Panel runtime. The Panel Data column changes back to <strong>Initial Value</strong>, because runtime values are not saved as defaults.</li>
+</ol>
+<h2>Follow the JavaScript</h2>
+<p>The source is at <code>examples/source/PanelDataLab.js</code> and is embedded in the <code>.wfpanel</code> project. The model runs every 250 ms and publishes one measured speed value:</p>
+<pre><code class="language-javascript">const previous = Data.get('Motor.ActualRPM');
+const target = Data.get('Motor.TargetRPM');
+const load = Data.get('Motor.LoadPct');
+const achievable = target * (1 - 0.0012 * load);
+Data.set('Motor.ActualRPM', Number((previous + 0.12 * (achievable - previous)).toFixed(1)));
+</code></pre>
+<p>All three right-hand speed widgets follow that one <code>Data.set()</code> call. <code>Data.get()</code> reads a variable; <code>Data.names()</code> lists all definitions. <code>Data.isComputed(name)</code> reports whether a definition was registered as a derived read-only value in the current run. Input controls publish changes through their two-way bindings <strong>before</strong> the saved JavaScript event handler executes.</p>
+<h3>Observe changes without manually wiring widget events</h3>
+<p>The example now registers two Data subscriptions in JavaScript:</p>
+<pre><code class="language-javascript">const targetWatcher = Data.onChange('Motor.TargetRPM', function(value, previous, name) {
+    ui.set('hintControls', 'TARGET ' + value + ' RPM');
+}, {immediate:true});
+
+const readyWatcher = Data.onChange('Motor.Ready', function(ready) {
+    if (!ready &amp;&amp; modelTimer !== null) stopMotorSimulation();
+});
+</code></pre>
+<p><code>Data.onChange()</code> receives <code>(value, previousValue, name)</code> and returns a numeric subscription ID. The target subscriber executes when you change the <strong>targetInput</strong> control <em>or</em> when RESET runs <code>Data.set('Motor.TargetRPM',1200)</code>. The READY subscriber stops the simulation when READY is switched off. A write of the <strong>same value</strong> produces no event, and initial defaults do not notify unless <code>{immediate:true}</code> is requested (then <code>previousValue</code> is <code>undefined</code>). The example calls <code>Data.offChange(id)</code> in <code>onShutdown()</code>; subscriptions are also cleared when a Panel run ends.</p>
+<p>These subscriptions <strong>do not replace designer-managed control events</strong>: for example, <code>onTargetChanged(value)</code> still demonstrates the Value Binding event handler. The Data subscription is for state changes regardless of their source. Programmatic <code>Data.set()</code> updates still never simulate an operator click or touch hardware.</p>
+<p><strong>Avoid feedback loops:</strong> A callback can write another variable, but do not make two subscriptions continually write new values back to one another. Events are queued within each synchronous dispatch cycle and capped at 256 to detect such loops; callback exceptions appear in the Panel diagnostics.</p>
+<h3>Saved visual event handlers</h3>
+<table>
+<thead>
+<tr>
+  <th>Control</th>
+  <th>Event</th>
+  <th>Handler</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td><code>startButton</code></td>
+  <td><code>clicked</code></td>
+  <td><code>startMotorSimulation()</code></td>
+</tr>
+<tr>
+  <td><code>stopButton</code></td>
+  <td><code>clicked</code></td>
+  <td><code>stopMotorSimulation()</code></td>
+</tr>
+<tr>
+  <td><code>resetButton</code></td>
+  <td><code>clicked</code></td>
+  <td><code>resetMotorSimulation()</code></td>
+</tr>
+<tr>
+  <td><code>targetInput</code></td>
+  <td><code>valueChanged</code></td>
+  <td><code>onTargetChanged(value)</code></td>
+</tr>
+<tr>
+  <td><code>modeSelector</code></td>
+  <td><code>selectionChanged</code></td>
+  <td><code>onModeChanged(text)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Use <strong>Design → select widget → Properties → Events → Go to Handler</strong> to inspect these functions. No manual <code>ui.on()</code> duplicate registrations are necessary.</p>
+<h2>Create your own computed value</h2>
+<p>Declare <code>Experiment.Voltage</code> (Number, initial 3.3) and <code>Experiment.VoltageMilli</code> (Number, initial 3300) in <strong>Properties → Panel Data</strong>. Bind a read-only Numeric or Digital Display widget to <code>Experiment.VoltageMilli</code>. Register at script startup:</p>
+<pre><code class="language-javascript">Data.computed('Experiment.VoltageMilli', ['Experiment.Voltage'], function(volts) {
+    return volts * 1000;
+});
+</code></pre>
+<p>Then <code>Data.set('Experiment.Voltage', 2.5)</code> automatically makes the bound millivolt display read <code>2500</code>. Calling <code>Data.set('Experiment.VoltageMilli', 2500)</code> throws, because the target is computed and read-only. This is a <strong>runtime declaration in the saved JavaScript</strong>; both variable definitions must be added in Design mode for the editor to offer the bindings. See <a href="api-reference.html#api-data-computed">docs/PANEL_DATA_COMPUTED_V02_DEV8_5.md</a>.</p>
+<h2>Create a variable and watch it change</h2>
+<ol>
+<li>In <strong>Design</strong>, open <strong>Properties → Panel Data → + New</strong> and create <code>Experiment.Voltage</code> as <strong>Number</strong> with initial value <code>0</code>. Alternatively, select a compatible widget and use <strong>Value Binding → + Create New Variable...</strong>.</li>
+<li>In <code>startMotorSimulation()</code>, immediately before the <code>setInterval</code> call, add <code>Data.set('Experiment.Voltage', 3.3);</code>.</li>
+<li>Run the Panel, reopen <strong>Properties → Panel Data</strong>, and click <strong>START</strong> after setting READY. The new row should now show a <strong>Live Value</strong> of <code>3.3</code>. The variable does not need to be bound to a visible widget to update in this list.</li>
+<li>Stop / Design: the value returns to the saved <strong>Initial Value</strong> (<code>0</code>). For persistent readings, use explicit FileIO or SQLite rather than changing project defaults automatically.</li>
+</ol>
+<h2>Make one small change</h2>
+<p>Change the <code>0.12</code> coefficient in <code>simulationTick()</code> to <code>0.06</code>. Watch the actual motor speed rise more slowly while the target remains fixed. Save the modified project with <strong>Save / Export</strong>. This simulation never commands the AD3 or physical motor hardware.</p>
+<h2>Rules that prevent confusion</h2>
+<ul>
+<li>Value Binding is optional. Unbound widgets still use <code>ui.get()</code> / <code>ui.set()</code>.</li>
+<li>Once a widget's Value is bound, <code>Data.set(name, value)</code> owns that value; direct <code>ui.set(widgetId, ...)</code> is rejected.</li>
+<li>A programmatic Data change refreshes widgets without simulating operator actions or hardware commands.</li>
+<li>Variable types must match widget types: Number, Boolean and Text. Read-only computed targets cannot be bound to operator-editable controls.</li>
+<li>A variable referenced by a widget cannot be deleted while that binding remains. JavaScript references cannot be automatically renamed.</li>
+<li><strong>Initial Value</strong> is the design-time default. <strong>Live Value</strong> is the runtime state; it isn't silently persisted.</li>
+</ul>
+<h2>Safety and scope</h2>
+<p>This example is simulation-only. The READY control changes a Boolean; only the explicit START button runs the synthetic model. There are no AD3 output operations, COM ports or network connections.</p>
+<h2>If something does not work</h2>
+<p>Confirm the Panel is running, the correct widget Value Binding is selected, and the variable name exactly matches the <code>Data.set()</code> argument. Expand <strong>Properties</strong> when Run Focus hides the pane. A newly created variable must appear immediately in Design mode and reflect its <code>Data.set()</code> changes in the live column during Run.</p>
+<h2>Related files</h2>
+<ul>
+<li><code>examples/panels/PanelDataLab.wfpanel</code> — one-Page workbench with all 19 widgets and seven typed variables.</li>
+<li><code>examples/source/PanelDataLab.js</code> — source for the embedded script.</li>
+<li><code>docs/PANEL_DATA_V02_DEV8.md</code> — Panel Data architecture, API and binding coverage.</li>
+</ul>
+<p class="doc-footnote">Source: <code>examples/guides/PanelDataLab.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

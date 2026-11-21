@@ -1,5 +1,6 @@
 #include "PlotBridge.h"
 #include "../WaveFormsBindings.h"
+#include "../BinaryBridge.h"
 #include <QRegularExpression>
 #include <QMetaType>
 #include <QStringList>
@@ -76,6 +77,7 @@ bool PlotBridge::setSeries(const QString& id,const QString& name,
     if(!readNumbers(xx,&c.x) || !readNumbers(yy,&c.y))
         return reject(QStringLiteral("Series requires 1-250000 finite numeric X/Y pairs"));
     m_seriesNames[id].insert(name);
+    m_nativeInfo[id].remove(name);
     emit commandReady(c);return true;
 }
 bool PlotBridge::appendSeries(const QString& id,const QString& name,
@@ -91,6 +93,7 @@ bool PlotBridge::appendSeries(const QString& id,const QString& name,
     if(!readNumbers(xx,&c.x) || !readNumbers(yy,&c.y))
         return reject(QStringLiteral("Append requires 1-250000 finite numeric X/Y pairs"));
     m_seriesNames[id].insert(name);
+    m_nativeInfo[id].remove(name);
     emit commandReady(c);return true;
 }
 bool PlotBridge::appendPoint(const QString& id,const QString& name,double x,double y) {
@@ -101,8 +104,42 @@ bool PlotBridge::appendPoint(const QString& id,const QString& name,double x,doub
     PlotCommand c;c.action=PlotCommand::Action::AppendSeries;
     c.plotId=id;c.seriesName=name;c.x={x};c.y={y};
     m_seriesNames[id].insert(name);
+    m_nativeInfo[id].remove(name);
     emit commandReady(c);return true;
 }
+bool PlotBridge::setNativeSamples(const QString& id,const QString& name,QObject* source,
+                                  double step,double start,const QVariantMap& options){
+    if(!validPlot(id))return false;
+    if(!validSeriesName(name)||!validNewSeries(id,name))return reject(QStringLiteral("Invalid native series name or series limit"));
+    if(!validSeriesOptions(options))return false;
+    auto* samples=qobject_cast<BinarySamples*>(source);
+    if(!samples || samples->length()<1 || samples->length()>4000000)
+        return reject(QStringLiteral("Native plot requires a live BinarySamples (1..4000000 samples)"));
+    const double end=start+double(samples->length()-1)*step;
+    if(!std::isfinite(step)||step<=0||!std::isfinite(start)||!std::isfinite(end)||end<=start)
+        return reject(QStringLiteral("Native plot requires positive finite X step, start and extent"));
+    PlotCommand command;command.plotId=id;command.seriesName=name;
+    command.options=options;command.nativeSamples=true;command.nativeStart=start;command.nativeStep=step;
+    // QVector's implicit sharing keeps data alive across the queued GUI message
+    // even if the worker JS calls samples.release() immediately afterward.
+    command.y=samples->nativeValues();
+    m_seriesNames[id].insert(name);
+    m_nativeInfo[id].insert(name,{{"native",true},{"count",samples->length()},
+                                  {"xStart",start},{"xStep",step},{"xEnd",end}});
+    emit commandReady(command);
+    return true;
+}
+bool PlotBridge::setView(const QString& id,double xmin,double xmax,double ymin,double ymax){
+    if(!validPlot(id))return false;
+    if(!std::isfinite(xmin)||!std::isfinite(xmax)||!std::isfinite(ymin)||!std::isfinite(ymax)||
+       xmin>=xmax||ymin>=ymax)return reject(QStringLiteral("View needs finite increasing X/Y limits"));
+    PlotCommand command;command.action=PlotCommand::Action::SetView;command.plotId=id;
+    command.options={{"xMin",xmin},{"xMax",xmax},{"yMin",ymin},{"yMax",ymax}};
+    emit commandReady(command);return true;
+}
+QVariantMap PlotBridge::getView(const QString& id) const {return m_views.value(id);}
+QVariantMap PlotBridge::nativeSeriesInfo(const QString& id,const QString& name) const {return m_nativeInfo.value(id).value(name);}
+void PlotBridge::receiveView(const QString& id,const QVariantMap& view){if(m_plotIds.contains(id))m_views[id]=view;}
 bool PlotBridge::setSamples(const QString& id,const QString& name,const QVariantList& yy,
                             double rate,double start,const QVariantMap& options) {
     if(!validPlot(id))return false;
@@ -120,6 +157,7 @@ bool PlotBridge::setSamples(const QString& id,const QString& name,const QVariant
         c.x.append(x);
     }
     m_seriesNames[id].insert(name);
+    m_nativeInfo[id].remove(name);
     emit commandReady(c);return true;
 }
 bool PlotBridge::fromScope(const QString& id,int channel,const QString& name) {
@@ -140,6 +178,7 @@ bool PlotBridge::fromScope(const QString& id,int channel,const QString& name) {
         c.x.append(double(i)/rate);
     }
     m_seriesNames[id].insert(name);
+    m_nativeInfo[id].remove(name);
     emit commandReady(c);return true;
 }
 bool PlotBridge::configure(const QString& id,const QVariantMap& settings) {
@@ -158,9 +197,14 @@ bool PlotBridge::configure(const QString& id,const QVariantMap& settings) {
                   k==QLatin1String("xLog") || k==QLatin1String("yLog") ||
                   k==QLatin1String("showCursors") || k==QLatin1String("showY2") ||
                   k==QLatin1String("showY2Labels") || k==QLatin1String("showXAxis") ||
-                  k==QLatin1String("showYAxis") || k==QLatin1String("y2Auto")) {
+                  k==QLatin1String("showYAxis") || k==QLatin1String("y2Auto") ||
+                  k==QLatin1String("digitalPerfOverlay")) {
             if(v.metaType().id()!=QMetaType::Bool)
                 return reject(QStringLiteral("Option %1 must be boolean").arg(k));
+        } else if(k==QLatin1String("legacyEnvelopeOpacity") || k==QLatin1String("nativeEnvelopeOpacity")) {
+            bool ok=false;const double d=v.toDouble(&ok);
+            if(!ok || !std::isfinite(d) || d<0 || d>1)
+                return reject(QStringLiteral("Envelope opacity must be between 0 and 1"));
         } else if(k==QLatin1String("xMin") || k==QLatin1String("xMax") ||
                   k==QLatin1String("yMin") || k==QLatin1String("yMax") ||
                   k==QLatin1String("lineWidth") || k==QLatin1String("cursorA") ||
@@ -178,6 +222,8 @@ bool PlotBridge::clear(const QString& id) {
     if(!validPlot(id))return false;
     PlotCommand c;c.action=PlotCommand::Action::Clear;c.plotId=id;
     m_seriesNames.remove(id);
+    m_nativeInfo.remove(id);
+    m_views.remove(id);
     emit commandReady(c);return true;
 }
 bool PlotBridge::removeSeries(const QString& id,const QString& name) {
@@ -185,6 +231,7 @@ bool PlotBridge::removeSeries(const QString& id,const QString& name) {
     if(!validSeriesName(name))return reject(QStringLiteral("Invalid series name"));
     PlotCommand c;c.action=PlotCommand::Action::RemoveSeries;c.plotId=id;c.seriesName=name;
     m_seriesNames[id].remove(name);
+    m_nativeInfo[id].remove(name);
     emit commandReady(c);return true;
 }
 

@@ -7,6 +7,7 @@
 #include "widgets/MeasurementTableWidget.h"
 #include "widgets/TestSequenceWidget.h"
 #include <QApplication>
+#include <QAbstractItemModel>
 #include <QDebug>
 #include <QVariantList>
 #include <QVariantMap>
@@ -79,15 +80,15 @@ int main(int argc,char** argv) {
     CHECK(nativeRows.toList().size()==2);
     CHECK(nativeRows.toList().at(0).metaType().id()==QMetaType::QVariantMap);
     tableFactory->applyRuntimeValue(table,tableDefinition,nativeRows);
-    CHECK(table->displayedRows()==2 && table->item(1,3)->text()=="FAIL");
-    CHECK(table->item(0,3)->text()=="PASS");
-    CHECK(table->item(1,3)->text()=="FAIL");
+    CHECK(table->displayedRows()==2 && table->model()->index(1,3).data().toString()=="FAIL");
+    CHECK(table->model()->index(0,3).data().toString()=="PASS");
+    CHECK(table->model()->index(1,3).data().toString()=="FAIL");
     QVariantList invalid=rows;
     invalid.append(QVariantMap{{"name","Invalid"},{"value",1.0},{"low",7.0},{"high",1.0}});
     CHECK(!table->setMeasurements(invalid));
     CHECK(table->displayedRows()==2); // atomic invalid-row rejection
     CHECK(table->setMeasurements(QVariantList{QVariantMap{{"name","Untested"}}}));
-    CHECK(table->item(0,3)->text()=="NOT TESTED");
+    CHECK(table->model()->index(0,3).data().toString()=="NOT TESTED");
     tableFactory->applyRuntimeValue(table,tableDefinition,QVariantMap{{"reset",true}});
     CHECK(table->displayedRows()==0);
     // These QWidget-derived visual controls intentionally do not declare Q_OBJECT.
@@ -116,10 +117,10 @@ int main(int argc,char** argv) {
     // The Table is now hidden. A fresh ui.set() must still update its rows.
     canvas.applyValue("crossPageTable",QVariantList{
         QVariantMap{{"name","PWM"},{"value",50.1},{"low",49.0},{"high",51.0},{"unit","%"}}});
-    CHECK(retainedTable->displayedRows()==1 && retainedTable->item(0,3)->text()=="PASS");
+    CHECK(retainedTable->displayedRows()==1 && retainedTable->model()->index(0,3).data().toString()=="PASS");
     CHECK(canvas.activatePage("table",tablePage,QSize(900,500),&error));
     CHECK(dynamic_cast<MeasurementTableWidget*>(canvas.findChild<QWidget*>("crossPageTable"))==retainedTable);
-    CHECK(retainedTable->displayedRows()==1 && retainedTable->item(0,3)->text()=="PASS");
+    CHECK(retainedTable->displayedRows()==1 && retainedTable->model()->index(0,3).data().toString()=="PASS");
     CHECK(canvas.activatePage("summary",summary,QSize(900,500),&error));
     CHECK(dynamic_cast<MeasurementResultWidget*>(canvas.findChild<QWidget*>("crossPageResult"))==retained);
     CHECK(retained->resultState()=="PASS");

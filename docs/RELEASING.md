@@ -1,30 +1,11 @@
 # Releasing WFScript
 
-## v0.1 public release baseline
+The current release target is **v0.2**; v0.1 remains the previous public release. Preserve Git history and existing tags.
 
-The previous source baseline was validated, but the **new v0.1 packaging still requires a clean Windows rebuild and CTest pass** before tagging. Prior evidence:
+1. Review [v0.2 checklist](RELEASE_V0_2_CHECKLIST.md) and complete clean Windows build/native tests and manual acceptance checks.
+2. Publish verified source from the existing `main` history (see [GitHub workflow](GITHUB_V0_2_PUBLISHING.md)); do **not** initialize an unrelated repository or force-push over v0.1.
+3. Review the GitHub Actions build/test status on `main`.
+4. Only after the gates pass, create annotated tag `v0.2`, push the tag, and draft the GitHub Release using `RELEASE_NOTES_v0.2.md`.
+5. Binary releases are optional: a portable EXE requires matching Qt `windeployqt` assets, licensing review, and clean-system smoke testing before distribution.
 
-- application builds and runs on the validated Windows Qt environment,
-- the full native CTest suite passes (**66 / 66**),
-- manual editor checks passed,
-- the owner successfully ran the AD3 Hardware Test Station example.
-
-## Suggested Git tagging workflow
-
-```powershell
-git init -b main
-git add .
-git commit -m "WFScript v0.1 public release"
-git tag -a v0.1 -m "WFScript v0.1"
-```
-
-Then create the remote repository and push normally.
-
-## Before publishing binaries
-
-If you publish binaries later, also:
-
-1. build a clean **Release** configuration,
-2. deploy Qt dependencies with `windeployqt`,
-3. test on a clean Windows system,
-4. review Qt open-source obligations and third-party notices.
+Historical v0.1/revision-specific notes are retained in the repository under `docs/development-history/` and `docs/` as reference, not active release instructions.

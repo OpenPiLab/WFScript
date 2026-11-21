@@ -1,0 +1,220 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "SWD Protocol — Target Registers — WFScript v0.2-dev native Digilent SDK protocols",
+  "scriptName": "ProtocolSWD.js",
+  "activePageId": "protocol_swd",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "protocol_swd",
+      "name": "SWD Protocol",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "swdTitle",
+          "type": "label",
+          "text": "ARM SWD  /  SWCLK DIO0 · SWDIO DIO1",
+          "x": 24,
+          "y": 18,
+          "width": 1112,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "swdSafety",
+          "type": "label",
+          "text": "Only connect a voltage-compatible 3.3 V debug target with common GND. Read-only demonstration; never writes registers automatically.",
+          "x": 24,
+          "y": 80,
+          "width": 1112,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "swdRate",
+          "type": "option_selector",
+          "text": "SWD CLOCK, Hz",
+          "x": 24,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "100000|500000|1000000",
+            "defaultIndex": 2,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "swdCfg",
+          "type": "button",
+          "text": "CONFIGURE",
+          "x": 24,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSwdCfgClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "swdReset",
+          "type": "button",
+          "text": "LINE RESET",
+          "x": 300,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSwdResetClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "swdRead",
+          "type": "button",
+          "text": "READ DP IDCODE",
+          "x": 576,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSwdReadClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "swdStop",
+          "type": "button",
+          "text": "RELEASE PINS",
+          "x": 852,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSwdStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "swdStatus",
+          "type": "label",
+          "text": "IDLE",
+          "x": 24,
+          "y": 385,
+          "width": 1112,
+          "height": 76,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "swdLog",
+          "type": "event_log",
+          "text": "SWD Transaction & Event Log",
+          "x": 24,
+          "y": 476,
+          "width": 1112,
+          "height": 239,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        },
+        {
+          "id": "swdFoot",
+          "type": "label",
+          "text": "Simulation results are labeled as simulation. This is a native SDK controller example, not a passive waveform decoder.\\nStop/Close releases protocol outputs. Configure buttons may physically drive selected DIO pins.",
+          "x": 24,
+          "y": 727,
+          "width": 1112,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: SWD Protocol — Target Registers\n// │ Level: Advanced  |  Mode: hardware-capable\n// │\n// │ GOAL: Read a debug-port identification register from a compatible ARM SWD target.\n// │ BEFORE RUN: Use Simulation for API structure. Physical use requires voltage-matched\n// │    SWCLK, SWDIO and common ground.\n// │ TRY FIRST: Press CONFIGURE.\n// │ TRACE: `swdCfg` → `onSwdCfgClicked()` → configure clock/data; `swdRead` → read DP\n// │    register.\n// │ EDIT SAFELY: Change the clock rate only within the capabilities of your actual SWD\n// │    target.\n// │ REMEMBER: SWD requires protocol acknowledgements and turnaround timing; a simulated read\n// │    does not identify hardware.\n// │\n// │ EVENT TIP: Select `swdCfg` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/ProtocolSWD.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n// ARM SWD target register reading. No writes on startup or in this demo.\nfunction swdLog(t) {\n    ui.set('swdStatus', t);\n    ui.set('swdLog', {\n        append: {\n            level: t.indexOf('ERROR') >= 0 ? 'ERROR' : (t.indexOf('NACK') >= 0 || t.indexOf('UNCONFIRMED') >= 0 ? 'WARN' : 'INFO'),\n            source: 'SWD',\n            message: t\n        }\n    });\n    print('SWD: ' + t);\n}\nfunction swdTry(fn) {\n    try {\n        fn();\n    } catch (e) {\n        swdLog('ERROR: ' + String(e));\n    }\n}\n/**\n * CORE LESSON — Configures a clock/data debug connection on explicit operator request; a target ID\n * read requires a voltage-compatible powered target.\n */\nfunction swdConfigure() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    const rate = Number(ui.get('swdRate'));\n    if (!Protocol1.SWD.configure({\n        clock: 0,\n        data: 1,\n        rateHz: rate,\n        turnaround: 1\n    })) throw Error(Protocol1.SWD.lastError);\n    swdLog((Protocol1.simulation ? 'SIMULATED' : 'READY') + ' / ' + rate + ' Hz / SWCLK0 SWDIO1');\n}\nfunction swdReset() {\n    if (!Protocol1.SWD.clear(52, 16)) throw Error(Protocol1.SWD.lastError);\n    swdLog('SWD RESET SENT');\n}\nfunction swdRead() {\n    const r = Protocol1.SWD.readRegister(false, 0);\n    if (!r.ok) throw Error(r.error);\n    if (r.simulated) {\n        swdLog('SIMULATED — no real target ACK or ID');\n        return;\n    }\n    swdLog('DP IDCODE / ACK ' + r.ackName + ' (' + r.ack + ') / 0x' + Number(r.value || 0).toString(16) +\n        ' / parityError ' + String(!!r.parityError));\n}\nfunction swdStop() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    swdLog('STOPPED / pins released');\n}\nfunction onSwdCfgClicked() {\n    return swdTry(swdConfigure);\n}\nfunction onSwdResetClicked() {\n    return swdTry(swdReset);\n}\nfunction onSwdReadClicked() {\n    return swdTry(swdRead);\n}\nfunction onSwdStopClicked() {\n    return swdTry(swdStop);\n}\nswdLog('IDLE — connect only voltage-compatible SWD target with common ground');\n"
+}

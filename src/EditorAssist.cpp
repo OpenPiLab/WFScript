@@ -161,6 +161,25 @@ QStringList enumValues(QString p) {
 QString signature(QString p,int argument) {
     p=canonical(p);
     const auto tip=[&](const QString& s,const QString& d) {return s+QStringLiteral("\n")+d+QStringLiteral("\nArgument ")+QString::number(argument+1);};
+    if(p==QStringLiteral("Data.set"))return tip(QStringLiteral("Data.set(name, value)"),QStringLiteral("Set a project-owned typed variable; every bound widget updates automatically. Throws for unknown names or wrong types"));
+    if(p==QStringLiteral("Data.get"))return tip(QStringLiteral("Data.get(name)"),QStringLiteral("Read a shared variable from any Page; throws if missing"));
+    if(p==QStringLiteral("Data.names"))return tip(QStringLiteral("Data.names()"),QStringLiteral("List project-owned shared variable names"));
+    if(p==QStringLiteral("Data.onChange"))return tip(QStringLiteral("Data.onChange(name, callback, {immediate:false})"),QStringLiteral("Return numeric subscription ID. callback(value, previousValue, name) runs only on changes, including bound input edits; immediate:true sends current value with undefined previousValue"));
+    if(p==QStringLiteral("Data.offChange"))return tip(QStringLiteral("Data.offChange(subscriptionId)"),QStringLiteral("Remove one change subscription; true if it existed, false otherwise"));
+    if(p==QStringLiteral("Data.computed"))return tip(QStringLiteral("Data.computed(targetName, dependencies, formula)"),QStringLiteral("Declare the target in Panel Data first. Pure formula(...dependencyValues) returns the matching typed value. Dependencies update the read-only target, all its bound displays, and onChange listeners. Cycles and editable input targets are rejected"));
+    if(p==QStringLiteral("Data.isComputed"))return tip(QStringLiteral("Data.isComputed(name)"),QStringLiteral("True after a declared Panel Data variable is registered as a read-only computed value"));
+    if(p==QStringLiteral("Serial.create"))return tip(QStringLiteral("Serial.create({port,baudRate?,dataBits?,parity?,stopBits?,flowControl?})"),QStringLiteral("Create unopened native QSerialPort; call on(...), then open()"));
+    if(p==QStringLiteral("Serial.ports"))return tip(QStringLiteral("Serial.ports()"),QStringLiteral("Discover available PC COM ports; returns array of port descriptions"));
+    if(p==QStringLiteral("TCP.create"))return tip(QStringLiteral("TCP.create({host,port})"),QStringLiteral("TCP client: register callbacks, then connect()"));
+    if(p==QStringLiteral("TCP.createServer"))return tip(QStringLiteral("TCP.createServer({host:'127.0.0.1',port:0})"),QStringLiteral("TCP server: on('connection',fn), listen(); port 0 chooses a local port"));
+    if(p==QStringLiteral("UDP.create"))return tip(QStringLiteral("UDP.create({host:'127.0.0.1',port:0})"),QStringLiteral("Datagrams: on('message',fn), bind(); send(payload,ip,port)"));
+    if(p.endsWith(QStringLiteral("Connection.on")) || p==QStringLiteral("TCPServer.on"))return tip(QStringLiteral("on(event,callback)"),QStringLiteral("Event names: open/connect/listening/connection/data/line/message/text/error/close; callbacks run on Panel JS thread"));
+    if(p.endsWith(QStringLiteral("Connection.write")))return tip(QStringLiteral("write(textOrByteArray) : bytesAccepted"),QStringLiteral("UTF-8 text or byte array; stream framing is not automatic; on('line') assembles newline messages"));
+    if(p==QStringLiteral("UDPConnection.send"))return tip(QStringLiteral("send(textOrByteArray, numericIP, port) : bytesSent"),QStringLiteral("One UDP datagram, <=65507 bytes; default destination should be 127.0.0.1"));
+    if(p==QStringLiteral("UDPConnection.bind") || p==QStringLiteral("TCPServer.listen"))return tip(p+QStringLiteral("()"),QStringLiteral("Explicitly start listening; info().localPort returns the bound port"));
+    if(p==QStringLiteral("setInterval"))return tip(QStringLiteral("setInterval(callback, milliseconds, ...args)"),QStringLiteral("Panel-only repeating Qt timer, 10..86400000 ms; max 256 active; clearInterval(id) to cancel"));
+    if(p==QStringLiteral("setTimeout"))return tip(QStringLiteral("setTimeout(callback, milliseconds, ...args)"),QStringLiteral("Panel-only one-shot Qt timer, 10..86400000 ms; clearTimeout(id) to cancel"));
+    if(p==QStringLiteral("clearInterval") || p==QStringLiteral("clearTimeout"))return tip(p+QStringLiteral("(timerId)"),QStringLiteral("Cancel timer ID; harmless if already cancelled or fired"));
     if(p.startsWith(QStringLiteral("Scope1.Channel1.")) &&
        (p.endsWith(QStringLiteral(".measure")) || p.endsWith(QStringLiteral(".measureCapture"))))
         return tip(QStringLiteral("measure(name [, startSeconds, endSeconds])"),QStringLiteral("Measurement name and optional time window; units depend on measurement"));
@@ -201,6 +220,12 @@ QString signature(QString p,int argument) {
     if(p==QStringLiteral("Logic1.single")) return tip(QStringLiteral("single()"),QStringLiteral("Arm untriggered DigitalIn acquisition using Logic1.Time settings"));
     if(p==QStringLiteral("Logic1.samples")) return tip(QStringLiteral("samples()"),QStringLiteral("Returns last completed 16-bit DIO sample words"));
     if(p==QStringLiteral("Logic1.captureDiagnostics")) return tip(QStringLiteral("captureDiagnostics()"),QStringLiteral("Read byte-count and half-buffer acquisition diagnostics"));
+    if(p==QStringLiteral("StaticIO.onChange")) return tip(QStringLiteral("onChange(pin, callback, {edge:'change'|'rising'|'falling',debounceMs:30})"),QStringLiteral("Register one callback per DIO; no polling until startMonitor()"));
+    if(p==QStringLiteral("StaticIO.startMonitor")) return tip(QStringLiteral("startMonitor({pollIntervalMs:20})"),QStringLiteral("Explicitly start read-only 10..1000 ms polling; one snapshot for all 16 pins"));
+    if(p==QStringLiteral("StaticIO.stopMonitor")) return tip(QStringLiteral("stopMonitor()"),QStringLiteral("Stop monitoring immediately, retain callbacks for restart; does not touch outputs"));
+    if(p==QStringLiteral("StaticIO.monitorStats")) return tip(QStringLiteral("monitorStats()"),QStringLiteral("Snapshot counts, watch count, input mask, poll latency and error"));
+    if(p==QStringLiteral("StaticIO.clearOnChange")) return tip(QStringLiteral("clearOnChange(pin)"),QStringLiteral("Unregister callback for pin 0..15"));
+    if(p==QStringLiteral("StaticIO.clearAllOnChange")) return tip(QStringLiteral("clearAllOnChange()"),QStringLiteral("Unregister callbacks on every DIO pin"));
     if(p==QStringLiteral("StaticIO.setPin")) return tip(QStringLiteral("setPin(index, state)"),QStringLiteral("Pin 0..15; state 0=LOW, 1=HIGH, 2=Z; commit immediately"));
     if(p==QStringLiteral("StaticIO.readPin")) return tip(QStringLiteral("readPin(index)"),QStringLiteral("Read fresh pin level, returns -1 on error"));
     if(p==QStringLiteral("StaticIO.config")) return tip(QStringLiteral("config()"),QStringLiteral("Apply staged 16-pin StaticIO state to hardware"));
@@ -215,6 +240,11 @@ QString signature(QString p,int argument) {
     if(p.endsWith(QStringLiteral(".Custom.set")) || p.endsWith(QStringLiteral(".Play.set")))
         return tip(QStringLiteral("set(samples)"),QStringLiteral("Array of normalized voltage samples [-1,1]"));
     if(p==QStringLiteral("plots.setSeries")) return tip(QStringLiteral("setSeries(id, seriesName, xArray, yArray [, options])"),QStringLiteral("Replace explicitly addressed X/Y series"));
+    if(p==QStringLiteral("plots.setNativeSamples")) return tip(QStringLiteral("setNativeSamples(id, name, BinarySamples, xStep [, xStart, options])"),QStringLiteral("Native full-resolution chart, visible-range decimation"));
+    if(p==QStringLiteral("plots.nativeSeriesInfo")) return tip(QStringLiteral("nativeSeriesInfo(plotId,name)"),QStringLiteral("Native series count / X start / step / end metadata"));
+    if(p==QStringLiteral("plots.getView")) return tip(QStringLiteral("getView(plotId)"),QStringLiteral("Last asynchronous zoom/pan view snapshot"));
+    if(p==QStringLiteral("plots.setView")) return tip(QStringLiteral("setView(plotId,xMin,xMax,yMin,yMax)"),QStringLiteral("Queue a programmatic zoom"));
+    if(p==QStringLiteral("plots.onViewChanged")) return tip(QStringLiteral("onViewChanged(plotId, callback)"),QStringLiteral("Subscribe to native chart zoom/pan updates"));
     if(p==QStringLiteral("plots.setSamples")) return tip(QStringLiteral("setSamples(id, name, samples, sampleRateHz [, startSeconds, options])"),QStringLiteral("Uniformly sampled time axis"));
     if(p==QStringLiteral("plots.fromScope")) return tip(QStringLiteral("fromScope(plotId [, channel=1, name])"),QStringLiteral("Copy completed Scope1 channel capture to one Panel plot"));
     if(p==QStringLiteral("plots.configure")) return tip(QStringLiteral("configure(plotId, options)"),QStringLiteral("Chart types, labels and X/Y bounds; Panel-only"));

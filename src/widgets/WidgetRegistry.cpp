@@ -26,5 +26,28 @@ const WidgetFactory* WidgetRegistry::factory(const QString& typeId) const {
 }
 QVector<WidgetProperty> WidgetRegistry::properties(const QString& typeId) const {
     const auto* f=factory(typeId);
-    return f ? f->properties() : QVector<WidgetProperty>{};
+    if(!f)return {};
+    // Truly universal properties go here, not in 29 widget-specific factories.
+    // ID and geometry are always rendered by the Inspector's fixed header.
+    WidgetProperty hint{QStringLiteral("toolTip"),QStringLiteral("Tooltip / Help"),
+                        QStringLiteral("string"),true};
+    hint.defaultValue=QString();
+    hint.category=QStringLiteral("Common");
+    WidgetProperty enabled{QStringLiteral("runEnabled"),QStringLiteral("Enabled during Run"),
+                           QStringLiteral("boolean"),true};
+    enabled.defaultValue=true;
+    enabled.category=QStringLiteral("Common");
+    WidgetProperty visible{QStringLiteral("runVisible"),QStringLiteral("Visible during Run"),
+                           QStringLiteral("boolean"),true};
+    visible.defaultValue=true;
+    visible.category=QStringLiteral("Common");
+    QVector<WidgetProperty> result{hint,enabled,visible};
+    for(const WidgetProperty& own:f->properties()) {
+        // Do not create two fields with the same persistent JSON key.
+        bool duplicate=false;
+        for(const WidgetProperty& common:result)
+            if(common.id==own.id) {duplicate=true;break;}
+        if(!duplicate)result.append(own);
+    }
+    return result;
 }

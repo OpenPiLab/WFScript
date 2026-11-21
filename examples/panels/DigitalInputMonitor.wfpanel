@@ -1,0 +1,806 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Opt-in read-only StaticIO monitoring, debounced JS edges, test station auto-start; v0.2-dev.4",
+  "scriptName": "DigitalInputMonitor.js",
+  "activePageId": "dio_monitor",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "dio_monitor",
+      "name": "01 Input Monitor",
+      "width": 1160,
+      "height": 820,
+      "controls": [
+        {
+          "id": "monitorTitle",
+          "type": "label",
+          "text": "01 — Digital input monitor | explicitly started and stopped",
+          "x": 24,
+          "y": 16,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "monitorInfo",
+          "type": "label",
+          "text": "Hardware: active-low DIO0 START and DIO1 fixture switches; each has a 10 kΩ pull-up to 3.3 V and switch to GND. Monitoring OFF on load. No outputs driven by monitor.",
+          "x": 24,
+          "y": 70,
+          "width": 1040,
+          "height": 70,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "monitorStart",
+          "type": "button",
+          "text": "START MONITOR",
+          "x": 24,
+          "y": 158,
+          "width": 192,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onMonitorStartClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "monitorStop",
+          "type": "button",
+          "text": "STOP MONITOR",
+          "x": 228,
+          "y": 158,
+          "width": 192,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onMonitorStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "monitorStatsButton",
+          "type": "button",
+          "text": "MONITOR STATS",
+          "x": 432,
+          "y": 158,
+          "width": 192,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onMonitorStatsButtonClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "monitorRead",
+          "type": "button",
+          "text": "MANUAL READ",
+          "x": 636,
+          "y": 158,
+          "width": 192,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onMonitorReadClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "monitorClear",
+          "type": "button",
+          "text": "STOP + CLEAR",
+          "x": 840,
+          "y": 158,
+          "width": 192,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onMonitorClearClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "monitorState",
+          "type": "label",
+          "text": "IDLE — no polling",
+          "x": 24,
+          "y": 211,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "inputState",
+          "type": "label",
+          "text": "No input observed",
+          "x": 24,
+          "y": 266,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "monitorStatsDisplay",
+          "type": "label",
+          "text": "",
+          "x": 24,
+          "y": 321,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "simInfo",
+          "type": "label",
+          "text": "Simulation only: use HIGH then LOW to generate a stable falling edge. These buttons refuse to write to physical AD3 pins.",
+          "x": 24,
+          "y": 379,
+          "width": 1040,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "simStartHigh",
+          "type": "button",
+          "text": "SIM DIO0 HIGH",
+          "x": 24,
+          "y": 446,
+          "width": 190,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSimStartHighClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "simStartLow",
+          "type": "button",
+          "text": "SIM DIO0 LOW",
+          "x": 226,
+          "y": 446,
+          "width": 190,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSimStartLowClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "simFixtureHigh",
+          "type": "button",
+          "text": "SIM DIO1 HIGH",
+          "x": 428,
+          "y": 446,
+          "width": 190,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSimFixtureHighClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "simFixtureLow",
+          "type": "button",
+          "text": "SIM DIO1 LOW",
+          "x": 630,
+          "y": 446,
+          "width": 190,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSimFixtureLowClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "inputLog",
+          "type": "event_log",
+          "text": "Event Log",
+          "x": 24,
+          "y": 500,
+          "width": 1060,
+          "height": 260,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 1000
+          }
+        }
+      ]
+    },
+    {
+      "id": "dio_callbacks",
+      "name": "02 JavaScript Callbacks",
+      "width": 1160,
+      "height": 820,
+      "controls": [
+        {
+          "id": "callbackTitle",
+          "type": "label",
+          "text": "02 — Register callbacks independently of polling",
+          "x": 24,
+          "y": 16,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "callbackInfo",
+          "type": "label",
+          "text": "Registering onChange() NEVER starts hardware polling. startMonitor() is always explicit; the 20 ms native QTimer reads 16 pins in a single SDK snapshot. JS handlers run only after debounced edges.",
+          "x": 24,
+          "y": 70,
+          "width": 1040,
+          "height": 84,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "callbacksRegister",
+          "type": "button",
+          "text": "REGISTER CALLBACKS",
+          "x": 24,
+          "y": 172,
+          "width": 208,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbacksRegisterClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbacksClearOne",
+          "type": "button",
+          "text": "REMOVE DIO1",
+          "x": 243,
+          "y": 172,
+          "width": 180,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbacksClearOneClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbacksClearAll",
+          "type": "button",
+          "text": "REMOVE ALL",
+          "x": 434,
+          "y": 172,
+          "width": 180,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbacksClearAllClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbacksStart",
+          "type": "button",
+          "text": "START MONITOR",
+          "x": 625,
+          "y": 172,
+          "width": 195,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbacksStartClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbacksStop",
+          "type": "button",
+          "text": "STOP MONITOR",
+          "x": 830,
+          "y": 172,
+          "width": 190,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbacksStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "fixtureState",
+          "type": "label",
+          "text": "Fixture state pending",
+          "x": 24,
+          "y": 231,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "callbackNote",
+          "type": "label",
+          "text": "Callbacks are on the same QJSEngine worker thread. A blocked script can delay polling; short pulses may be missed. Exact edge timing requires the AD3 Logic Analyzer.",
+          "x": 24,
+          "y": 300,
+          "width": 1040,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "callbackLog",
+          "type": "event_log",
+          "text": "Event Log",
+          "x": 24,
+          "y": 416,
+          "width": 1060,
+          "height": 330,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 1000
+          }
+        }
+      ]
+    },
+    {
+      "id": "dio_test",
+      "name": "03 Test Station",
+      "width": 1160,
+      "height": 820,
+      "controls": [
+        {
+          "id": "stationTitle",
+          "type": "label",
+          "text": "03 — Physical START button launches a project-owned test",
+          "x": 24,
+          "y": 16,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationInfo",
+          "type": "label",
+          "text": "ARM AUTO START explicitly. A debounced DIO0 falling edge calls TestRunner.run(). The test checks active-low DIO1 fixture interlock and records a native numeric PASS/FAIL result. No analog instruments or DIO outputs are configured.",
+          "x": 24,
+          "y": 70,
+          "width": 1040,
+          "height": 88,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationArm",
+          "type": "button",
+          "text": "ARM AUTO START",
+          "x": 24,
+          "y": 172,
+          "width": 205,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onStationArmClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stationDisarm",
+          "type": "button",
+          "text": "DISARM",
+          "x": 242,
+          "y": 172,
+          "width": 160,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onStationDisarmClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stationRun",
+          "type": "button",
+          "text": "RUN MANUALLY",
+          "x": 416,
+          "y": 172,
+          "width": 178,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onStationRunClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stationTerminate",
+          "type": "button",
+          "text": "TERMINATE",
+          "x": 608,
+          "y": 172,
+          "width": 170,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onStationTerminateClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stationReset",
+          "type": "button",
+          "text": "RESET RESULT",
+          "x": 792,
+          "y": 172,
+          "width": 195,
+          "height": 38,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onStationResetClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stationStatus",
+          "type": "label",
+          "text": "DISARMED",
+          "x": 24,
+          "y": 229,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationFixture",
+          "type": "label",
+          "text": "Fixture not observed",
+          "x": 24,
+          "y": 289,
+          "width": 1040,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "stationSequence",
+          "type": "test_sequence",
+          "text": "Test sequence",
+          "x": 24,
+          "y": 348,
+          "width": 600,
+          "height": 250,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "fixtureResult",
+          "type": "measurement_result",
+          "text": "Fixture closed",
+          "x": 649,
+          "y": 348,
+          "width": 430,
+          "height": 170,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "stationLog",
+          "type": "event_log",
+          "text": "Event Log",
+          "x": 24,
+          "y": 614,
+          "width": 1050,
+          "height": 175,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 1000
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: Digital Input Test Station — Native Monitor\n// │ Level: Advanced\n// │\n// │ GOAL: Monitor debounced DIO input changes and optionally trigger the Test Executive.\n// │ BEFORE RUN: No automatic polling or output at startup. Hardware inputs are active-low\n// │    with 10 kΩ pull-ups to 3.3 V, switches to ground.\n// │ TRY FIRST: Press START MONITOR and inspect stats.\n// │ TRACE: `monitorStart` → `onMonitorStartClicked()` → `StaticIO.onChange()` +\n// │    `StaticIO.startMonitor()`.\n// │ EDIT SAFELY: Change the debounceMs value in `registerInputs()` and compare callback\n// │    sensitivity in Simulation.\n// │ REMEMBER: Registering callbacks and starting input polling are separate operations;\n// │    edges are host-observed.\n// │\n// │ EVENT TIP: Select `monitorStart` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/DigitalInputMonitor.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/** Digital Input Test Station — v0.2-dev.4\n * All monitoring is OPT-IN. Loading/starting this Panel does not poll or drive DIO.\n * Physical wiring: 3.3V -> 10k pull-up -> DIO0 (START) / DIO1 (fixture closed);\n * each switch connects its pin to GND when pressed/closed. Common GND.\n * Do not connect unprotected industrial voltages or use this for a safety E-stop.\n */\nlet autoStartArmed = false;\nfunction note(target, message, level) {\n    print('[Digital Input] ' + message);\n    ui.set(target, {\n        append: {\n            source: 'DIO',\n            level: level || 'INFO',\n            message: String(message)\n        }\n    });\n}\nfunction action(fn) {\n    try {\n        fn();\n    } catch (e) {\n        const message = String(e);\n        ui.set('monitorState', 'ERROR: ' + message);\n        note('inputLog', message, 'ERROR');\n        note('stationLog', message, 'ERROR');\n    }\n}\nfunction inputStart(value, pin, event) {\n    ui.set('inputState', 'DIO0 START: PRESSED (stable ' + event.stableMs + ' ms)');\n    note('inputLog', 'DIO0 ' + event.edge + ' at host ' + event.timestampUtc + '; ' + event.timestampSource);\n    if (!autoStartArmed) return;\n    // Do not reconstruct or reconfigure test definitions here: project owns them.\n    if (TestRunner.run()) {\n        ui.set('stationStatus', 'Physical START received; test running');\n        note('stationLog', 'START press launched Test Executive');\n    } else {\n        note('stationLog', 'START ignored: ' + TestRunner.lastError, 'WARN');\n    }\n}\nfunction inputFixture(value, pin, event) {\n    const state = value === 0 ? 'CLOSED' : 'OPEN';\n    ui.set('fixtureState', 'Fixture DIO1: ' + state);\n    ui.set('stationFixture', 'Fixture: ' + state);\n    note('callbackLog', 'DIO1 ' + event.edge + ' / ' + state + ' / host-observed');\n}\n/**\n * CORE LESSON — Registers edge-triggered JavaScript callbacks; it does NOT begin polling. The\n * distinct startMonitor action explicitly enables native input monitoring.\n */\nfunction registerInputs() {\n    if (!StaticIO.onChange(0, inputStart, {\n        edge: 'falling',\n        debounceMs: 30\n    }))\n        throw Error(StaticIO.lastError);\n    if (!StaticIO.onChange(1, inputFixture, {\n        edge: 'change',\n        debounceMs: 30\n    }))\n        throw Error(StaticIO.lastError);\n}\nfunction armMonitor() {\n    if (StaticIO.monitoring) throw Error('Already polling; use STOP MONITOR to pause');\n    registerInputs();\n    if (!StaticIO.startMonitor({ pollIntervalMs: 20 })) throw Error(StaticIO.lastError);\n    ui.set('monitorState', 'RUNNING / 20ms read-only polling / 30ms debounce');\n    note('inputLog', 'Started native input monitor; no DIO outputs configured');\n}\nfunction stopMonitor() {\n    StaticIO.stopMonitor();\n    autoStartArmed = false;\n    ui.set('monitorState', 'STOPPED / zero SDK monitor polls');\n    ui.set('stationStatus', 'AUTO START DISARMED — monitor stopped');\n    note('inputLog', 'C++ input monitor stopped; callbacks retained for restart');\n}\nfunction showStats() {\n    const s = StaticIO.monitorStats();\n    const msg = 'monitoring=' + s.monitoring + ' polls=' + s.polls + ' callbacks=' + s.callbacks +\n        ' changes=' + s.changes + ' last SDK poll=' + s.lastPollDurationUs + 'us watches=' + s.watchCount;\n    ui.set('monitorStatsDisplay', msg);\n    note('inputLog', msg);\n}\nfunction simulateInput(pin, level) {\n    if (!StaticIO.simulation) throw Error('SIM buttons are disabled on real hardware; use physical switches');\n    // Simulation only: StaticIO's existing ideal-output echo model provides input changes.\n    if (!StaticIO.setPin(pin, level)) throw Error(StaticIO.lastError);\n    note('inputLog', 'SIM DIO' + pin + ' = ' + level + ' (no physical outputs)');\n}\n// Page 01 — explicit lifecycle, manual reads, one native snapshot per poll.\n// Designer event: select monitorStart -> Properties -> Events -> clicked\nfunction onMonitorStartClicked() {\n    return action(armMonitor);\n}\n// Designer event: select monitorStop -> Properties -> Events -> clicked\nfunction onMonitorStopClicked() {\n    return action(stopMonitor);\n}\n// Designer event: select monitorStatsButton -> Properties -> Events -> clicked\nfunction onMonitorStatsButtonClicked() {\n    return action(showStats);\n}\n// Designer event: select monitorRead -> Properties -> Events -> clicked\nfunction onMonitorReadClicked() {\n    return action(() => {\n        const r = StaticIO.status();\n        if (!r.valid) throw Error(r.lastError);\n        ui.set('inputState', 'Manual snapshot DIO0=' + ((r.inputMask >> 0) & 1) +\n            '  DIO1=' + ((r.inputMask >> 1) & 1));\n        note('inputLog', 'Manual status: 0x' + r.inputMask.toString(16));\n    });\n}\n// Designer event: select monitorClear -> Properties -> Events -> clicked\nfunction onMonitorClearClicked() {\n    return action(() => {\n        stopMonitor();\n        StaticIO.clearAllOnChange();\n        note('inputLog', 'All input callbacks unregistered');\n    });\n}\n// Designer event: select simStartHigh -> Properties -> Events -> clicked\nfunction onSimStartHighClicked() {\n    return action(() => simulateInput(0, 1));\n}\n// Designer event: select simStartLow -> Properties -> Events -> clicked\nfunction onSimStartLowClicked() {\n    return action(() => simulateInput(0, 0));\n}\n// Designer event: select simFixtureHigh -> Properties -> Events -> clicked\nfunction onSimFixtureHighClicked() {\n    return action(() => simulateInput(1, 1));\n}\n// Designer event: select simFixtureLow -> Properties -> Events -> clicked\nfunction onSimFixtureLowClicked() {\n    return action(() => simulateInput(1, 0));\n}\n\n// Page 02 — callbacks are registered separately from native polling.\n// Designer event: select callbacksRegister -> Properties -> Events -> clicked\nfunction onCallbacksRegisterClicked() {\n    return action(() => {\n        registerInputs();\n        note('callbackLog', 'Callbacks registered — polling state is ' + StaticIO.monitoring);\n    });\n}\n// Designer event: select callbacksClearOne -> Properties -> Events -> clicked\nfunction onCallbacksClearOneClicked() {\n    return action(() => {\n        StaticIO.clearOnChange(1);\n        note('callbackLog', 'DIO1 callback removed; DIO0 remains');\n    });\n}\n// Designer event: select callbacksClearAll -> Properties -> Events -> clicked\nfunction onCallbacksClearAllClicked() {\n    return action(() => {\n        StaticIO.clearAllOnChange();\n        note('callbackLog', 'All JS callbacks removed; native polling not changed');\n    });\n}\n// Designer event: select callbacksStart -> Properties -> Events -> clicked\nfunction onCallbacksStartClicked() {\n    return action(armMonitor);\n}\n// Designer event: select callbacksStop -> Properties -> Events -> clicked\nfunction onCallbacksStopClicked() {\n    return action(stopMonitor);\n}\n\n// Page 03 — optional physical START event invokes the native, project-owned sequence.\n// Designer event: select stationArm -> Properties -> Events -> clicked\nfunction onStationArmClicked() {\n    return action(() => {\n        if (!StaticIO.monitoring) armMonitor();\n        autoStartArmed = true;\n        ui.set('stationStatus', 'ARMED — DIO0 falling edge starts TestRunner');\n        note('stationLog', 'Physical START auto-run armed; DIO1 interlock checked in test');\n    });\n}\n// Designer event: select stationDisarm -> Properties -> Events -> clicked\nfunction onStationDisarmClicked() {\n    return action(() => {\n        autoStartArmed = false;\n        ui.set('stationStatus', 'DISARMED — DIO0 events no longer start a test');\n        note('stationLog', 'Auto-start disabled; monitor left in its current state');\n    });\n}\n// Designer event: select stationRun -> Properties -> Events -> clicked\nfunction onStationRunClicked() {\n    return action(() => {\n        if (!TestRunner.run()) throw Error(TestRunner.lastError);\n        note('stationLog', 'Operator requested one test run');\n    });\n}\n// Designer event: select stationTerminate -> Properties -> Events -> clicked\nfunction onStationTerminateClicked() {\n    return action(() => {\n        if (!TestRunner.terminate()) throw Error(TestRunner.lastError);\n    });\n}\n// Designer event: select stationReset -> Properties -> Events -> clicked\nfunction onStationResetClicked() {\n    return action(() => {\n        if (!TestRunner.reset()) throw Error(TestRunner.lastError);\n    });\n}\nTestRunner.onFinished(function () {\n    const s = TestRunner.summary();\n    ui.set('stationStatus', 'Last result: ' + s.state + ' / ' + s.passed + ' passed / ' + s.failed + ' failed');\n});\n// Panel startup: register ordinary ui.on handlers ONLY. No SDK polling or output change.\nui.set('monitorState', 'IDLE / monitor OFF; press START MONITOR');\nui.set('inputState', 'No digital samples acquired by monitor');\nui.set('fixtureState', 'Fixture state not yet observed');\nui.set('stationFixture', 'DIO1 fixture interlock: not yet observed');\nui.set('stationStatus', 'DISARMED — explicit ARM required');\n",
+  "libraries": [
+    {
+      "name": "DigitalMonitorTestSteps.mjs",
+      "source": "// LEARNING TIP: verifyFixture() returns 1 for a closed active-low DIO1. It does not operate an interlock or configure digital outputs.\n\n/** DigitalMonitorTestSteps.mjs — data-only test definition functions.\n * No outputs are configured; this is a fixture interlock demonstration.\n * A physical test fixture should use hardware safety interlocks independently.\n */\nexport function setupFixture() {\n    print('[Digital Test] Setup: verify fixture input without changing DIO directions');\n    return true;\n}\nexport function verifyFixture() {\n    const state = StaticIO.readPin(1);\n    // separate manual SDK snapshot\n    if (state < 0) throw Error(StaticIO.lastError);\n    // Active-low switch: CLOSED -> 0 -> result 1 (PASS).\n    const closed = state === 0 ? 1 : 0;\n    print('[Digital Test] Main: fixture closed=' + !!closed + ' (DIO1=' + state + ')');\n    return closed;\n}\nexport function cleanupFixture() {\n    // No Wavegen, Scope, Protocol or outputs were driven in this example.\n    print('[Digital Test] Cleanup complete; monitor lifecycle stays with operator');\n    return true;\n}\n"
+    }
+  ],
+  "testDefinition": {
+    "schemaVersion": 1,
+    "id": "digital-input-fixture-test",
+    "title": "Physical Fixture Interlock Verification",
+    "config": {
+      "sequenceId": "stationSequence",
+      "logId": "stationLog",
+      "stopOnFailure": true,
+      "totalTimeoutMs": 5000
+    },
+    "steps": [
+      {
+        "id": "setup",
+        "name": "SETUP — read-only digital input verification",
+        "group": "setup",
+        "type": "action",
+        "mode": "once",
+        "timeoutMs": 800,
+        "handler": "setupFixture"
+      },
+      {
+        "id": "fixture",
+        "name": "MAIN — Fixture closed (DIO1 LOW)",
+        "group": "main",
+        "type": "numeric",
+        "mode": "once",
+        "timeoutMs": 800,
+        "handler": "verifyFixture",
+        "limits": {
+          "low": 1,
+          "high": 1
+        },
+        "unit": "boolean",
+        "resultWidget": "fixtureResult"
+      },
+      {
+        "id": "cleanup",
+        "name": "CLEANUP — No instrument output changed",
+        "group": "cleanup",
+        "type": "action",
+        "mode": "once",
+        "timeoutMs": 800,
+        "handler": "cleanupFixture"
+      }
+    ]
+  },
+  "testLibrary": "DigitalMonitorTestSteps.mjs",
+  "runInformation": {
+    "fields": []
+  },
+  "reportStorage": {
+    "autoSave": false,
+    "directory": ""
+  }
+}

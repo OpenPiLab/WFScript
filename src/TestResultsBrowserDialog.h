@@ -11,7 +11,9 @@ class QLabel;
 class QLineEdit;
 class QPlainTextEdit;
 class QPushButton;
-class QTableWidget;
+class QTableView;
+class ArchivedRunsModel;
+class ArchivedRecordRowsModel;
 class QTabWidget;
 
 // Read-only browser for completed .json execution records. It never reads or
@@ -33,13 +35,18 @@ private:
     QComboBox* m_verdict=nullptr;
     QLabel* m_status=nullptr;
     QLabel* m_recordHeader=nullptr;
-    QTableWidget* m_history=nullptr;
+    QTableView* m_history=nullptr;
+    ArchivedRunsModel* m_historyModel=nullptr;
     QTabWidget* m_details=nullptr;
     QPlainTextEdit* m_overview=nullptr;
     QPlainTextEdit* m_json=nullptr;
-    QTableWidget* m_steps=nullptr;
-    QTableWidget* m_measurements=nullptr;
-    QTableWidget* m_runInfo=nullptr;
+    QTableView* m_steps=nullptr;
+    ArchivedRecordRowsModel* m_stepsModel=nullptr;
+    QTableView* m_measurements=nullptr;
+    ArchivedRecordRowsModel* m_measurementsModel=nullptr;
+    QTableView* m_runInfo=nullptr;
+    ArchivedRecordRowsModel* m_runInfoModel=nullptr;
+    bool m_jsonRendered=false;
     QPushButton* m_exportJson=nullptr;
     QPushButton* m_exportCsv=nullptr;
     QPushButton* m_openFile=nullptr;
@@ -49,6 +56,7 @@ private:
     void selectHistory();
     void clearDetail(const QString& message);
     void showDetail(const QJsonObject& record,const QString& path);
+    void renderRawJsonIfNeeded();
     void chooseFolder();
     void openFolder();
     void openFile();

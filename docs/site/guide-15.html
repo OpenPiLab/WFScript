@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 15: External Rigol instruments and SCPI Panels · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="active">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 15 — External Rigol instruments and SCPI Panels</h2>
+<p>The Rigol example suite demonstrates how WFScript can host an external-instrument application without hard-coding Rigol into its C++ runtime. Four embedded JavaScript drivers sit above the shared <code>WFScpiCore.mjs</code> transport:</p>
+<table>
+<thead>
+<tr>
+  <th>Instrument</th>
+  <th>Driver module</th>
+  <th>Typical purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Rigol DP932A</td>
+  <td><code>RigolDP900.mjs</code></td>
+  <td>Protected DC supply programming and readback</td>
+</tr>
+<tr>
+  <td>Rigol DM858</td>
+  <td><code>RigolDM858.mjs</code></td>
+  <td>Independent multimeter measurements</td>
+</tr>
+<tr>
+  <td>Rigol DG902 Pro</td>
+  <td><code>RigolDG900Pro.mjs</code></td>
+  <td>Function generation, channel readback</td>
+</tr>
+<tr>
+  <td>Rigol MHO954</td>
+  <td><code>RigolMHO900.mjs</code></td>
+  <td>Scope setup, measurements, waveform download</td>
+</tr>
+</tbody>
+</table>
+<p>The shared core owns command serialization, reply framing, IEEE blocks and timeout handling. The <strong>Rigol Test Station v0.7.2</strong> adds a guarded <code>RigolTestApi.mjs</code> facade that exposes focused Promise-returning operations, enforces conservative test-profile limits, and tracks output ownership. Do not bypass those protections inside an executing test by opening a competing SCPI socket.</p>
+<h3>Two applications, two jobs</h3>
+<p>The <strong>Operator Bench</strong> is an interactive manual instrument workbench. The <strong>Automated Test Station</strong> is a streamlined, results-first application that runs named procedures under the native Test Executive. The distinction is architectural, not merely a difference in page layout.</p>
+<p>The v0.7.2 Test Station authors 12 steps, expands to 21 executable steps and expects 39 numeric checks on a successful composite run. Its original DC and sine/square tests are followed by synchronized dual-channel Normal capture and stopped-record RAW acquisition. Those newer two-channel and RAW paths are still <strong>awaiting physical validation</strong> with the planned BNC splitter setup; offline mocks are not equivalent to a real MHO954 transfer.</p>
+<h3>Instrument connections are not harmless</h3>
+<p>The Panel's SCPI endpoints are configuration, not universal defaults. Before RUN, verify actual IP address and port, identify each instrument, confirm the required physical wiring, and inspect all possible source output states. The source architecture deliberately avoids resetting or energizing outputs merely by connecting.</p>
+<h3>Output ownership, unknown state and cleanup</h3>
+<p>The guarded facade checks output state and remembers which channels the test deliberately changed. Cleanup attempts instrument-reported OFF across owned channels; communication failure makes output state <strong>unknown</strong>, not automatically safe. Confirm terminal voltage or generator output independently when the consequences matter. Network transport shutdown is not a physical emergency-stop function.</p>
+<h3>Synchronized captures are a real acquisition property</h3>
+<p>Two sequential <code>scope.chN.capture()</code> calls are not simultaneous. A synchronized capture requests selected scope channels from one stopped record with aligned timestamps. The test-facing <code>Rigol.scope.captureMulti()</code> and <code>Rigol.scope.captureRaw()</code> are distinct from the raw MHO954 driver methods and have their own software limits.</p>
+<p>For the planned dual-channel test, DG902 Pro CH1 feeds both MHO954 CH1 and CH2 through a suitable BNC splitter, with both scope inputs configured for compatible high impedance. The expected splitter reference is approximately 0 dB gain and 0° relative sine phase, subject to wiring and calibration. Keep the DP932A/DM858 voltage path separate and confirm that all five source channels start OFF.</p>
+<h3>What the low-level drivers add</h3>
+<p>The driver catalog exposes far more than the test facade: additional generator functions, acquisition options, protection diagnostics, status registers, instrument files and network configuration. Use those advanced calls only when the application can enforce equivalent safety and serialization rules. The separate <strong>Rigol SCPI API Guide</strong> documents those methods; they are not native WFScript global APIs.</p>
+<div class="pager"><a href="guide-14.html">← Previous chapter</a><a href="guide-16.html">Next chapter →</a></div></article></main></div></body></html>

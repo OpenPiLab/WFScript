@@ -1,14 +1,19 @@
-name: Windows source build
+name: Windows source build and tests
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  source-and-build:
+  windows-build-and-test:
     runs-on: windows-2022
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt (MSVC 2022, Windows)
@@ -16,15 +21,24 @@ jobs:
         with:
           version: '6.9.2'
           arch: win64_msvc2022_64
+          modules: qtserialport
           cache: true
-      - name: Verify examples and repository metadata
+      - name: Validate repository and release identity
         shell: pwsh
         run: |
           python tools/check_repo.py
           python tools/build_examples.py --check
-      - name: Configure application
+          python tools/check_warning_cleanup.py
+          python tools/check_release.py
+      - name: Run Python and JavaScript offline regressions
         shell: pwsh
-        run: cmake -S . -B build/ci -G "Visual Studio 17 2022" -A x64 -DWFSCRIPT_BUILD_TESTS=OFF
-      - name: Build application
+        run: python tools/run_offline_tests.py
+      - name: Configure application and native tests
         shell: pwsh
-        run: cmake --build build/ci --config Release --parallel
+        run: cmake -S . -B build/ci -G "Visual Studio 17 2022" -A x64 -DWFSCRIPT_BUILD_TESTS=ON
+      - name: Build all targets
+        shell: pwsh
+        run: cmake --build build/ci --config Release --parallel 2
+      - name: Run native Qt CTests
+        shell: pwsh
+        run: ctest --test-dir build/ci -C Release --output-on-failure -j 2

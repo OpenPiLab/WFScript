@@ -1,8 +1,10 @@
 #include "PanelChartWidget.h"
+#include "PlotAxisLabels.h"
 #include <QFont>
 #include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QKeyEvent>
+#include <QElapsedTimer>
 #include <QCursor>
 #include <QPainter>
 #include <QPainterPath>
@@ -70,7 +72,9 @@ QVariantMap PanelChartWidget::defaults() {
             {"xAuto",true},{"yAuto",true},{"xMin",0.0},{"xMax",1.0},
             {"yMin",-1.0},{"yMax",1.0},{"showGrid",true},{"showLegend",true},{"showXAxis",true},{"showYAxis",true},{"showY2Labels",true},
             {"lineWidth",1.8},{"showY2",false},{"y2Auto",true},{"y2Min",0.0},{"y2Max",100.0},{"y2Label","Right Y"},{"xLog",false},{"yLog",false},
-            {"showCursors",false},{"cursorA",0.0},{"cursorB",1.0}};
+            {"showCursors",false},{"cursorA",0.0},{"cursorB",1.0},
+            {"nativeEnvelopeOpacity",0.32},{"legacyEnvelopeOpacity",0.32},
+            {"digitalPerfOverlay",false}};
 }
 PanelChartWidget::PanelChartWidget(QWidget* parent):QWidget(parent),m_settings(defaults()) {
     setAutoFillBackground(false);
@@ -78,9 +82,22 @@ PanelChartWidget::PanelChartWidget(QWidget* parent):QWidget(parent),m_settings(d
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
     setToolTip(QStringLiteral("Shift+mouse: snap cursor A | Ctrl+mouse: snap cursor B | Measurement X: clear cursors | Drag: pan | Legend: toggle trace | Wheel: zoom"));
+    // Interactive events must not flood the script worker with viewChanged/UI
+    // round-trips. Publish the latest viewport after a short idle interval.
+    m_viewNotificationTimer.setSingleShot(true);
+    m_viewNotificationTimer.setInterval(40);
+    connect(&m_viewNotificationTimer,&QTimer::timeout,this,&PanelChartWidget::publishView);
+    // While dragging or scrolling, paint a cheaper pixel-column preview.
+    // Once input settles, redraw the exact per-pixel envelope/full samples.
+    m_renderIdleTimer.setSingleShot(true);
+    m_renderIdleTimer.setInterval(85);
+    connect(&m_renderIdleTimer,&QTimer::timeout,this,[this]{
+        m_fastInteraction=false;
+        update();
+    });
 }
 qsizetype PanelChartWidget::pointCount(const QString& name) const {
-    for(const Series& s:m_series)if(s.name==name)return s.x.size();
+    for(const Series& s:m_series)if(s.name==name)return s.nativeSamples?s.y.size():s.x.size();
     return 0;
 }
 bool PanelChartWidget::hasSeries(const QString& name) const {
@@ -92,7 +109,16 @@ void PanelChartWidget::applyDefinition(const PanelControl& def) {
     properties.insert("title",def.text.isEmpty()?QStringLiteral("Plot"):def.text);
     for(auto it=def.properties.begin();it!=def.properties.end();++it)
         properties.insert(it.key(),it.value().toVariant());
+    const bool wasDigital=m_settings.value("chartType").toString()==QLatin1String("Digital");
     m_settings=properties;
+    const bool isDigital=m_settings.value("chartType").toString()==QLatin1String("Digital");
+    if(wasDigital!=isDigital)for(Series& s:m_series){
+        if(!s.nativeSamples){
+            if(isDigital)s.digitalIndex.build(s.x,s.y);
+            else s.digitalIndex=DigitalEdgeIndex{};
+        }
+        s.digitalGeometry.valid=false;
+    }
     m_haveCursorA=m_haveCursorB=false;
     m_inspectorDismissed=false;
     m_cursorsCleared=false;
@@ -106,6 +132,13 @@ void PanelChartWidget::updateSeries(const PlotCommand& cmd) {
     if(found<0 && m_series.size()>=kMaxSeries)return;
     Series s;
     s.name=cmd.seriesName;s.x=cmd.x;s.y=cmd.y;
+    s.nativeSamples=cmd.nativeSamples;s.nativeStart=cmd.nativeStart;s.nativeStep=cmd.nativeStep;
+    if(s.nativeSamples)s.nativeIndex.build(s.y);
+    else {
+        s.legacyIndex.build(s.x,s.y);
+        if(m_settings.value("chartType").toString()==QLatin1String("Digital"))
+            s.digitalIndex.build(s.x,s.y);
+    }
     if(found>=0){
         s.color=m_series.at(found).color;
         s.width=m_series.at(found).width;
@@ -119,7 +152,7 @@ void PanelChartWidget::updateSeries(const PlotCommand& cmd) {
     if(cmd.options.contains("markerSize"))s.markerSize=cmd.options.value("markerSize").toDouble();
     if(cmd.options.contains("visible"))s.visible=cmd.options.value("visible").toBool();
     if(cmd.options.contains("axis"))s.axis=cmd.options.value("axis").toString();
-    s.xAscending=std::is_sorted(s.x.cbegin(),s.x.cend());
+    s.xAscending=s.nativeSamples?true:s.legacyIndex.ascending();
     if(found>=0)m_series[found]=std::move(s);
     else m_series.append(std::move(s));
 }
@@ -133,13 +166,34 @@ void PanelChartWidget::applyCommand(const PlotCommand& cmd) {
         if(found<0)updateSeries(cmd);
         else {
             Series& s=m_series[found];
+            if(s.nativeSamples){
+                // Appending arbitrary XY data changes the series model; switch
+                // deliberately to the existing ordinary-array representation.
+                s.x.reserve(s.y.size()+cmd.x.size());
+                for(qsizetype i=0;i<s.y.size();++i)
+                    s.x.append(s.nativeStart+double(i)*s.nativeStep);
+                s.nativeSamples=false;
+                s.nativeIndex=NativeSampleIndex{};
+            }
+            const std::size_t oldCount=std::size_t(s.y.size());
             s.x+=cmd.x;s.y+=cmd.y;
             constexpr qsizetype maxPoints=250000;
             if(s.x.size()>maxPoints){
                 const qsizetype drop=s.x.size()-maxPoints;
                 s.x.remove(0,drop);s.y.remove(0,drop);
+                s.legacyIndex.build(s.x,s.y); // ring front-trim changes all index positions
+                if(m_settings.value("chartType").toString()==QLatin1String("Digital"))
+                    s.digitalIndex.build(s.x,s.y);
+            } else {
+                s.legacyIndex.append(s.x,s.y,oldCount);
+                if(m_settings.value("chartType").toString()==QLatin1String("Digital"))
+                    s.digitalIndex.append(s.x,s.y,oldCount);
             }
-            s.xAscending=std::is_sorted(s.x.cbegin(),s.x.cend());
+            s.legacyGeometry.valid=false;
+            s.digitalGeometry.valid=false;
+            s.xAscending=s.legacyIndex.ascending();
+            if(cmd.options.contains("color") || cmd.options.contains("width"))
+                s.digitalGeometry.valid=false; // raster contains the stroke color and width
             if(cmd.options.contains("color"))s.color=QColor(cmd.options.value("color").toString());
             if(cmd.options.contains("width"))s.width=cmd.options.value("width").toDouble();
             if(cmd.options.contains("markerSize"))s.markerSize=cmd.options.value("markerSize").toDouble();
@@ -155,6 +209,9 @@ void PanelChartWidget::applyCommand(const PlotCommand& cmd) {
     case PlotCommand::Action::Clear:m_series.clear();m_viewActive=false;m_haveCursorA=m_haveCursorB=false;break;
     case PlotCommand::Action::StyleSeries:
         for(Series& s:m_series)if(s.name==cmd.seriesName) {
+            if((cmd.options.contains("color") && QColor(cmd.options.value("color").toString())!=s.color) ||
+               (cmd.options.contains("width") && cmd.options.value("width").toDouble()!=s.width))
+                s.digitalGeometry.valid=false; // color/width are baked into cached raster
             if(cmd.options.contains("color"))s.color=QColor(cmd.options.value("color").toString());
             if(cmd.options.contains("width"))s.width=cmd.options.value("width").toDouble();
             if(cmd.options.contains("markerSize"))s.markerSize=cmd.options.value("markerSize").toDouble();
@@ -163,20 +220,86 @@ void PanelChartWidget::applyCommand(const PlotCommand& cmd) {
             break;
         }
         break;
+    case PlotCommand::Action::SetView:
+        m_viewX0=cmd.options.value("xMin").toDouble();
+        m_viewX1=cmd.options.value("xMax").toDouble();
+        m_viewY0=cmd.options.value("yMin").toDouble();
+        m_viewY1=cmd.options.value("yMax").toDouble();
+        m_viewActive=true;publishView();break;
     case PlotCommand::Action::Configure:
         if(cmd.options.contains("cursorA") || cmd.options.contains("cursorB") ||
            (cmd.options.contains("showCursors") && cmd.options.value("showCursors").toBool())) {
             m_cursorsCleared=false;
             m_inspectorDismissed=false;
         }
-        for(auto it=cmd.options.cbegin();it!=cmd.options.cend();++it)
+        // Appearance/configuration operations such as envelope opacity, grid,
+        // title, and cursors never discard an active zoom. Only an actual axis
+        // domain change releases the view, allowing new manual axes to apply.
+        bool axisChanged=false;
+        const bool strokeChanged=cmd.options.contains("lineWidth") &&
+            m_settings.value("lineWidth")!=cmd.options.value("lineWidth");
+        const bool wasDigital=m_settings.value("chartType").toString()==QLatin1String("Digital");
+        static const QStringList axisKeys={
+            QStringLiteral("chartType"),QStringLiteral("xAuto"),QStringLiteral("yAuto"),
+            QStringLiteral("xMin"),QStringLiteral("xMax"),
+            QStringLiteral("yMin"),QStringLiteral("yMax"),
+            QStringLiteral("xLog"),QStringLiteral("yLog"),
+            QStringLiteral("showY2"),QStringLiteral("y2Auto"),
+            QStringLiteral("y2Min"),QStringLiteral("y2Max")};
+        for(auto it=cmd.options.cbegin();it!=cmd.options.cend();++it){
+            if(axisKeys.contains(it.key()) && m_settings.value(it.key())!=it.value())
+                axisChanged=true;
             m_settings.insert(it.key(),it.value());
-        m_viewActive=false;
+        }
+        if(axisChanged)m_viewActive=false;
+        if(strokeChanged)for(Series& s:m_series)s.digitalGeometry.valid=false;
+        const bool isDigital=m_settings.value("chartType").toString()==QLatin1String("Digital");
+        if(wasDigital!=isDigital)for(Series& s:m_series){
+            if(!s.nativeSamples){
+                if(isDigital)s.digitalIndex.build(s.x,s.y);
+                else s.digitalIndex=DigitalEdgeIndex{};
+            }
+            s.digitalGeometry.valid=false;
+        }
         break;
     }
     update();
 }
-void PanelChartWidget::resetView() {m_viewActive=false;update();}
+void PanelChartWidget::resetView() {
+    m_viewNotificationTimer.stop();m_renderIdleTimer.stop();m_fastInteraction=false;
+    m_viewActive=false;update();publishView();
+}
+void PanelChartWidget::publishView(){
+    const QVariantMap bounds=resolvedRanges();
+    QVariantMap state=bounds;
+    state.insert(QStringLiteral("isZoomed"),m_viewActive);
+    state.insert(QStringLiteral("seriesCount"),m_series.size());
+    emit viewChanged(state);
+}
+QVariantMap PanelChartWidget::nativeRenderDiagnostics() const {
+    return {{QStringLiteral("lastNativePrimitives"),qlonglong(m_lastNativePrimitives)},
+            {QStringLiteral("geometryBuilds"),qlonglong(m_nativeGeometryBuilds)},
+            {QStringLiteral("cacheHits"),qlonglong(m_nativeCacheHits)},
+            {QStringLiteral("fastPreview"),m_fastInteraction}};
+}
+QVariantMap PanelChartWidget::legacyRenderDiagnostics() const {
+    return {{QStringLiteral("lastLegacyPrimitives"),qlonglong(m_lastLegacyPrimitives)},
+            {QStringLiteral("geometryBuilds"),qlonglong(m_legacyGeometryBuilds)},
+            {QStringLiteral("cacheHits"),qlonglong(m_legacyCacheHits)},
+            {QStringLiteral("fastPreview"),m_fastInteraction}};
+}
+QVariantMap PanelChartWidget::digitalRenderDiagnostics() const {
+    return {{QStringLiteral("lastDigitalPrimitives"),qlonglong(m_lastDigitalPrimitives)},
+            {QStringLiteral("geometryBuilds"),qlonglong(m_digitalGeometryBuilds)},
+            {QStringLiteral("cacheHits"),qlonglong(m_digitalCacheHits)},
+            {QStringLiteral("rasterBuilds"),qlonglong(m_digitalRasterBuilds)},
+            {QStringLiteral("previewBlits"),qlonglong(m_digitalPreviewBlits)},
+            {QStringLiteral("lastFrameMs"),m_lastDigitalFrameMs},
+            {QStringLiteral("lastQueryMs"),m_lastDigitalQueryMs},
+            {QStringLiteral("lastGeometryMs"),m_lastDigitalGeometryMs},
+            {QStringLiteral("lastPaintMs"),m_lastDigitalPaintMs},
+            {QStringLiteral("maxFrameMs"),m_maxDigitalFrameMs}};
+}
 QVariantMap PanelChartWidget::seriesStyle(const QString& name) const {
     for(const Series& s:m_series)if(s.name==name)
         return {{"color",s.color.name()},{"width",s.width},
@@ -208,15 +331,33 @@ void PanelChartWidget::ranges(double& xmin,double& xmax,double& ymin,double& yma
     for(const Series& s:m_series) {
         if(!s.visible)continue;
         const bool right=m_settings.value("showY2").toBool() && s.axis==QLatin1String("right");
-        for(qsizetype i=0;i<s.x.size();++i) {
-            const double x=s.x.at(i),y=s.y.at(i);
-            if(!std::isfinite(x) || !std::isfinite(y) || (xl && x<=0) || (!right && yl && y<=0))continue;
-            if(!anyX){xmin=xmax=x;anyX=true;}
-            else {xmin=std::min(xmin,x);xmax=std::max(xmax,x);}
-            if(!right){
-                if(!anyY){ymin=ymax=y;anyY=true;}
-                else {ymin=std::min(ymin,y);ymax=std::max(ymax,y);}
+        if(s.nativeSamples){
+            if(!s.nativeIndex.valid()||s.y.isEmpty())continue;
+            const double a=s.nativeStart,b=a+double(s.y.size()-1)*s.nativeStep;
+            if(!xl || b>0){
+                const double xlow=xl?std::max(a,std::numeric_limits<double>::min()):a;
+                if(!anyX){xmin=xlow;xmax=b;anyX=true;}
+                else {xmin=std::min(xmin,xlow);xmax=std::max(xmax,b);}
+                if(!right){
+                    const double low=yl?s.nativeIndex.minimumPositive():s.nativeIndex.minimum();
+                    const double high=s.nativeIndex.maximum();
+                    if(std::isfinite(low) && high>=low){
+                        if(!anyY){ymin=low;ymax=high;anyY=true;}
+                        else {ymin=std::min(ymin,low);ymax=std::max(ymax,high);}
+                    }
+                }
             }
+            continue;
+        }
+        // For ordinary XY arrays all four combinations of linear/log valid
+        // extents were calculated when the data arrived (not per paint/wheel).
+        const LegacyXYExtent& bounds=s.legacyIndex.range(xl,!right && yl);
+        if(!bounds.valid)continue;
+        if(!anyX){xmin=bounds.xmin;xmax=bounds.xmax;anyX=true;}
+        else {xmin=std::min(xmin,bounds.xmin);xmax=std::max(xmax,bounds.xmax);}
+        if(!right){
+            if(!anyY){ymin=bounds.ymin;ymax=bounds.ymax;anyY=true;}
+            else {ymin=std::min(ymin,bounds.ymin);ymax=std::max(ymax,bounds.ymax);}
         }
     }
     if(!anyX){xmin=xl?1.0:0.0;xmax=xl?10.0:1.0;}
@@ -295,15 +436,18 @@ void PanelChartWidget::paintEvent(QPaintEvent*) {
     const auto yCoord=[&](double y){return plot.bottom()-(ty(y)-ay)/(by-ay)*plot.height();};
     const auto drawXGrid=[&]() {
         const QVector<double> xt=ticks(xmin,xmax,xl,8);
+        const QVector<QString> xlabels=xl ? QVector<QString>{} : PlotAxisLabels::linearX(xt);
         double prevLabel=-1e6;
-        for(double x:xt) {
+        for(int i=0;i<xt.size();++i) {
+            const double x=xt[i];
             const double px=xCoord(x);
             if(m_settings.value("showGrid").toBool()){
                 painter.setPen(QPen(lines,1));painter.drawLine(QPointF(px,plot.top()),QPointF(px,plot.bottom()));
             }
             if(m_settings.value("showXAxis",true).toBool() && (px-prevLabel>=43 || prevLabel<-1e5)) {
                 painter.setPen(muted);
-                painter.drawText(QRectF(px-39,plot.bottom()+6,78,18),Qt::AlignCenter,axisNumber(x));
+                painter.drawText(QRectF(px-39,plot.bottom()+6,78,18),Qt::AlignCenter,
+                                 xl ? axisNumber(x) : xlabels[i]);
                 prevLabel=px;
             }
         }
@@ -350,10 +494,12 @@ void PanelChartWidget::paintEvent(QPaintEvent*) {
         painter.restore();
     }
     painter.save();painter.setClipRect(plot.adjusted(-1,-1,1,1));
+    m_lastNativePrimitives=0;
+    m_lastLegacyPrimitives=0;
     const QString mode=m_settings.value("chartType").toString();
     const double lineWidth=qBound(.5,m_settings.value("lineWidth").toDouble(),8.0);
     for(const Series& s:m_series) {
-        const qsizetype count=s.x.size();
+        const qsizetype count=s.nativeSamples?s.y.size():s.x.size();
         if(count<=0 || !s.visible)continue;
         // Isolate per-series QPainter state. The rounded chart background above
         // uses a solid brush; inheriting it here would fill open line/XY/step
@@ -366,6 +512,121 @@ void PanelChartWidget::paintEvent(QPaintEvent*) {
         };
         painter.setBrush(Qt::NoBrush);
         painter.setPen(QPen(s.color,s.width>0?s.width:lineWidth));
+        if(s.nativeSamples){
+            // RC1.5: a million original samples never become a million Qt
+            // drawing primitives. The existing 64-sample index reduces each
+            // visible X-column to its real extrema; dense waveforms use one
+            // un-antialiased vertical stroke plus at most one connector per
+            // column. Close zoom draws the original individual samples.
+            const double viewFirst=(xmin-s.nativeStart)/s.nativeStep;
+            const double viewEnd=(xmax-s.nativeStart)/s.nativeStep;
+            const double n=double(s.y.size());
+            if(std::isfinite(viewFirst)&&std::isfinite(viewEnd)&&viewEnd>=0&&viewFirst<n){
+                const std::size_t first=std::size_t(std::max(0.0,std::floor(viewFirst)-1.0));
+                const std::size_t last=std::size_t(std::min(n,std::ceil(viewEnd)+2.0));
+                NativeGeometry& geometry=s.nativeGeometry;
+                const bool yLog=yl&&!rightAxis;
+                if(!geometry.valid || geometry.xmin!=xmin || geometry.xmax!=xmax ||
+                   geometry.ymin!=(rightAxis?y2min:ymin) ||
+                   geometry.ymax!=(rightAxis?y2max:ymax) ||
+                   geometry.plot!=plot || geometry.xLog!=xl ||
+                   geometry.yLog!=yLog || geometry.preview!=m_fastInteraction){
+                    geometry=NativeGeometry{};
+                    geometry.valid=true;geometry.xmin=xmin;geometry.xmax=xmax;
+                    geometry.ymin=rightAxis?y2min:ymin;
+                    geometry.ymax=rightAxis?y2max:ymax;
+                    geometry.plot=plot;geometry.xLog=xl;geometry.yLog=yLog;
+                    geometry.preview=m_fastInteraction;
+                    ++m_nativeGeometryBuilds;
+                    const std::size_t widthPixels=std::size_t(std::max(1.0,std::ceil(plot.width())));
+                    geometry.dense=last>first && last-first>widthPixels*2;
+                    if(geometry.dense){
+                        // During continuous wheel/drag input, reduce the number
+                        // of columns temporarily, but keep true extrema even
+                        // in that preview. Idle redraw restores every column.
+                        const std::size_t columns=m_fastInteraction?
+                            std::max(std::size_t(1),widthPixels/2):widthPixels;
+                        const auto envelopes=s.nativeIndex.columnsByView(
+                            s.y,s.nativeStart,s.nativeStep,xmin,xmax,columns,xl);
+                        geometry.lines.reserve(qsizetype(envelopes.size()));
+                        geometry.centerLines.reserve(qsizetype(envelopes.size()));
+                        QPointF previousCenter;
+                        bool havePrevious=false;
+                        for(const NativePixelColumn& column:envelopes){
+                            const NativeSampleExtrema& envelope=column.envelope;
+                            if(!envelope.valid || !envelope.count || (yLog&&!envelope.hasPositive)){
+                                havePrevious=false;continue;
+                            }
+                            const NativeSamplePoint& low=yLog?envelope.positiveLow:envelope.low;
+                            const NativeSamplePoint& high=envelope.high;
+                            const double x=column.x;
+                            if(xl&&x<=0){havePrevious=false;continue;}
+                            const double px=xCoord(x);
+                            const double pyLow=yCoord(low.value),pyHigh=yCoord(high.value);
+                            // The signal itself is an exact *column mean*.
+                            // The separate extrema stroke still shows spikes/noise;
+                            // neither representation changes the original data.
+                            const double mean=envelope.sum/double(envelope.count);
+                            const bool meanValid=std::isfinite(mean)&&(!yLog||mean>0);
+                            const double pyMean=meanValid?yCoord(mean):0;
+                            if(!std::isfinite(px)||!std::isfinite(pyLow)||!std::isfinite(pyHigh)){
+                                havePrevious=false;continue;
+                            }
+                            geometry.lines.append(QLineF(px,pyLow,px,pyHigh));
+                            if(meanValid&&std::isfinite(pyMean)){
+                                const QPointF center(px,pyMean);
+                                if(havePrevious)geometry.centerLines.append(QLineF(previousCenter,center));
+                                previousCenter=center;
+                                havePrevious=true;
+                            } else havePrevious=false;
+                        }
+                        geometry.primitives=geometry.lines.size()+geometry.centerLines.size();
+                    } else if(last>first){
+                        // Fine zoom: the original samples are still available.
+                        const auto points=s.nativeIndex.visible(s.y,first,last,widthPixels);
+                        bool started=false;
+                        for(const NativeSamplePoint& item:points){
+                            const double x=s.nativeStart+double(item.index)*s.nativeStep;
+                            if((xl&&x<=0)||(yLog&&item.value<=0)){started=false;continue;}
+                            const QPointF pt(xCoord(x),yCoord(item.value));
+                            if(!std::isfinite(pt.x())||!std::isfinite(pt.y())){
+                                started=false;continue;
+                            }
+                            if(!started){geometry.finePath.moveTo(pt);started=true;}
+                            else geometry.finePath.lineTo(pt);
+                            ++geometry.primitives;
+                        }
+                    }
+                } else {
+                    ++m_nativeCacheHits;
+                }
+                m_lastNativePrimitives+=geometry.primitives;
+                if(geometry.dense){
+                    // Two screen-bounded drawing layers, never per-sample Qt
+                    // primitives: subdued true min/max envelope plus the
+                    // smooth antialiased mean trace. This is a *display* choice
+                    // only; cursor/statistics/exports retain every sample.
+                    const double opacity=qBound(0.0,m_settings.value("nativeEnvelopeOpacity",QVariant(0.32)).toDouble(),1.0);
+                    if(opacity>0 && !geometry.lines.isEmpty()){
+                        QColor envelopeColor=s.color;
+                        envelopeColor.setAlphaF(opacity);
+                        painter.setRenderHint(QPainter::Antialiasing,false);
+                        painter.setPen(QPen(envelopeColor,1.0,Qt::SolidLine,Qt::FlatCap));
+                        painter.drawLines(geometry.lines.constData(),int(geometry.lines.size()));
+                    }
+                    if(!geometry.centerLines.isEmpty()){
+                        painter.setRenderHint(QPainter::Antialiasing,true);
+                        painter.setPen(QPen(s.color,s.width>0?s.width:lineWidth,
+                                            Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+                        painter.drawLines(geometry.centerLines.constData(),int(geometry.centerLines.size()));
+                    }
+                } else {
+                    painter.setRenderHint(QPainter::Antialiasing,true);
+                    painter.drawPath(geometry.finePath);
+                }
+            }
+            painter.restore();continue;
+        }
         const int maxDraw=qMax(2000,int(plot.width()*5));
         const qsizetype step=qMax(qsizetype(1),(count+maxDraw-1)/maxDraw);
         const auto valid=[&](qsizetype i){return std::isfinite(s.x[i]) && std::isfinite(s.y[i]) &&
@@ -387,32 +648,101 @@ void PanelChartWidget::paintEvent(QPaintEvent*) {
             }
             painter.setBrush(Qt::NoBrush);
         } else if((mode==QLatin1String("Line") || mode==QLatin1String("XY")) &&
-                  count>qsizetype(plot.width()*4) &&
-                  std::is_sorted(s.x.cbegin(),s.x.cend()) &&
-                  std::all_of(s.x.cbegin(),s.x.cend(),[&](double x){return std::isfinite(x) && (!xl || x>0);}) &&
-                  std::all_of(s.y.cbegin(),s.y.cend(),[&](double y){return std::isfinite(y) && (rightAxis || !yl || y>0);})) {
-            // Dense monotonic traces: retain min/max extrema per horizontal
-            // pixel instead of dropping narrow spikes during decimation.
-            const int columns=std::max(1,int(std::ceil(plot.width())));
-            QVector<double> low(columns,std::numeric_limits<double>::infinity());
-            QVector<double> high(columns,-std::numeric_limits<double>::infinity());
-            for(qsizetype i=0;i<count;++i) {
-                if(!valid(i))continue;
-                const double px=xCoord(s.x.at(i));
-                const int col=int(std::floor(px-plot.left()));
-                if(col<0 || col>=columns)continue;
-                low[col]=std::min(low[col],s.y.at(i));
-                high[col]=std::max(high[col],s.y.at(i));
-            }
-            QPointF previous;bool havePrevious=false;
-            for(int col=0;col<columns;++col) {
-                if(!std::isfinite(low[col]))continue;
-                const double px=plot.left()+col;
-                const double yLow=yCoord(low[col]),yHigh=yCoord(high[col]);
-                painter.drawLine(QPointF(px,yLow),QPointF(px,yHigh));
-                const QPointF mid(px,(yLow+yHigh)/2.0);
-                if(havePrevious)painter.drawLine(previous,mid);
-                previous=mid;havePrevious=true;
+                  s.legacyIndex.ascending() && s.legacyIndex.allFinite() &&
+                  (!xl || s.legacyIndex.allXPositive()) &&
+                  (rightAxis || !yl || s.legacyIndex.allYPositive())) {
+            // Legacy ordinary XY charts share the RC1.5.1 pixel-bounded
+            // renderer, but bin by TRUE X coordinates (including irregular
+            // intervals) instead of assuming native uniform sample spacing.
+            // Index and axis summaries are built on set/append, not on repaint.
+            const auto span=s.legacyIndex.visibleSpan(s.x,xmin,xmax);
+            const std::size_t widthPixels=std::size_t(std::max(1.0,std::ceil(plot.width())));
+            NativeGeometry& geometry=s.legacyGeometry;
+            const bool yLog=yl&&!rightAxis;
+            if(!geometry.valid || geometry.xmin!=xmin || geometry.xmax!=xmax ||
+               geometry.ymin!=(rightAxis?y2min:ymin) ||
+               geometry.ymax!=(rightAxis?y2max:ymax) ||
+               geometry.plot!=plot || geometry.xLog!=xl ||
+               geometry.yLog!=yLog || geometry.preview!=m_fastInteraction){
+                geometry=NativeGeometry{};
+                geometry.valid=true;geometry.xmin=xmin;geometry.xmax=xmax;
+                geometry.ymin=rightAxis?y2min:ymin;
+                geometry.ymax=rightAxis?y2max:ymax;
+                geometry.plot=plot;geometry.xLog=xl;geometry.yLog=yLog;
+                geometry.preview=m_fastInteraction;
+                ++m_legacyGeometryBuilds;
+                // Keep legacy per-sample antialiased appearance for medium
+                // (e.g. Rigol 1700-point) previews, but cache that path.
+                // Use the indexed envelope only for genuinely dense input.
+                geometry.dense=count>qsizetype(plot.width()*4) &&
+                               span.second>span.first &&
+                               span.second-span.first>widthPixels*2;
+                if(geometry.dense){
+                    const std::size_t columns=m_fastInteraction?
+                        std::max(std::size_t(1),widthPixels/2):widthPixels;
+                    const auto envelopes=s.legacyIndex.columns(s.x,s.y,xmin,xmax,columns,xl);
+                    geometry.lines.reserve(qsizetype(envelopes.size()));
+                    geometry.centerLines.reserve(qsizetype(envelopes.size()));
+                    QPointF previousCenter;
+                    bool havePrevious=false;
+                    for(const LegacyXYColumn& column:envelopes){
+                        const NativeSampleExtrema& e=column.envelope;
+                        if(!e.valid||!e.count){havePrevious=false;continue;}
+                        const double px=xCoord(column.x);
+                        const double yLo=yCoord(e.low.value),yHi=yCoord(e.high.value);
+                        const double mean=e.sum/double(e.count);
+                        if(!std::isfinite(px)||!std::isfinite(yLo)||!std::isfinite(yHi)){
+                            havePrevious=false;continue;
+                        }
+                        geometry.lines.append(QLineF(px,yLo,px,yHi));
+                        if(std::isfinite(mean) && (!yLog||mean>0)){
+                            const double py=yCoord(mean);
+                            if(std::isfinite(py)){
+                                const QPointF center(px,py);
+                                if(havePrevious)geometry.centerLines.append(QLineF(previousCenter,center));
+                                previousCenter=center;havePrevious=true;
+                            }else havePrevious=false;
+                        }else havePrevious=false;
+                    }
+                    geometry.primitives=geometry.lines.size()+geometry.centerLines.size();
+                }else{
+                    // At close zoom show original points directly (plus
+                    // immediate neighbors for continuity at plot boundaries).
+                    const std::size_t from=span.first>0?span.first-1:span.first;
+                    const std::size_t to=std::min(std::size_t(count),span.second+1);
+                    bool started=false;
+                    for(std::size_t i=from;i<to;++i){
+                        const double xx=s.x[qsizetype(i)],yy=s.y[qsizetype(i)];
+                        if((xl&&xx<=0)||(yLog&&yy<=0)){started=false;continue;}
+                        const QPointF pt(xCoord(xx),yCoord(yy));
+                        if(!std::isfinite(pt.x())||!std::isfinite(pt.y())){
+                            started=false;continue;
+                        }
+                        if(!started){geometry.finePath.moveTo(pt);started=true;}
+                        else geometry.finePath.lineTo(pt);
+                        ++geometry.primitives;
+                    }
+                }
+            }else ++m_legacyCacheHits;
+            m_lastLegacyPrimitives+=geometry.primitives;
+            if(geometry.dense){
+                const double opacity=qBound(0.0,
+                    m_settings.value("legacyEnvelopeOpacity",QVariant(0.32)).toDouble(),1.0);
+                if(opacity>0 && !geometry.lines.isEmpty()){
+                    QColor envelope=s.color;envelope.setAlphaF(opacity);
+                    painter.setRenderHint(QPainter::Antialiasing,false);
+                    painter.setPen(QPen(envelope,1.0,Qt::SolidLine,Qt::FlatCap));
+                    painter.drawLines(geometry.lines.constData(),int(geometry.lines.size()));
+                }
+                if(!geometry.centerLines.isEmpty()){
+                    painter.setRenderHint(QPainter::Antialiasing,true);
+                    painter.setPen(QPen(s.color,s.width>0?s.width:lineWidth,
+                                        Qt::SolidLine,Qt::RoundCap,Qt::RoundJoin));
+                    painter.drawLines(geometry.centerLines.constData(),int(geometry.centerLines.size()));
+                }
+            }else{
+                painter.setRenderHint(QPainter::Antialiasing,true);
+                painter.drawPath(geometry.finePath);
             }
         } else {
             QPainterPath path;
@@ -523,7 +853,8 @@ void PanelChartWidget::wheelEvent(QWheelEvent* ev) {
     if(std::isfinite(xmin) && std::isfinite(xmax) && std::isfinite(ymin) &&
        std::isfinite(ymax) && xmin<xmax && ymin<ymax) {
         m_viewX0=xmin;m_viewX1=xmax;m_viewY0=ymin;m_viewY1=ymax;
-        m_viewActive=true;update();
+        m_viewActive=true;m_fastInteraction=true;
+        m_renderIdleTimer.start();m_viewNotificationTimer.start();update();
     }
     ev->accept();
 }
@@ -539,6 +870,20 @@ bool PanelChartWidget::nearestSampleX(double requested,double& snapped) const {
     const double target=logX?std::log10(std::max(requested,std::numeric_limits<double>::min())):requested;
     for(const Series& s:m_series) {
         if(!s.visible)continue;
+        if(s.nativeSamples && !s.y.isEmpty()){
+            const double pos=(requested-s.nativeStart)/s.nativeStep;
+            if(!std::isfinite(pos))continue;
+            for(double candidate:{std::floor(pos),std::ceil(pos)}){
+                if(candidate<0||candidate>=s.y.size())continue;
+                const auto i=qsizetype(candidate);
+                const double x=s.nativeStart+double(i)*s.nativeStep;
+                const double y=s.y.at(i);
+                if(!std::isfinite(y)||(logX&&x<=0))continue;
+                const double score=std::abs((logX?std::log10(x):x)-target);
+                if(score<best){best=score;snapped=x;found=true;}
+            }
+            continue;
+        }
         const qsizetype n=std::min(s.x.size(),s.y.size());
         const auto accept=[&](qsizetype i) {
             if(i<0 || i>=n)return;
@@ -631,7 +976,9 @@ void PanelChartWidget::mousePressEvent(QMouseEvent* ev) {
         for(int i=0;i<m_series.size() && i<8;++i) {
             if(legendRow(i).contains(ev->position())) {
                 m_series[i].visible=!m_series[i].visible;
-                m_viewActive=false;update();ev->accept();return;
+                // Visibility changes never discard a zoomed viewport.
+                // Fit-to-series extents remains an explicit double-click.
+                update();ev->accept();return;
             }
         }
     }
@@ -673,10 +1020,19 @@ void PanelChartWidget::mouseMoveEvent(QMouseEvent* ev) {
     m_viewX1=xl?std::pow(10.0,hx+dx):xmax+dx;
     m_viewY0=yl?std::pow(10.0,ly+dy):ymin+dy;
     m_viewY1=yl?std::pow(10.0,hy+dy):ymax+dy;
-    m_viewActive=true;update();ev->accept();
+    m_viewActive=true;m_fastInteraction=true;
+    m_renderIdleTimer.start();m_viewNotificationTimer.start();update();ev->accept();
 }
 void PanelChartWidget::mouseReleaseEvent(QMouseEvent* ev) {
-    if(ev->button()==Qt::LeftButton){m_panning=false;m_draggingInspector=false;}
+    if(ev->button()==Qt::LeftButton){
+        if(m_panning){
+            // Deliver the actual final viewport once even when the operator
+            // releases the mouse before the coalescing timer expires.
+            m_viewNotificationTimer.stop();publishView();
+            m_renderIdleTimer.stop();m_fastInteraction=false;update();
+        }
+        m_panning=false;m_draggingInspector=false;
+    }
 }
 void PanelChartWidget::mouseDoubleClickEvent(QMouseEvent* ev) {
     resetView();ev->accept();
@@ -693,10 +1049,17 @@ void PanelChartWidget::secondaryRanges(double& ymin,double& ymax) const {
     ymin=0;ymax=1;
     for(const Series& s:m_series) {
         if(!s.visible || s.axis!=QLatin1String("right"))continue;
-        for(double v:s.y) {
-            if(!std::isfinite(v))continue;
-            if(!any){ymin=ymax=v;any=true;}
-            else {ymin=std::min(ymin,v);ymax=std::max(ymax,v);}
+        if(s.nativeSamples){
+            if(s.nativeIndex.valid()){
+                if(!any){ymin=s.nativeIndex.minimum();ymax=s.nativeIndex.maximum();any=true;}
+                else {ymin=std::min(ymin,s.nativeIndex.minimum());ymax=std::max(ymax,s.nativeIndex.maximum());}
+            }
+            continue;
+        }
+        double low=0,high=0;
+        if(s.legacyIndex.rightRange(low,high)){
+            if(!any){ymin=low;ymax=high;any=true;}
+            else {ymin=std::min(ymin,low);ymax=std::max(ymax,high);}
         }
     }
     if(!any){ymin=0;ymax=1;}
@@ -711,6 +1074,8 @@ void PanelChartWidget::secondaryRanges(double& ymin,double& ymax) const {
 }
 
 void PanelChartWidget::drawDigital(QPainter& painter,const QRectF& plot,bool light) {
+    QElapsedTimer frameClock;frameClock.start();
+    m_lastDigitalQueryMs=0;m_lastDigitalGeometryMs=0;m_lastDigitalPaintMs=0;
     const QColor grid=light?QColor("#dce6ef"):QColor("#304458");
     const QColor fg=light?QColor("#23374a"):QColor("#e4eef8");
     const QColor muted=light?QColor("#637a91"):QColor("#94b2ca");
@@ -725,8 +1090,16 @@ void PanelChartWidget::drawDigital(QPainter& painter,const QRectF& plot,bool lig
     }
     double xmin=std::numeric_limits<double>::infinity();
     double xmax=-std::numeric_limits<double>::infinity();
-    for(const Series* s:lanes)for(double x:s->x)if(std::isfinite(x)){
-        xmin=std::min(xmin,x);xmax=std::max(xmax,x);
+    for(const Series* s:lanes){
+        if(s->digitalIndex.valid()){
+            xmin=std::min(xmin,s->digitalIndex.firstX());
+            xmax=std::max(xmax,s->digitalIndex.lastX());
+        } else {
+            // Unsupported unsorted/invalid digital series keep the old path.
+            for(double x:s->x)if(std::isfinite(x)){
+                xmin=std::min(xmin,x);xmax=std::max(xmax,x);
+            }
+        }
     }
     if(!std::isfinite(xmin)||xmin>=xmax){xmin=0;xmax=1;}
     if(!m_settings.value("xAuto",true).toBool()) {
@@ -737,17 +1110,24 @@ void PanelChartWidget::drawDigital(QPainter& painter,const QRectF& plot,bool lig
     const auto px=[&](double x){return plot.left()+(x-xmin)/(xmax-xmin)*plot.width();};
     const int count=std::min(int(lanes.size()),16);
     const double h=plot.height()/count;
-    for(double x:ticks(xmin,xmax,false,8)){
+    const QVector<double> xticks=ticks(xmin,xmax,false,8);
+    const QVector<QString> xlabels=PlotAxisLabels::linearX(xticks);
+    double previousLabelX=-1e6;
+    for(int i=0;i<xticks.size();++i){
+        const double x=xticks[i];
         const double xx=px(x);
         if(m_settings.value("showGrid").toBool()){
             painter.setPen(QPen(grid,1));painter.drawLine(QPointF(xx,plot.top()),QPointF(xx,plot.bottom()));
         }
-        if(m_settings.value("showXAxis",true).toBool()){
+        if(m_settings.value("showXAxis",true).toBool() &&
+           (xx-previousLabelX>=70 || previousLabelX<-1e5)){
             painter.setPen(muted);
-            painter.drawText(QRectF(xx-35,plot.bottom()+4,70,18),Qt::AlignCenter,axisNumber(x));
+            painter.drawText(QRectF(xx-35,plot.bottom()+4,70,18),Qt::AlignCenter,xlabels[i]);
+            previousLabelX=xx;
         }
     }
     painter.save();painter.setClipRect(plot);
+    m_lastDigitalPrimitives=0;
     for(int n=0;n<count;++n){
         const Series& s=*lanes[n];
         const double top=plot.top()+h*n;
@@ -755,13 +1135,120 @@ void PanelChartWidget::drawDigital(QPainter& painter,const QRectF& plot,bool lig
         painter.setPen(QPen(grid,1));
         painter.drawLine(QPointF(plot.left(),top+h),QPointF(plot.right(),top+h));
         painter.setPen(QPen(s.color,std::max(1.3,s.width)));
-        QPointF previous;bool have=false;
-        for(qsizetype i=0;i<std::min(s.x.size(),s.y.size());++i){
-            if(!std::isfinite(s.x[i])||!std::isfinite(s.y[i])){have=false;continue;}
-            const QPointF pt(px(s.x[i]),s.y[i]>=0.5?high:low);
-            if(have){painter.drawLine(previous,QPointF(pt.x(),previous.y()));
-                     painter.drawLine(QPointF(pt.x(),previous.y()),pt);}
-            previous=pt;have=true;
+        if(s.digitalIndex.valid()){
+            DigitalGeometry& geometry=s.digitalGeometry;
+            // During wheel/drag interaction we can transform an existing
+            // raster instead of rebuilding transitions and painting thousands
+            // of Qt primitives for every mouse event. Exact data is restored
+            // after the 85 ms idle timer, or immediately on a programmatic view.
+            const bool canPreview=m_fastInteraction && geometry.valid &&
+                !geometry.raster.isNull() && geometry.plot==plot &&
+                geometry.hi==high && geometry.lo==low &&
+                std::isfinite(xmin) && std::isfinite(xmax) && xmin<xmax &&
+                geometry.xmin<geometry.xmax &&
+                (geometry.xmax-geometry.xmin)/(xmax-xmin)>=0.20 &&
+                (geometry.xmax-geometry.xmin)/(xmax-xmin)<=5.0 &&
+                std::min(xmax,geometry.xmax)>std::max(xmin,geometry.xmin);
+            if(!canPreview && (!geometry.valid || geometry.xmin!=xmin ||
+               geometry.xmax!=xmax || geometry.hi!=high ||
+               geometry.lo!=low || geometry.plot!=plot ||
+               geometry.preview!=m_fastInteraction)){
+                QElapsedTimer buildClock;buildClock.start();
+                geometry=DigitalGeometry{};
+                geometry.valid=true;geometry.xmin=xmin;geometry.xmax=xmax;
+                geometry.hi=high;geometry.lo=low;geometry.plot=plot;
+                geometry.preview=m_fastInteraction;
+                ++m_digitalGeometryBuilds;
+                const std::size_t pixels=std::size_t(std::max(1.0,std::ceil(plot.width())));
+                QElapsedTimer queryClock;queryClock.start();
+                const std::size_t visibleEdges=s.digitalIndex.transitionsIn(xmin,xmax);
+                m_lastDigitalQueryMs+=double(queryClock.nsecsElapsed())*1.e-6;
+                geometry.dense=visibleEdges>pixels*2;
+                if(geometry.dense){
+                    // Dense views have a bounded number of column strokes.
+                    // This intermediate representation preserves both levels
+                    // when even a one-sample pulse falls inside one pixel.
+                    const std::size_t columns=m_fastInteraction?
+                        std::max(std::size_t(1),pixels/2):pixels;
+                    queryClock.restart();
+                    const auto bins=s.digitalIndex.columns(xmin,xmax,columns);
+                    m_lastDigitalQueryMs+=double(queryClock.nsecsElapsed())*1.e-6;
+                    geometry.lines.reserve(qsizetype(bins.size()*2));
+                    for(const DigitalPixelColumn& bin:bins){
+                        const double x0=px(bin.x0),x1=px(bin.x1);
+                        const double mid=(x0+x1)*.5;
+                        if(bin.low && bin.high)
+                            geometry.lines.append(QLineF(mid,high,mid,low));
+                        else if(bin.high || bin.low){
+                            const double y=bin.high?high:low;
+                            geometry.lines.append(QLineF(x0,y,x1,y));
+                        }
+                    }
+                    geometry.primitives=geometry.lines.size();
+                } else {
+                    const double begin=std::max(xmin,s.digitalIndex.firstX());
+                    const double finish=std::min(xmax,s.digitalIndex.lastX());
+                    if(begin<=finish){
+                        bool state=s.digitalIndex.stateAt(begin);
+                        const auto& edges=s.digitalIndex.transitions();
+                        auto it=std::upper_bound(edges.begin(),edges.end(),begin,
+                            [](double xx,const DigitalTransition& e){return xx<e.x;});
+                        geometry.path.moveTo(px(begin),state?high:low);
+                        for(;it!=edges.end() && it->x<=finish;++it){
+                            const double xx=px(it->x);
+                            geometry.path.lineTo(xx,state?high:low);
+                            geometry.path.lineTo(xx,it->high?high:low);
+                            state=it->high;geometry.primitives+=2;
+                        }
+                        geometry.path.lineTo(px(finish),state?high:low);
+                        ++geometry.primitives;
+                    }
+                }
+                // Rasterize just the digital waveform layer, not the grid,
+                // labels or measurement cursors; those stay at their exact
+                // viewport position during every pan and zoom.
+                const double dpr=std::max(1.0,devicePixelRatioF());
+                const int rw=std::max(1,int(std::ceil(plot.width()*dpr)));
+                const int rh=std::max(1,int(std::ceil(h*dpr)));
+                geometry.raster=QImage(rw,rh,QImage::Format_ARGB32_Premultiplied);
+                geometry.raster.fill(Qt::transparent);
+                {
+                    QPainter rasterPainter(&geometry.raster);
+                    rasterPainter.setRenderHint(QPainter::Antialiasing,!geometry.dense);
+                    rasterPainter.scale(dpr,dpr);
+                    rasterPainter.translate(-plot.left(),-top);
+                    rasterPainter.setPen(QPen(s.color,std::max(1.3,s.width)));
+                    if(geometry.dense && !geometry.lines.isEmpty())
+                        rasterPainter.drawLines(geometry.lines.constData(),int(geometry.lines.size()));
+                    else if(!geometry.dense)rasterPainter.drawPath(geometry.path);
+                }
+                ++m_digitalRasterBuilds;
+                m_lastDigitalGeometryMs+=double(buildClock.nsecsElapsed())*1.e-6;
+            } else ++m_digitalCacheHits;
+            m_lastDigitalPrimitives+=geometry.primitives;
+            QElapsedTimer blitClock;blitClock.start();
+            if(!geometry.raster.isNull()){
+                double scale=1.0,shift=0.0;
+                if(canPreview){
+                    scale=(geometry.xmax-geometry.xmin)/(xmax-xmin);
+                    shift=(geometry.xmin-xmin)*plot.width()/(xmax-xmin);
+                    ++m_digitalPreviewBlits;
+                }
+                const QRectF target(plot.left()+shift,top,plot.width()*scale,h);
+                painter.drawImage(target,geometry.raster,
+                    QRectF(0,0,geometry.raster.width(),geometry.raster.height()));
+            }
+            m_lastDigitalPaintMs+=double(blitClock.nsecsElapsed())*1.e-6;
+        }else{
+            // Unsorted/NaN input retains legacy segment and gap behaviour.
+            QPointF previous;bool have=false;
+            for(qsizetype i=0;i<std::min(s.x.size(),s.y.size());++i){
+                if(!std::isfinite(s.x[i])||!std::isfinite(s.y[i])){have=false;continue;}
+                const QPointF pt(px(s.x[i]),s.y[i]>=0.5?high:low);
+                if(have){painter.drawLine(previous,QPointF(pt.x(),previous.y()));
+                         painter.drawLine(QPointF(pt.x(),previous.y()),pt);}
+                previous=pt;have=true;
+            }
         }
     }
     painter.restore();
@@ -791,6 +1278,26 @@ void PanelChartWidget::drawDigital(QPainter& painter,const QRectF& plot,bool lig
         painter.restore();
         // Detailed measurements are in the movable inspection overlay.
     }
+    m_lastDigitalFrameMs=double(frameClock.nsecsElapsed())*1.e-6;
+    m_maxDigitalFrameMs=std::max(m_maxDigitalFrameMs,m_lastDigitalFrameMs);
+    if(m_settings.value("digitalPerfOverlay",false).toBool()){
+        const QRectF hud(plot.right()-355,plot.top()+7,348,48);
+        painter.save();painter.setPen(Qt::NoPen);
+        painter.setBrush(light?QColor(250,252,255,225):QColor(9,17,29,225));
+        painter.drawRoundedRect(hud,6,6);
+        QFont info=painter.font();info.setPixelSize(11);painter.setFont(info);
+        painter.setPen(fg);
+        painter.drawText(hud.adjusted(6,2,-6,-2),Qt::AlignLeft|Qt::AlignVCenter,
+           QStringLiteral("Frame %1 ms | Build %2 ms | Blit %3 ms\nQuery %4 ms | Raster %5 | Preview %6")
+             .arg(m_lastDigitalFrameMs,0,'f',2)
+             .arg(m_lastDigitalGeometryMs,0,'f',2)
+             .arg(m_lastDigitalPaintMs,0,'f',2)
+             .arg(m_lastDigitalQueryMs,0,'f',2)
+             .arg(m_digitalRasterBuilds)
+             .arg(m_digitalPreviewBlits));
+        painter.restore();
+    }
+
 }
 
 // Measurements are calculated directly from the series arrays, never from
@@ -800,13 +1307,20 @@ bool PanelChartWidget::sampleDomain(double& lo,double& hi) const {
     const bool logX=m_settings.value("xLog").toBool();
     for(const Series& s:m_series) {
         if(!s.visible)continue;
-        const qsizetype n=std::min(s.x.size(),s.y.size());
-        for(qsizetype i=0;i<n;++i) {
-            const double x=s.x.at(i),y=s.y.at(i);
-            if(!std::isfinite(x)||!std::isfinite(y)||(logX && x<=0))continue;
-            if(!found){lo=hi=x;found=true;}
-            else {lo=std::min(lo,x);hi=std::max(hi,x);}
+        if(s.nativeSamples){
+            if(s.nativeIndex.valid()&&!s.y.isEmpty()){
+                const double a=s.nativeStart,b=a+double(s.y.size()-1)*s.nativeStep;
+                if(!logX||b>0){
+                    if(!found){lo=a;hi=b;found=true;}
+                    else {lo=std::min(lo,a);hi=std::max(hi,b);}
+                }
+            }
+            continue;
         }
+        const LegacyXYExtent& bounds=s.legacyIndex.range(logX,false);
+        if(!bounds.valid)continue;
+        if(!found){lo=bounds.xmin;hi=bounds.xmax;found=true;}
+        else {lo=std::min(lo,bounds.xmin);hi=std::max(hi,bounds.xmax);}
     }
     return found;
 }
@@ -830,6 +1344,18 @@ double PanelChartWidget::mouseXValue(double px) const {
 }
 
 bool PanelChartWidget::sampleAt(const Series& s,double x,bool digital,double& y,bool exactOnly) {
+    if(s.nativeSamples){
+        if(s.y.isEmpty()||!std::isfinite(x))return false;
+        const double p=(x-s.nativeStart)/s.nativeStep;
+        if(!std::isfinite(p)||p<0||p>double(s.y.size()-1))return false;
+        const double nearest=std::round(p);
+        if(exactOnly && std::abs(p-nearest)>1e-6)return false;
+        const qsizetype a=qsizetype(std::floor(p)),b=qsizetype(std::ceil(p));
+        const double t=p-double(a);
+        y=s.y.at(a)*(1-t)+s.y.at(b)*t;
+        if(digital)y=y>=.5?1.0:0.0;
+        return std::isfinite(y);
+    }
     const qsizetype n=std::min(s.x.size(),s.y.size());
     if(n==0 || !std::isfinite(x))return false;
     // Mouse-snapped cursors report only measured sample values. Explicit

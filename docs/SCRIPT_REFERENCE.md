@@ -66,8 +66,9 @@ Common top-level instrument objects include:
 - `Wavegen1`
 - `Scope1`
 - `Supplies`
-- `StaticIO`
+- `StaticIO` (opt-in native input-change monitor via `onChange` and explicit `startMonitor` / `stopMonitor`; see [STATICIO_INPUT_MONITOR_V02_DEV4.md](reference/STATICIO_INPUT_MONITOR_V02_DEV4.md))
 - `Patterns`
+- `Protocol1` (alias `Protocol`): native UART, SPI, I²C master/Spy, classical CAN, SWD; introduced in **v0.2-dev**. Full API, electrical precautions and limits: [PROTOCOL_SCRIPTING_V02_DEV.md](reference/PROTOCOL_SCRIPTING_V02_DEV.md)
 
 ### Example: simple Wavegen + Scope capture
 
@@ -180,3 +181,40 @@ If you are unsure how something should be done, the best path is:
 4. Adapt that script into your own panel.
 
 That workflow is the intended way to discover the API in WFScript.
+
+
+## v0.2-dev.1: asynchronous UART and native Terminal widget
+
+The `Protocol1.UART` interface retains `startRx()`, `read(maxBytes)`, `write(bytes)`, and `writeText(text)` exactly for manual use. Opt-in `startAutoRx({pollIntervalMs:10,bufferSize:65536})` starts a **C++ Qt timer** on the existing Panel worker thread. While active, `read()` consumes the bounded native queue rather than reading from the SDK directly. `stopAutoRx()` preserves unread queue data, and `Protocol1.stop()` releases the protocol and clears callbacks.
+
+Optional `Protocol1.UART.onData(function(chunk){ ... })` receives a *copy* of the native event (`data`, `text`, `count`, `overflow`, `parityErrorIndex`, `timestamp` and `timestampSource`); `clearOnData()` removes it. `available()`, `stats()` and `autoReceiving` expose queue state, errors and receiver status. No JavaScript polling timer is required. Note that a long-running blocking callback prevents this same-thread QTimer from running until the callback finishes.
+
+The **UART Terminal (native RX)** Panel widget receives chunks through `PanelRuntime`'s existing worker-to-GUI signals, **not through JavaScript**. It exposes a `sendRequested(text)` UI event for optional operator-driven transmission. Open **Digital Instruments → UART Async Lab** to compare native-widget operation, `onData()` callback, and a project-owned Test Executive UART echo test. See [UART async architecture and hardware testing](reference/UART_ASYNC_V02_DEV1.md) for exact API signatures and limitations.
+
+## v0.2-dev.2: native Qt-backed Panel JavaScript timers
+
+In a **running Panel**, `setInterval(fn, ms, ...args)` runs a JavaScript callback repeatedly;
+`setTimeout(fn, ms, ...args)` runs it once. Both return an integer timer ID. Cancel with
+`clearInterval(id)` or `clearTimeout(id)`. Callbacks and `onInitialize` share one QJSEngine
+worker thread. Timer callbacks are serialized with Panel events, Test Executive steps and
+native UART polling; a blocking JavaScript callback delays all of them. **Not real-time.**
+
+```javascript
+let heartbeatId = 0;
+function onInitialize() {
+    heartbeatId = setInterval(function() {
+        ui.set('timeLabel', new Date().toISOString());
+    }, 1000);
+    setTimeout(function(message) { print(message); }, 2000, 'Ready');
+}
+function onShutdown() { clearInterval(heartbeatId); }
+```
+
+Intervals must be integer milliseconds from **10 to 86,400,000** (24h). A Panel can
+have **256 active timers**; calls beyond the limit throw clear errors. IDs are allocated
+dynamically and never reused within the same Panel run. Native cleanup cancels timers when
+the Panel stops, including failures and interrupted scripts. Clearing an expired or unknown
+ID is harmless. Functions are intentionally **Panel-only**; standalone one-shot Script
+Editor runs have no persistent event loop and throw an explanatory error. Native UART
+reception and Test Executive scheduling continue to use their own C++ timers independently.
+See **Getting Started → Panel JavaScript Timers** and `docs/PANEL_TIMERS_V02_DEV2.md`.

@@ -1,0 +1,158 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Visual QA for Slider v0.2-dev.8.7; no hardware or external script. Demonstrates titled, measured, compact and configurable sliders with unchanged rich-text Label.",
+  "scriptName": "SliderVisualQA.js",
+  "script": "// Slider Visual QA: no script or hardware output required.\n// The Slider itself displays its title, current value and optional endpoints.\n",
+  "activePageId": "main",
+  "libraries": [],
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "panelData": [],
+  "pages": [
+    {
+      "id": "main",
+      "name": "Slider QA",
+      "width": 980,
+      "height": 550,
+      "controls": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "SLIDER VISUAL QA  |  WFScript v0.2-dev.8.7",
+          "x": 25,
+          "y": 18,
+          "width": 930,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "intro",
+          "type": "label",
+          "text": "Drag the sliders: their values change without code. In Design, edit Title / Show Live Value / Show Minimum / Maximum; also test Light mode.",
+          "x": 25,
+          "y": 75,
+          "width": 930,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "harmonics",
+          "type": "slider",
+          "text": "3rd HARMONIC (%)",
+          "x": 36,
+          "y": 165,
+          "width": 434,
+          "height": 76,
+          "value": 35,
+          "min": 0,
+          "max": 75,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "noise",
+          "type": "slider",
+          "text": "NOISE FLOOR (%)",
+          "x": 504,
+          "y": 165,
+          "width": 434,
+          "height": 76,
+          "value": 15,
+          "min": 0,
+          "max": 75,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "compact",
+          "type": "slider",
+          "text": "COMPACT CONTROL",
+          "x": 36,
+          "y": 285,
+          "width": 220,
+          "height": 38,
+          "value": 52,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "signed",
+          "type": "slider",
+          "text": "SIGNED OFFSET (mV)",
+          "x": 300,
+          "y": 282,
+          "width": 638,
+          "height": 83,
+          "value": -125,
+          "min": -500,
+          "max": 500,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "noValue",
+          "type": "slider",
+          "text": "LABEL + TRACK ONLY",
+          "x": 36,
+          "y": 404,
+          "width": 434,
+          "height": 76,
+          "value": 20,
+          "min": 0,
+          "max": 50,
+          "events": {},
+          "properties": {
+            "showValue": false,
+            "showRange": false
+          }
+        },
+        {
+          "id": "readout",
+          "type": "label",
+          "text": "Original Label preserves HTML: <b>Rich Text</b> <span style=\"color:#39c4d8\">OK</span>",
+          "x": 504,
+          "y": 404,
+          "width": 434,
+          "height": 76,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    }
+  ]
+}

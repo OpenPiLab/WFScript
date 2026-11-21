@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 7: Analog Discovery 3 instrumentation · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="active">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 7 — Analog Discovery 3 instrumentation</h2>
+<p>WFScript includes native WaveForms SDK bindings for supported Digilent instruments, including the Analog Discovery 3. Its instrument globals use familiar names: <code>Device</code>, <code>Scope1</code>, <code>Wavegen1</code>, <code>Supplies</code>, <code>StaticIO</code>, <code>Patterns1</code>, <code>Logic1</code> and <code>Protocol1</code>. Aliases such as <code>Scope</code> and <code>Wavegen</code> may refer to the same underlying native object rather than a separate hardware session.</p>
+<h3>Start by establishing what is connected</h3>
+<p>Before changing hardware state, check device availability and the model-specific capabilities. An API member being present does not mean every capability, voltage range or digital pin mode is available on every device.</p>
+<pre><code class="language-javascript">if (!Device.isConnected()) {
+    print('No instrument connection available');
+} else {
+    print('Device:', Device.name);
+}
+</code></pre>
+<p>In simulation, values are suitable for UI and algorithm demonstrations, not for validating physical accuracy. Mark simulated values clearly in both operator displays and reports.</p>
+<h3>Capture a scope waveform</h3>
+<p>The primary pattern is configure → arm/single → wait for completion → inspect data → release/stop. Exact object properties and ranges are listed in the Script API reference. The simplified outline below shows the sequencing without implying that the chosen sample rate is possible on every connected device.</p>
+<pre><code class="language-javascript">Scope1.Time.Samples.value = 4096;
+Scope1.Time.Rate.value = 1000000;
+Scope1.Channel1.enable = true;
+
+if (!Scope1.single()) throw Error(Scope1.lastError);
+if (!Scope1.wait()) throw Error(Scope1.lastError);
+const volts = Scope1.Channel1.data;
+</code></pre>
+<p>Choose a suitable input range before capture. A smaller scope range may saturate when a DC supply is above the configured window; saturation is not evidence that the supply is producing the clipped voltage. Use a known test waveform, check input ratings and termination, and examine actual capture metadata.</p>
+<h3>Produce a waveform</h3>
+<p><code>Wavegen1</code> offers analog output capabilities including simple functions and model-supported advanced modes. Start with the output disabled, set a known shape, frequency and amplitude, then explicitly start it. Stop outputs when finished; don't rely on closing a display widget to make an electrical output safe.</p>
+<pre><code class="language-javascript">Wavegen1.Channel1.enable = true;
+Wavegen1.Channel1.Simple.Type.text = 'Sine';
+Wavegen1.Channel1.Simple.Frequency.value = 1000;
+Wavegen1.Channel1.Simple.Amplitude.value = 1;
+if (!Wavegen1.run()) throw Error(Wavegen1.lastError);
+// Acquire a matching waveform, then stop/release the output.
+</code></pre>
+<p>The example assumes a safe loopback circuit and the device's amplitude convention; inspect the device documentation and the complete bridge API before connecting a load.</p>
+<h3>Power supplies are active outputs</h3>
+<p>The positive and negative supplies expose staged settings, enable controls, and explicit run/config behavior. A successful request does not independently prove the terminal voltage; use scope or multimeter measurement when physical verification matters. Before a demonstration, disconnect sensitive circuits and work inside the device's safe voltage/current capabilities.</p>
+<h3>A safe first hardware experiment</h3>
+<p>Use a short BNC or otherwise appropriate connection from a known wavegen output to a scope input with shared reference/ground. Configure a low-amplitude 1 kHz sine, arm a short capture, verify its measured frequency and Vpp, then stop the output. Keep the script and connection simple so unexpected measurements are easy to diagnose.</p>
+<p>For deeper guided experiments, open <strong>Signal Lab</strong>, <strong>AD3 Scope Explorer</strong>, <strong>Power Supplies</strong>, <strong>Logic Analyzer</strong>, <strong>AC Network Laboratory</strong> or <strong>RC Step Response Laboratory</strong> from the bundled examples.</p>
+<div class="pager"><a href="guide-06.html">← Previous chapter</a><a href="guide-08.html">Next chapter →</a></div></article></main></div></body></html>

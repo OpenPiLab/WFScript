@@ -1,22 +1,22 @@
-## v0.1 warning-cleanup candidate — Windows Qt build pending
+# WFScript changelog
 
-- Source-level correction of all seven warning categories from the initial Windows Debug build log (373 emitted warnings, including repeated compilation of shared files in native test targets).
-- Default-initialize three trailing WidgetProperty metadata fields without changing aggregate initialization or project format.
-- Replace one deprecated Qt regular-expression match option and a deprecated mouse-event test constructor.
-- Clarify error-return indentation, make snippet index narrowing explicit, resolve signed counter comparison safely, and remove an unused intermediate.
-- Preserve app version 0.1.0; this is **not** a separate public feature release.
-- Source/offline checks only; **Windows Build All and all 66 native CTests must be rerun** before release.
+## v0.2 — source release candidate (2026-11-20)
 
-# Changelog
+WFScript v0.2 extends the public v0.1 release with a visual application-development
+workflow, improved widgets, a full-screen Operator View, Panel Data, embedded JavaScript
+modules, modern charts and binary operations, native network/serial/SQLite support,
+and a native automated Test Executive with structured measurements, reports, sweeps,
+conditionals and cleanup. The source package contains 40 built-in examples and the
+illustrated, searchable documentation set.
 
-## v0.1 — Initial public release
+The Windows Qt 6.9.2 MinGW **RC1.5.14.10.8** development baseline passed
+**116/116 registered native CTests**. This cleanup does **not** change `src/`, native
+CTest sources or bundled example Panel bytes.
 
-- First public source release of WFScript.
-- Includes the multi-Page Panel Designer, JavaScript editor, API explorer, built-in examples, plotting widgets, experiment tables, and native Test Executive.
-- Experiment Table values are exposed to JavaScript as native arrays through `ui.get()`.
-- Example library is organized into six user-facing categories.
-- Windows Qt Creator import path has been cleaned up for a normal kit-based workflow.
-- Added a WFScript application icon and Windows executable icon resource.
-- Release validation completed by the owner on Windows Qt 6.9.2 / MinGW 64-bit.
-- Previous source baseline: **66 / 66 native CTests passed** on Windows. This renamed v0.1 packaging remains to be rebuilt and retested.
-- Owner confirmed a successful run of the **AD3 Hardware Test Station** example on real hardware.
+See [release notes](RELEASE_NOTES_v0.2.md) for highlights and verification limitations.
+Historical RC-by-RC development changelogs are retained in the original full-source
+checkpoint archive, rather than included in the public repository root.
+
+## v0.1 — previous public release
+
+See the [v0.1 release on GitHub](https://github.com/OpenPiLab/WFScript/releases/tag/v0.1).

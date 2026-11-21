@@ -8,6 +8,7 @@ public:
     QString displayName() const override {return QStringLiteral("Digital Timing / Protocol");}
     PanelControl defaultDefinition(const QString& id) const override;
     QVector<WidgetProperty> properties() const override;
+    QVector<PanelEventDefinition> events() const override;
     QWidget* create(const PanelControl& d,QWidget* parent,EventSink sink) const override;
     void applyDefinition(QWidget* w,const PanelControl& d) const override;
     void readDefinition(QWidget*,PanelControl&) const override {}

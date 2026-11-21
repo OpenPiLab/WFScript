@@ -43,6 +43,27 @@ inline QVector<PanelEventDefinition> forType(const QString& type) {
         QStringLiteral("Fires when the checkbox is toggled."),QStringLiteral("checked")}};
     return {}; // label, numeric, gauge and plot are display-only at present
 }
+// The Events inspector and Create Handler generator use the SAME metadata
+// as the runtime/validator. No hard-coded special cases for particular events.
+inline QString argumentFor(const QString& type,const QString& event) {
+    for(const auto& definition:forType(type))
+        if(definition.name==event)return definition.argument;
+    return {};
+}
+inline QString argumentJsTypeFor(const QString& type,const QString& event) {
+    for(const auto& definition:forType(type)) {
+        if(definition.name!=event || definition.argument.isEmpty())continue;
+        // Catalog signatures use eventName(argument: javascriptType).
+        const QString signature=definition.signature;
+        const QString prefix=definition.argument+QStringLiteral(":");
+        const int start=signature.indexOf(prefix);
+        if(start<0)return QStringLiteral("any");
+        const int valueStart=start+prefix.size();
+        const int end=signature.indexOf(QLatin1Char(')'),valueStart);
+        return (end<0?signature.mid(valueStart):signature.mid(valueStart,end-valueStart)).trimmed();
+    }
+    return {};
+}
 inline bool supports(const QString& type,const QString& event) {
     for (const auto& entry : forType(type)) if(entry.name==event) return true;
     return false;

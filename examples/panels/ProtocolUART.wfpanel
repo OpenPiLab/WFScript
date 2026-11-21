@@ -1,0 +1,238 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "UART Protocol — Native SDK Terminal — WFScript v0.2-dev native Digilent SDK protocols",
+  "scriptName": "ProtocolUART.js",
+  "activePageId": "protocol_uart",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "protocol_uart",
+      "name": "UART Protocol",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "uartTitle",
+          "type": "label",
+          "text": "UART TX/RX  /  DIO0 TX + DIO1 RX",
+          "x": 24,
+          "y": 18,
+          "width": 1112,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "uartSafety",
+          "type": "label",
+          "text": "Connect DIO0 to DIO1 through 1 kΩ for local loopback. Common ground. 3.3 V logic. Opening this Panel never drives pins.",
+          "x": 24,
+          "y": 80,
+          "width": 1112,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "uartBaud",
+          "type": "option_selector",
+          "text": "BAUD RATE",
+          "x": 24,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "9600|19200|57600|115200",
+            "defaultIndex": 3,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "uartText",
+          "type": "option_selector",
+          "text": "UART MESSAGE",
+          "x": 380,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "PING|STATUS|HELLO",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "uartCfg",
+          "type": "button",
+          "text": "CONFIGURE / START RX",
+          "x": 24,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onUartCfgClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "uartSend",
+          "type": "button",
+          "text": "SEND TEXT",
+          "x": 300,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onUartSendClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "uartRead",
+          "type": "button",
+          "text": "POLL RX",
+          "x": 576,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onUartReadClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "uartStop",
+          "type": "button",
+          "text": "RELEASE PINS",
+          "x": 852,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onUartStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "uartStatus",
+          "type": "label",
+          "text": "IDLE",
+          "x": 24,
+          "y": 385,
+          "width": 1112,
+          "height": 76,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "uartLog",
+          "type": "event_log",
+          "text": "UART Transaction & Event Log",
+          "x": 24,
+          "y": 476,
+          "width": 1112,
+          "height": 239,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        },
+        {
+          "id": "uartFoot",
+          "type": "label",
+          "text": "Simulation results are labeled as simulation. This is a native SDK controller example, not a passive waveform decoder.\\nStop/Close releases protocol outputs. Configure buttons may physically drive selected DIO pins.",
+          "x": 24,
+          "y": 727,
+          "width": 1112,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: UART Protocol — Native SDK Terminal\n// │ Level: Intermediate  |  Mode: hardware-capable\n// │\n// │ GOAL: Use native AD3 UART commands to transmit text and inspect received data.\n// │ BEFORE RUN: Use Simulation for API exploration. For real UART use DIO0 TX→1 kΩ→DIO1 RX\n// │    or a voltage-compatible device and common ground.\n// │ TRY FIRST: Click CONFIGURE / START RX.\n// │ TRACE: `uartCfg` → `onUartCfgClicked()` → Protocol1.UART configure/startRx; send and\n// │    poll use separate native calls.\n// │ EDIT SAFELY: Change the transmitted text and compare the UTF-8/text result with received\n// │    bytes when physically looped back.\n// │ REMEMBER: Native Digilent UART is different from PC Serial COM ports.\n// │\n// │ EVENT TIP: Select `uartCfg` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/ProtocolUART.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n// Native Digilent UART TX/RX. Simulation never produces actual received bytes.\n// All DIO outputs are enabled only after the operator presses a button.\nfunction uartLog(t) {\n    ui.set('uartStatus', t);\n    ui.set('uartLog', {\n        append: {\n            level: t.indexOf('ERROR') >= 0 ? 'ERROR' : (t.indexOf('NACK') >= 0 || t.indexOf('UNCONFIRMED') >= 0 ? 'WARN' : 'INFO'),\n            source: 'UART',\n            message: t\n        }\n    });\n    print('UART: ' + t);\n}\nfunction uartTry(fn) {\n    try {\n        fn();\n    } catch (e) {\n        uartLog('ERROR: ' + String(e));\n    }\n}\n/**\n * CORE LESSON — Releases old protocol ownership, then configures native AD3 UART TX/RX. The PC\n * COM-port Serial API is a separate system.\n */\nfunction uartConfig() {\n    const baud = Number(ui.get('uartBaud'));\n    if (!Protocol1.stop()) throw Error('release previous session: ' + Protocol1.lastError);\n    if (!Protocol1.UART.configure({\n        tx: 0,\n        rx: 1,\n        baudRate: baud,\n        dataBits: 8,\n        parity: 'none',\n        stopBits: 1\n    }))\n        throw Error(Protocol1.UART.lastError);\n    if (!Protocol1.UART.startRx()) throw Error(Protocol1.UART.lastError);\n    uartLog((Protocol1.simulation ? 'SIMULATED (no physical IO)' : 'UART READY') + ' / ' + baud + ' baud / TX0 RX1');\n}\nfunction uartSend() {\n    const s = String(ui.get('uartText') || 'PING');\n    const r = Protocol1.UART.writeText(s + '\\n');\n    if (!r.ok) throw Error(r.error);\n    uartLog((r.simulated ? 'SIMULATION — no actual transmission' : 'TX SENT') + ' / ' + JSON.stringify(s + '\\n'));\n}\nfunction uartRead() {\n    const r = Protocol1.UART.read(1024);\n    if (!r.ok) throw Error(r.error);\n    const text = String.fromCharCode.apply(null, r.data);\n    uartLog((r.simulated ? 'SIMULATED EMPTY RX' : 'RX ' + r.count + ' bytes') + ' / ' + JSON.stringify(text) +\n        ' / parityIndex ' + String(r.parityErrorIndex || 0) + ' / overflow ' + String(!!r.overflow));\n}\nfunction uartStop() {\n    if (!Protocol1.stop()) throw Error('OUTPUT SHUTDOWN UNCONFIRMED: ' + Protocol1.lastError);\n    uartLog('STOPPED — digital resources released');\n}\nfunction onUartCfgClicked() {\n    return uartTry(uartConfig);\n}\nfunction onUartSendClicked() {\n    return uartTry(uartSend);\n}\nfunction onUartReadClicked() {\n    return uartTry(uartRead);\n}\nfunction onUartStopClicked() {\n    return uartTry(uartStop);\n}\nuartLog('IDLE — select CONFIGURE before sending; no pins driven');\n"
+}

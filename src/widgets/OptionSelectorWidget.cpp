@@ -1,16 +1,44 @@
 #include "OptionSelectorWidget.h"
 #include "InstrumentVisuals.h"
 #include <QComboBox>
+#include <QPainterPath>
+#include <QPaintEvent>
 #include <QPainter>
 #include <QResizeEvent>
 #include <QSignalBlocker>
 #include <QVariant>
 #include <utility>
 
+namespace {
+// The platform QComboBox paints an opaque square arrow button when only the
+// outer rounded border is styled. A reserved, transparent arrow well and a
+// painted triangle keep the right edge rounded in Windows light/dark themes.
+class RoundedOptionCombo final : public QComboBox {
+public:
+    using QComboBox::QComboBox;
+protected:
+    void paintEvent(QPaintEvent* event) override {
+        QComboBox::paintEvent(event); // native item text, focus, keyboard and accessibility
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing,true);
+        const QColor ink=InstrumentVisuals::light(this)
+            ? QColor(QStringLiteral("#27465c")) : QColor(QStringLiteral("#b6cfde"));
+        const qreal cx=qMax(12.,width()-18.);
+        const qreal cy=height()*.5;
+        QPainterPath arrow;
+        arrow.moveTo(cx-5,cy-2);
+        arrow.lineTo(cx+5,cy-2);
+        arrow.lineTo(cx,cy+3.5);
+        arrow.closeSubpath();
+        p.fillPath(arrow,ink);
+    }
+};
+}
+
 OptionSelectorWidget::OptionSelectorWidget(QWidget* parent):QWidget(parent) {
     setAttribute(Qt::WA_OpaquePaintEvent,false);
     setAutoFillBackground(false);
-    m_combo=new QComboBox(this);
+    m_combo=new RoundedOptionCombo(this);
     m_combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
     connect(m_combo,QOverload<int>::of(&QComboBox::activated),this,[this](int index){
         emit userIndexChanged(index);
@@ -59,7 +87,13 @@ void OptionSelectorWidget::updateLayout() {
     const QString selected=light?QStringLiteral("#bddbe7"):QStringLiteral("#355a72");
     m_combo->setStyleSheet(QStringLiteral(
         "QComboBox { color:%2; background:%3; border:1px solid %1;"
-        "border-radius:8px; padding-left:12px; padding-right:8px; }"
+        "border-radius:8px; padding-left:12px; padding-right:36px; }"
+        // Explicit subcontrol prevents the native Windows square drop-down
+        // overlay from obscuring the right-hand curve and selected text.
+        "QComboBox::drop-down { subcontrol-origin:padding;"
+        "subcontrol-position:top right; width:32px; border:0;"
+        "background:transparent; }"
+        "QComboBox::down-arrow {image:none; width:0; height:0;}"
         "QComboBox QAbstractItemView {color:%2;background:%4;"
         "selection-background-color:%5;}").arg(a.name(),text,background,popup,selected));
 }

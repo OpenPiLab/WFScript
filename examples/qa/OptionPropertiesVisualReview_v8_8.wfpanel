@@ -1,0 +1,208 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Option Selector clipping and universal Property Editor QA; simulation only, no hardware commands.",
+  "scriptName": "OptionPropertyQA.js",
+  "script": "// Visual/Properties QA panel: no script and no hardware outputs.\n",
+  "activePageId": "main",
+  "libraries": [],
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "panelData": [],
+  "pages": [
+    {
+      "id": "main",
+      "name": "Option + Properties QA",
+      "width": 980,
+      "height": 650,
+      "controls": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "OPTION + PROPERTY EDITOR REVIEW  |  WFScript v0.2-dev.8.8",
+          "x": 24,
+          "y": 14,
+          "width": 930,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "help",
+          "type": "instruction_card",
+          "text": "About this review",
+          "x": 24,
+          "y": 74,
+          "width": 930,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "tone": "Information",
+            "body": "In Design mode, select any widget and inspect Common / Widget Settings. Run to verify the options render without right-side clipping. The design-only caption disappears, and the disabled test button is greyed out. No hardware outputs."
+          }
+        },
+        {
+          "id": "mode",
+          "type": "option_selector",
+          "text": "OPERATING MODE",
+          "x": 24,
+          "y": 169,
+          "width": 420,
+          "height": 115,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Auto|Manual|Calibration|Standby",
+            "defaultIndex": 0,
+            "accent": "blue",
+            "toolTip": "Choose an operating mode; selection stays script-visible"
+          }
+        },
+        {
+          "id": "profile",
+          "type": "option_selector",
+          "text": "TEST PROFILE",
+          "x": 466,
+          "y": 169,
+          "width": 420,
+          "height": 115,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Low Voltage|High Voltage|Advanced Diagnostics",
+            "defaultIndex": 0,
+            "accent": "green",
+            "toolTip": "Long option labels should never overlap the arrow"
+          }
+        },
+        {
+          "id": "compact",
+          "type": "option_selector",
+          "text": "COMPACT SELECTOR",
+          "x": 24,
+          "y": 300,
+          "width": 270,
+          "height": 73,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "Alpha|Beta|Gamma",
+            "defaultIndex": 1,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "slider",
+          "type": "slider",
+          "text": "OUTPUT LEVEL (%)",
+          "x": 318,
+          "y": 300,
+          "width": 360,
+          "height": 76,
+          "value": 45,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "showValue": true,
+            "showRange": true
+          }
+        },
+        {
+          "id": "normal",
+          "type": "button",
+          "text": "NORMAL BUTTON",
+          "x": 24,
+          "y": 404,
+          "width": 255,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "toolTip": "Hover to see the common tooltip"
+          }
+        },
+        {
+          "id": "locked",
+          "type": "button",
+          "text": "DISABLED IN RUN",
+          "x": 298,
+          "y": 404,
+          "width": 260,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "runEnabled": false,
+            "toolTip": "Editable in Designer; disabled for operators"
+          }
+        },
+        {
+          "id": "hidden",
+          "type": "label",
+          "text": "DESIGN ONLY — disappears while running",
+          "x": 24,
+          "y": 476,
+          "width": 600,
+          "height": 51,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "runVisible": false,
+            "textFormat": "Plain Text",
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "footer",
+          "type": "label",
+          "text": "All controls are selectable in Design. Use Properties to adjust ID, geometry, Tooltip, Run Enabled, and Run Visible.",
+          "x": 24,
+          "y": 542,
+          "width": 930,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    }
+  ]
+}

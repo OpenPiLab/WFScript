@@ -35,6 +35,14 @@ const context={
 };
 vm.createContext(context);
 vm.runInContext(panel.script,context,{timeout:2500,filename:'TableLimitPlot.js'});
+assert.equal(events.size,0,'no manual UI event registration');
+for(const widget of ids.values()) for(const [event,b] of Object.entries(widget.events||{})) {
+  const key=widget.id+':'+event;
+  assert(b.enabled && typeof context[b.handler]==='function',key);
+  assert(!events.has(key),'duplicate '+key);
+  events.set(key,context[b.handler]);
+}
+assert.equal(events.size,4,'four saved Table Limit Plot bindings');
 assert.equal(state.get('pointCount'),6);
 assert.equal(state.get('outsideCount'),1);
 assert.equal(Number(state.get('largestDeviation').toFixed(3)),0.150);

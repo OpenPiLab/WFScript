@@ -15,6 +15,14 @@
 #include <QAbstractItemView>
 
 namespace {
+bool isCommReference(const QString& p) {
+    for(const QString& type:{QStringLiteral("SerialConnection"),QStringLiteral("TCPConnection"),
+                             QStringLiteral("TCPServer"),QStringLiteral("UDPConnection"),
+                             QStringLiteral("BinaryBuffer"),QStringLiteral("BinaryStream"),
+                             QStringLiteral("BinarySamples")})
+        if(p==type || p.startsWith(type+QStringLiteral(".")))return true;
+    return false;
+}
 QString kindLabel(CompletionCatalog::Kind kind) {
     using K=CompletionCatalog::Kind;
     switch(kind) {
@@ -60,13 +68,14 @@ ApiExplorer::ApiExplorer(QWidget* parent):QWidget(parent) {
     });
     connect(m_tree,&QTreeWidget::currentItemChanged,this,[this]{updateDetails();});
     connect(m_tree,&QTreeWidget::itemDoubleClicked,this,[this](QTreeWidgetItem* item,int){
-        if(item && !item->data(0,Qt::UserRole).toString().startsWith(QStringLiteral("@guide")))
+        if(item && !item->data(0,Qt::UserRole).toString().startsWith(QStringLiteral("@guide")) &&
+           !isCommReference(item->data(0,Qt::UserRole).toString()))
             emit insertRequested(item->data(0,Qt::UserRole).toString());
     });
     connect(m_insert,&QPushButton::clicked,this,[this]{
         if(auto* item=m_tree->currentItem()) {
             const QString path=item->data(0,Qt::UserRole).toString();
-            if(!path.startsWith(QStringLiteral("@guide")))emit insertRequested(path);
+            if(!path.startsWith(QStringLiteral("@guide")) && !isCommReference(path))emit insertRequested(path);
         }
     });
     updateDetails();
@@ -74,8 +83,12 @@ ApiExplorer::ApiExplorer(QWidget* parent):QWidget(parent) {
 void ApiExplorer::fill() {
     m_tree->clear();
     const QStringList roots={QStringLiteral("Device"),QStringLiteral("Scope"),
-        QStringLiteral("Wavegen"),QStringLiteral("Logic"),QStringLiteral("Supplies"),QStringLiteral("StaticIO"),QStringLiteral("Patterns"),QStringLiteral("TestRunner"),QStringLiteral("modules"),QStringLiteral("plots"),QStringLiteral("ui"),
-        QStringLiteral("Math"),QStringLiteral("console"),QStringLiteral("include"),QStringLiteral("print"),QStringLiteral("wait")};
+        QStringLiteral("Wavegen"),QStringLiteral("Logic"),QStringLiteral("Supplies"),QStringLiteral("StaticIO"),QStringLiteral("Patterns"),QStringLiteral("Protocol"),QStringLiteral("TestRunner"),QStringLiteral("modules"),QStringLiteral("plots"),QStringLiteral("ui"),QStringLiteral("Data"),
+        QStringLiteral("FileIO"),QStringLiteral("Tool"),QStringLiteral("Database"),QStringLiteral("Binary"),
+        QStringLiteral("Serial"),QStringLiteral("TCP"),QStringLiteral("UDP"),
+        QStringLiteral("Math"),QStringLiteral("console"),QStringLiteral("include"),QStringLiteral("print"),QStringLiteral("wait"),
+        QStringLiteral("setTimeout"),QStringLiteral("clearTimeout"),
+        QStringLiteral("setInterval"),QStringLiteral("clearInterval")};
     for(const auto& entry:CompletionCatalog::entries({})) {
         if(!roots.contains(entry.name)) continue;
         auto* root=new QTreeWidgetItem(m_tree);
@@ -110,6 +123,21 @@ void ApiExplorer::fill() {
             addChildren(root,entry.name,0); // guide first, then exact executable API methods
         }
     }
+    // These are inferred return types, not JavaScript globals. Show their
+    // members in the Explorer but never offer to insert a nonexistent symbol.
+    for(const QString& type: {QStringLiteral("SerialConnection"),QStringLiteral("TCPConnection"),
+                              QStringLiteral("TCPServer"),QStringLiteral("UDPConnection"),
+                             QStringLiteral("BinaryBuffer"),QStringLiteral("BinaryStream"),
+                             QStringLiteral("BinarySamples")}) {
+        auto* root=new QTreeWidgetItem(m_tree);
+        root->setText(0,type+QStringLiteral(" (return type)"));
+        root->setData(0,Qt::UserRole,type);
+        root->setData(0,Qt::UserRole+1,
+            type.startsWith(QStringLiteral("Binary")) ?
+                QStringLiteral("Reference only: a native Binary result; use the actual JavaScript variable, not this type name") :
+                QStringLiteral("Reference only: returned from Serial/TCP/UDP.create; use the variable you assign"));
+        addChildren(root,type,0);
+    }
     for(int i=0;i<m_tree->topLevelItemCount();++i) m_tree->topLevelItem(i)->setExpanded(false);
 }
 void ApiExplorer::addChildren(QTreeWidgetItem* parent,const QString& path,int depth) {
@@ -137,10 +165,11 @@ bool ApiExplorer::filterItem(QTreeWidgetItem* item,const QString& term) {
 }
 void ApiExplorer::updateDetails() {
     const auto* item=m_tree->currentItem();
-    m_insert->setEnabled(item && !item->data(0,Qt::UserRole).toString().startsWith(QStringLiteral("@guide")));
+    m_insert->setEnabled(item && !item->data(0,Qt::UserRole).toString().startsWith(QStringLiteral("@guide")) &&
+                         !isCommReference(item->data(0,Qt::UserRole).toString()));
     if(!item) {
-        m_details->setHtml(QStringLiteral("<b>Instrument &amp; Script API Explorer</b><p>Browse TestRunner (including guided Test Executive topics), modules, plots, Scope, Wavegen, Logic, Supplies, StaticIO, Patterns, Device, and Panel APIs. "
-            "Search by member or function name. Double-click a symbol to insert its path into the active script.</p>"));
+        m_details->setHtml(QStringLiteral("<b>Instrument &amp; Script API Explorer</b><p>Browse TestRunner (including guided Test Executive topics), modules, plots, Scope, Wavegen, Logic, Supplies, StaticIO (including opt-in input monitoring), Patterns, Device, JavaScript timers, and Panel APIs. "
+            "Native Serial/TCP/UDP and Binary APIs are available. Returned connection and binary types are shown for reference, not as insertable globals. Search by member or function name.</p>"));
         return;
     }
     const QString path=item->data(0,Qt::UserRole).toString();

@@ -3,6 +3,7 @@
 #include "EducationWidgets.h"
 #include "ExperimentWidgets.h"
 #include <QPixmap>
+#include <QJsonDocument>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QMessageBox>
@@ -23,6 +24,7 @@
 #include <QToolButton>
 #include <QFrame>
 #include <QLabel>
+#include <QFont>
 #include <QLayout>
 #include <QtGlobal>
 #include <cmath>
@@ -88,12 +90,22 @@ WidgetPropertyInspector::WidgetPropertyInspector(QWidget* parent):QWidget(parent
     m_layout->setSpacing(5);
     m_layout->setSizeConstraint(QLayout::SetMinimumSize);
     auto* common=new QFormLayout;
+    // The type is defined by the factory and is not an editable widget property.
+    // Keep it above ID/geometry so the user can identify any selected widget.
+    m_typeLabel=new QLabel(QStringLiteral("No widget selected"),this);
+    m_typeLabel->setObjectName(QStringLiteral("panelPropertyType"));
+    m_typeLabel->setWordWrap(true);
+    m_typeLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    QFont typeFont=m_typeLabel->font();
+    typeFont.setBold(true);
+    m_typeLabel->setFont(typeFont);
     m_id=new QLineEdit(this);
     m_id->setObjectName("panelPropertyId");
     m_x=geometryField(-1000,8192,"panelPropertyX",this);
     m_y=geometryField(-1000,8192,"panelPropertyY",this);
     m_width=geometryField(25,3000,"panelPropertyWidth",this);
     m_height=geometryField(22,3000,"panelPropertyHeight",this);
+    common->addRow("Type",m_typeLabel);
     common->addRow("ID",m_id);
     common->addRow("X",m_x);
     common->addRow("Y",m_y);
@@ -130,6 +142,8 @@ void WidgetPropertyInspector::rebuild(const QString& type) {
     m_imageStatus=nullptr;
     m_imageImport=nullptr;
     m_imageClear=nullptr;
+    m_legacySettingsBox=nullptr;
+    m_legacySettings=nullptr;
     if(m_dynamic) {m_layout->removeWidget(m_dynamic);delete m_dynamic;m_dynamic=nullptr;}
     if(type.isEmpty())return;
     m_dynamic=new QWidget(this);
@@ -168,8 +182,7 @@ void WidgetPropertyInspector::rebuild(const QString& type) {
         sections->addWidget(group);
         return form;
     };
-    if(const auto* factory=WidgetRegistry::instance().factory(type))
-        m_metadata=factory->properties();
+    m_metadata=WidgetRegistry::instance().properties(type);
     for(const WidgetProperty& prop:m_metadata) {
         // The legacy geometry field is already represented by four numeric
         // fields. id and type are never editable widget-specific properties.
@@ -203,7 +216,7 @@ void WidgetPropertyInspector::rebuild(const QString& type) {
         e->setMinimumHeight(23);
         if(prop.kind=="multiline") {
             if(prop.id==QStringLiteral("source") && type==QStringLiteral("equation")) {
-                e->setToolTip(QStringLiteral("LaTeX-style subset: \\frac{top}{bottom}, \\sqrt{x}, x_{sub}, x^{power}, \\pi, \\omega, \\tau, \\cdot. No $ delimiters or external LaTeX installation."));
+                e->setToolTip(QStringLiteral("TeX-style subset: \\frac{a}{b}, \\sqrt{x}, x_{sub}, x^{power}, \\Sigma, \\varepsilon, \\pi, \\omega, \\tau, \\Longleftrightarrow, \\%. No full LaTeX engine."));
                 if(auto* editor=dynamic_cast<MultilinePropertyEditor*>(e))
                     editor->setPlaceholderText(QStringLiteral("f_c=\\frac{1}{2\\pi RC}"));
             } else if(prop.id==QStringLiteral("body")) {
@@ -226,7 +239,7 @@ void WidgetPropertyInspector::rebuild(const QString& type) {
         math->setAlignment(Qt::AlignCenter);
         math->setStyleSheet(QStringLiteral("background:#192d41;color:white;border:1px solid #4b6a84;"));
         stack->addWidget(math);
-        auto* quick=new QLabel(QStringLiteral("Examples: f_c=\\frac{1}{2\\pi RC}     \\tau=RC     H(j\\omega)=\\frac{1}{1+j\\omega RC}\nSupported: \\frac, \\sqrt, ^, _, \\alpha, \\beta, \\pi, \\omega, \\tau, \\cdot. No full LaTeX engine."),preview);
+        auto* quick=new QLabel(QStringLiteral("Examples: f_c=\\frac{1}{2\\pi RC}     \\tau=RC     H(j\\omega)=\\frac{1}{1+j\\omega RC}\nSupported: \\frac, \\sqrt, ^, _, \\alpha, \\varepsilon, \\Sigma, \\pi, \\omega, \\tau, \\cdot, \\Longleftrightarrow, \\%. No full LaTeX engine."),preview);
         quick->setWordWrap(true);stack->addWidget(quick);
         sections->addWidget(preview);
         auto* sourceEditor=dynamic_cast<MultilinePropertyEditor*>(m_fields.value(QStringLiteral("source"),nullptr));
@@ -258,9 +271,11 @@ void WidgetPropertyInspector::rebuild(const QString& type) {
         }
     }
     if(type==QStringLiteral("experiment_table")) {
-        auto* note=new QLabel(QStringLiteral("Each | separates a column. Enter one initial data row per line. "
-            "For live data call ui.set(tableId, [[f, predicted, measured, error], ...]). "
-            "Right-click the table in Run mode to export CSV. Editable cells can fire valueChanged(rows)."),m_dynamic);
+        auto* note=new QLabel(QStringLiteral("Each | separates a column (up to 32 columns); do not use | inside a heading. "
+            "Enter initial rows one per line; rolling capacity up to 100,000. "
+            "For live data use ui.set(tableId,{append:[...]}) or {appendRows:[[...],...]}; full arrays replace. "
+            "The header has Import/Export CSV, Copy, Clear and Follow actions. "
+            "Editable cells support typing to edit and emit lightweight cellEdited. Deprecated full valueChanged(rows) snapshots require an explicit opt-in."),m_dynamic);
         note->setWordWrap(true);sections->addWidget(note);
     }
     if(type==QStringLiteral("image")) {
@@ -329,6 +344,26 @@ void WidgetPropertyInspector::rebuild(const QString& type) {
         help->setContentsMargins(7,6,7,7);
         sections->addWidget(help);
     }
+    // Saved fields from older examples or external widget versions must not
+    // vanish from inspection. They remain preserved by readControl(), but
+    // exposing them as editable would falsely imply the factory supports them.
+    m_legacySettingsBox=new QWidget(m_dynamic);
+    auto* legacyLayout=new QVBoxLayout(m_legacySettingsBox);
+    legacyLayout->setContentsMargins(7,4,3,5);
+    auto* legacyTitle=new QLabel(QStringLiteral("Stored legacy / unsupported settings (read-only)"),
+                                  m_legacySettingsBox);
+    legacyTitle->setWordWrap(true);
+    legacyLayout->addWidget(legacyTitle);
+    m_legacySettings=new QPlainTextEdit(m_legacySettingsBox);
+    m_legacySettings->setObjectName(QStringLiteral("panelPropertyLegacySettings"));
+    m_legacySettings->setReadOnly(true);
+    m_legacySettings->setFixedHeight(82);
+    m_legacySettings->setToolTip(QStringLiteral(
+        "These saved keys are not used by the current widget factory. "
+        "They are preserved when editing or saving, but cannot be changed here."));
+    legacyLayout->addWidget(m_legacySettings);
+    sections->addWidget(m_legacySettingsBox);
+    m_legacySettingsBox->hide();
     sections->addStretch();
     m_layout->addWidget(m_dynamic);
 }
@@ -358,7 +393,18 @@ QVariant WidgetPropertyInspector::valueOf(QWidget* editor,const QString& kind) c
 }
 void WidgetPropertyInspector::setControl(const PanelControl& d,bool editable) {
     m_changing=true;
-    rebuild(d.id.isEmpty()?QString():d.type);
+    const QString selectedType=d.id.isEmpty()?QString():d.type;
+    rebuild(selectedType);
+    if(selectedType.isEmpty()) {
+        m_typeLabel->setText(QStringLiteral("No widget selected"));
+        m_typeLabel->setToolTip(QString());
+    } else {
+        const auto* factory=WidgetRegistry::instance().factory(selectedType);
+        const QString name=factory?factory->displayName():selectedType;
+        m_typeLabel->setText(name.compare(selectedType,Qt::CaseInsensitive)==0
+            ? name : QStringLiteral("%1 (%2)").arg(name,selectedType));
+        m_typeLabel->setToolTip(QStringLiteral("Widget type ID: %1 (read-only)").arg(selectedType));
+    }
     if(d.type==QStringLiteral("image")) {
         m_imageData=d.properties.value(QStringLiteral("imageData")).toString();
         m_imageName=d.properties.value(QStringLiteral("imageName")).toString();
@@ -387,6 +433,19 @@ void WidgetPropertyInspector::setControl(const PanelControl& d,bool editable) {
         else if(p.kind=="integer" || p.kind=="double")
             assign(field,p.kind,qBound(p.minimum,0.0,p.maximum));
         else assign(field,p.kind,QString());
+    }
+    if(m_legacySettingsBox && m_legacySettings) {
+        QJsonObject legacy=d.properties;
+        for(const auto& property:m_metadata)
+            legacy.remove(property.id);
+        // Image binary is edited through the dedicated Import/Remove controls.
+        if(d.type==QStringLiteral("image")) {
+            legacy.remove(QStringLiteral("imageData"));
+            legacy.remove(QStringLiteral("imageName"));
+        }
+        m_legacySettings->setPlainText(QString::fromUtf8(
+            QJsonDocument(legacy).toJson(QJsonDocument::Indented)));
+        m_legacySettingsBox->setVisible(!legacy.isEmpty());
     }
     // Values were assigned with signals blocked, so explicitly redraw the
     // correct selected equation (including its font size) after changing tabs.
@@ -438,7 +497,14 @@ PanelControl WidgetPropertyInspector::readControl(const PanelControl& original) 
         else if(p.id=="value")d.value=value.toDouble();
         else if(p.id=="min")d.minimum=value.toDouble();
         else if(p.id=="max")d.maximum=value.toDouble();
-        else d.properties.insert(p.id,QJsonValue::fromVariant(value));
+        else if((p.id==QStringLiteral("toolTip") ||
+                 p.id==QStringLiteral("runEnabled") ||
+                 p.id==QStringLiteral("runVisible")) && p.defaultValue.isValid() &&
+                value==p.defaultValue) {
+            // Keep legacy projects compact; the absence of a common key
+            // always means its factory-independent default.
+            d.properties.remove(p.id);
+        } else d.properties.insert(p.id,QJsonValue::fromVariant(value));
     }
     if(d.type==QStringLiteral("image")) {
         if(m_imageData.isEmpty()) {

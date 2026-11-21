@@ -1,0 +1,34 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 10: Files, SQLite and native binary data · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="active">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 10 — Files, SQLite and native binary data</h2>
+<p>Data becomes more valuable when it can be saved, reloaded and compared. WFScript supports restricted file operations, CSV/JSON utilities, SQLite databases and native binary buffers. Choose the simplest representation that preserves your measurement meaning.</p>
+<h3>FileIO: small, readable files</h3>
+<p>Use JSON for configuration, CSV for measurements and portable tables, and native bytes when structured binary records matter. The FileIO API uses allowed PanelData paths or explicit user-granted paths instead of unconstrained filesystem access.</p>
+<pre><code class="language-javascript">var path = FileIO.dataPath('station-settings.json');
+FileIO.writeJson(path, {testName:'Power Check',limits:{low:3.2,high:3.4}});
+var saved = FileIO.readJson(path);
+</code></pre>
+<p>Treat file-access failures as expected application events: missing folders, invalid names, permissions and malformed JSON should produce helpful operator messages rather than silently resetting settings.</p>
+<h3>SQLite: structured and persistent records</h3>
+<p><code>Database</code> uses asynchronous Qt SQL work. <code>Database.open()</code> creates or opens a named database, <code>Database.exec()</code> executes prepared parameterized statements and <code>Database.query()</code> returns columns and rows. Success is indicated by a callback result with <code>ok:true</code>; the positive request ID merely indicates the operation was accepted for processing.</p>
+<pre><code class="language-javascript">Database.open('measurements.db', function(opened) {
+    if (!opened.ok) return print(opened.error);
+    var db = opened.db;
+    Database.exec(db,
+      'CREATE TABLE IF NOT EXISTS readings (time TEXT, volts REAL)',
+      [], function(created) {
+        if (!created.ok) return print(created.error);
+        Database.exec(db,
+          'INSERT INTO readings(time,volts) VALUES (?,?)',
+          [new Date().toISOString(), 3.301],
+          function(written) {
+            if (!written.ok) print(written.error);
+          });
+      });
+});
+</code></pre>
+<p>SQL <code>NULL</code> is not the same as an empty string or zero. RC1.5.14.10.8 specifically corrected SQL NULL readback into JavaScript <code>null</code>, and its native regression test now passes. Query results should be validated before publishing them into tables or limit calculations.</p>
+<h3>Binary: keep high-volume work near the data</h3>
+<p>The <code>Binary</code> service creates native buffers and supports integer/floating-point reads, checksums, packing, IEEE 488.2 framing, streams and decoded sample containers. Use it when a task naturally handles many kilobytes or large sample arrays; ordinary form values are simpler as JavaScript Numbers and strings.</p>
+<p>Avoid calling a native scalar accessor once per element when you can decode a whole series in one operation. The performance lab demonstrated why the JavaScript/native crossing matters: bulk processing scales well, but per-field calls may not.</p>
+<h3>The difference between report data and raw data</h3>
+<p>Test Executive reports should store compact measurements, verdicts, units, run metadata and meaningful references. A 100,000-sample waveform is better handled by a bounded binary/file path. Don't feed a huge raw array into every step completion event merely because JSON supports arrays.</p>
+<div class="pager"><a href="guide-09.html">← Previous chapter</a><a href="guide-11.html">Next chapter →</a></div></article></main></div></body></html>

@@ -16,6 +16,8 @@ struct PanelControl {
     double maximum = 100;
     // eventName -> {handler,enabled}; saved in .wfpanel, not in the widget.
     QJsonObject events;
+    // Optional project-owned Panel Data scalar Value binding.
+    QJsonObject bindings;
     // Optional, factory-owned settings; legacy document keys remain unchanged.
     QJsonObject properties;
 };

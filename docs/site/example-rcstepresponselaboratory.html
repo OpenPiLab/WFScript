@@ -1,0 +1,218 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WFScript — RC Step Response and Time Constant Laboratory · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>WFScript — RC Step Response and Time Constant Laboratory</h1>
+<p><strong>Version:</strong> v0.2-dev.8.9.3<br />
+<strong>Project:</strong> <code>RCStepResponseLaboratory.wfpanel</code> — eleven Pages, 116 native visual controls, one embedded JavaScript module, one embedded circuit diagram.<br />
+<strong>Modes:</strong> SYNTHETIC MODEL (does not touch hardware) and deliberately armed PHYSICAL AD3 (real two-channel Scope samples).<br />
+<strong>Prerequisite:</strong> A working WFScript Qt 6 application with the WaveForms SDK and native Panel JavaScript APIs; a physical Digilent Analog Discovery 3 is optional until Page 04.<br />
+<strong>Important:</strong> The generated model and the physical sample records are never substituted for each other. The panel is an educational exercise, not an independently calibrated instrument.</p>
+<h2>Learning outcomes</h2>
+<p>By completing this lab, students should be able to:</p>
+<ol>
+<li>Derive a first-order RC differential equation from KVL and the constitutive equations for a resistor and capacitor.</li>
+<li>Solve the equation for an arbitrary initial capacitor voltage following a piecewise-constant input change.</li>
+<li>Relate exponential charging and discharging to the definition of the time constant, including the 63.2% criterion and 5τ settling rule.</li>
+<li>Predict the steady periodic response to a symmetric square wave without treating each half-cycle as starting from zero volts.</li>
+<li>Use a physical AD3 to capture both the input step and capacitor response, locate each input edge, and isolate complete transient intervals.</li>
+<li>Fit an exponential by least squares without a hidden numerical library, learn why the optimization is partly linear and partly nonlinear, and interpret its residuals.</li>
+<li>Compare rising and falling edge time constants and understand what differences can reveal about noise, component behavior and measurement technique.</li>
+<li>Determine a cutoff frequency <strong>from a time-domain experiment</strong>, then connect it to the frequency-domain AC Network Laboratory.</li>
+<li>Preserve an evidence trail that distinguishes entered component values, synthetic calculations, and actual acquired voltages.</li>
+</ol>
+<h2>Equipment, baseline components and circuit</h2>
+<ul>
+<li>Digilent Analog Discovery 3 (optional for simulation), WaveForms SDK, WFScript v0.2-dev.8.9.2 or a compatible version that supports the existing instrument/visual/widget APIs.</li>
+<li>One non-polarized capacitor and one resistor, breadboard, AD3 flywires; an optional DMM/LCR meter.</li>
+<li>The actual components previously measured: <strong>R = 980 Ω</strong>, <strong>C = 571 nF at 1 kHz</strong>. These are entered parameters, not measurements made by this project.</li>
+<li><strong>Electrical connections:</strong> W1 to VIN; R from VIN to VCAP; C from VCAP to common ground; CH1+ to VIN; CH2+ to VCAP; W1 GND, CH1−, CH2− to the same ground. <strong>No external power supply</strong> and no externally energized circuit.</li>
+<li>Physically use the low-pass topology (capacitor to ground, output across capacitor). Rewire only with W1 OFF. A generic high-pass RC circuit is <em>not</em> this lab's DUT.</li>
+<li>Real W1 uses <strong>Square</strong>, 0 V DC offset, user-commanded 0.20–0.50 V peak; the sample starting point is ± amplitude. Its 0.5 V peak default means 1 Vpp square wave, not 0.5 Vpp. CH1 and CH2 are set to the same 5 Vpp Scope range as in the earlier AC example.</li>
+</ul>
+<p>A wiring-confirmation switch is only a checklist. It cannot detect incorrect or hazardous external wiring. Observe AD3 voltage/current limits and the physical circuit before energizing.</p>
+<h2>Follow along — Page-by-Page</h2>
+<h3>00 — Mission + roadmap</h3>
+<p>This Page shows what students will <em>derive</em>, <em>simulate</em>, <em>build</em>, <em>measure</em>, <em>fit</em>, and <em>report</em>. It contains the central identity</p>
+<p>[\tau=RC,\qquad f_c=\frac{1}{2\pi\tau}.]</p>
+<p>The two quantities are related because they arise from the <strong>same differential equation</strong>; one is a time-domain response measure and the other is a frequency-domain response measure.</p>
+<h3>01 — Derive the physical equation</h3>
+<p>Apply KVL to the series resistor and capacitor:</p>
+<p>[v_{in}(t)=v_R(t)+v_C(t).]</p>
+<p>Use Ohm's law (v_R=Ri) and the capacitor law (i=C\frac{dv_C}{dt}):</p>
+<p>[RC\frac{dv_C}{dt}+v_C=v_{in}(t).]</p>
+<p>After the input changes to a constant voltage (V_\infty), define (u(t)=v_C(t)-V_\infty). The ODE reduces to (du/dt=-u/(RC)). Separating the variables:</p>
+<p>[\frac{du}{u}=-\frac{dt}{RC}\Rightarrow \ln|u|=-\frac{t}{RC}+K.]</p>
+<p>Exponentiate, and use the initial condition (u(0)=V_0-V_\infty):</p>
+<p>[\boxed{v_C(t)=V_\infty+(V_0-V_\infty)e^{-t/\tau},\quad\tau=RC}.]</p>
+<p>The formula works for <strong>rising and falling</strong> steps without changing its algebra. At (t=0), the capacitor cannot jump instantaneously. As (t\rightarrow\infty), the resistor current (i=(v_{in}-v_C)/R) tends toward zero.</p>
+<h3>02 — Build the physical circuit</h3>
+<p>Use the fully embedded labeled schematic; do not assume that a sine-wave schematic tells you the requested W1 setting. In this experiment W1 is explicitly configured to <strong>Square</strong>. Check shared ground, the resistor series connection, and the capacitor to ground. There are no digital I/O connections.</p>
+<p>The capacitor may be non-polarized ceramic or film. A polarized capacitor should not be used with the laboratory's symmetric negative/positive square-wave stimulus.</p>
+<h3>03 — Synthetic experiment, no physical device</h3>
+<p>The Page starts from the user's measured component values: R=980 Ω, C=571 nF, 100 Hz square wave, 0.5 V peak, and 0.4 mV RMS deterministic synthetic noise.</p>
+<p>The model uses the <strong>steady periodic solution</strong> to avoid generating a made-up transient from 0 V at every edge. If the half-period is (T_h), let (q=e^{-T_h/\tau}). For a ±V square wave, the capacitor voltage immediately after a rising edge in periodic steady state is:</p>
+<p>[V_{up,start}=-V\frac{1-q}{1+q}.]</p>
+<p>The corresponding falling-edge starting value is (V_{down,start}=+V(1-q)/(1+q)). After each transition the voltage follows the exact first-order expression from Page 01. A deterministic pseudo-random generator optionally adds known, synthetic zero-mean noise for an educational exercise. It is not a noise model of the AD3 itself.</p>
+<p>Click <strong>RUN SYNTHETIC EXPERIMENT</strong> and inspect how the input square wave differs from the capacitor output. Try raising the synthetic noise from 0 to 1, 5 and 10 mV RMS. Then vary R or C, observe the slow/fast response, and compare with the theoretical τ and fc readouts.</p>
+<p><strong>Do not label any values on this Page as instrument measurements.</strong> The Page's plots always name the source, either SYNTHETIC MODEL ONLY or PHYSICAL AD3, and its result rows retain that source.</p>
+<h3>04 — Actual two-channel AD3 measurement</h3>
+<p>Start with the simulation. To measure hardware, connect the circuit as shown, select an actual <strong>Physical Device</strong>, and enable <code>stepWiringVerified</code>. For the focused hardware exercise the code enforces:</p>
+<table>
+<thead>
+<tr>
+  <th>Parameter</th>
+  <th>Allowed physical acquisition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Resistor</td>
+  <td>900 Ω or higher</td>
+</tr>
+<tr>
+  <td>RC time constant</td>
+  <td>70 µs to 1200 µs</td>
+</tr>
+<tr>
+  <td>Square-wave frequency</td>
+  <td>60 Hz to 150 Hz</td>
+</tr>
+<tr>
+  <td>Half-cycle settling</td>
+  <td>At least 6τ for every half period</td>
+</tr>
+<tr>
+  <td>Commanded W1 amplitude</td>
+  <td>0.20 to 0.50 V peak, zero offset</td>
+</tr>
+<tr>
+  <td>Sample acquisition</td>
+  <td>8192 paired samples, 250 kS/s requested; actual rate read back</td>
+</tr>
+</tbody>
+</table>
+<p>The default 980 Ω / 571 nF circuit yields (\tau=559.58~\mu s); the 100 Hz square wave has a 5 ms half-period, or ~8.94τ. A 5τ transient lasts ~2.798 ms. At the requested sampling rate this gives ~140 samples per time constant.</p>
+<p>Click <strong>CAPTURE PHYSICAL CH1 + CH2</strong>. A single explicit click configures W1 with the safe values, checks native W1 function readback when available, waits 300 ms for periodic settling, captures two actual channels, and automatically requests W1 OFF whether acquisition succeeds or fails. The Scope is configured with <strong>Trigger=None</strong> and the code finds actual CH1 edges in the recorded waveform; no hardware-trigger synchronization is assumed.</p>
+<p>Unlike the AC Lab's frequency sweep, this first revision performs <strong>one physical capture per click</strong>. It is deliberately simple and avoids new native instrument bridge changes.</p>
+<p>Click <strong>STOP / ABORT W1 NOW</strong> at any time. Changes to R, C, or square-wave frequency revoke the previous wiring confirmation. If a stop call returns false or throws, the status explicitly warns rather than claiming the output is definitely off. The app cannot guarantee interruption of a blocking vendor SDK call; do not treat this as a safety stop.</p>
+<h3>05 — Fitted waveform and residuals</h3>
+<p>The Page shows a trace of one complete CH2 transition, the estimated exponential and the <strong>residual</strong> (measured sample minus reconstructed fitted sample). Other readouts include:</p>
+<ul>
+<li>Mean τ across all complete transitions, and separate RISE and FALL means.</li>
+<li>The 63.2% threshold method as a cross-check.</li>
+<li>Cutoff frequency derived from (f_c=1/(2\pi\tau_{fit})).</li>
+<li>Pooled RMS residual, normalized to the measured CH1 input swing; this is <strong>not</strong> ADC resolution or calibrated accuracy.</li>
+<li>The percentage disagreement between fitted τ and the theoretical τ calculated from <strong>operator-entered</strong> R,C.</li>
+<li>A fitted voltage plateau (V_\infty), coefficient A, and an (R^2) estimate with eight digits.</li>
+</ul>
+<p>A residual of a few hundred microvolts may be consistent with excellent model agreement, but a small residual alone does not verify the absolute accuracy of the instrument or any input component values.</p>
+<h3>06 — The 63.2% graphical method</h3>
+<p>From the exponential equation, at (t=\tau) the remaining distance to the final voltage is (e^{-1}=36.7879%), so the capacitor has completed (1-e^{-1}=63.2121%) of its change. Students can locate this level on CH2 and calculate elapsed time since the CH1 input edge.</p>
+<p><strong>Implementation detail that matters:</strong> the initial amplitude and asymptote used for this threshold are obtained from the fitted curve. To correct the fact that the numerical fitting interval begins three samples after the CH1 transition, the fitted amplitude is extrapolated back to the CH1 edge time. The first measured threshold crossing is linearly interpolated between two CH2 samples. Thus this is a useful graphical cross-check, <strong>not a statistically independent estimate</strong> of the fit parameters.</p>
+<p>At (5\tau), (1-e^{-5}=99.3262%) of the voltage movement is complete. Emphasize that neither &quot;63.2% of the final voltage&quot; nor &quot;63.2% of a maximum amplitude&quot; is universally correct: the criterion is 63.2% <strong>of the voltage difference between the initial and final levels</strong>.</p>
+<h3>07 — Least-squares exponential fitting derivation</h3>
+<p>For sampled voltage after an input edge, with (t_i=(i-i_0)/f_s), use the model</p>
+<p>[y_i=V_\infty + A e^{-t_i/\tau}+\varepsilon_i.]</p>
+<p>The time constant τ is inside an exponential so solving all three unknowns simultaneously is a nonlinear regression problem. But <strong>for any fixed trial τ</strong>, define (E_i=e^{-t_i/\tau}), and the model becomes linear in (V_\infty) and A:</p>
+<p>[y_i=V_\infty+A E_i+\varepsilon_i.]</p>
+<p>Minimize the squared error (SSE=\sum_i(y_i-V_\infty-AE_i)^2). Taking partial derivatives with respect to (V_\infty) and A and setting them to zero yields</p>
+<p>[N V_\infty+A\sum E_i=\sum y_i,]</p>
+<p>[V_\infty\sum E_i+A\sum E_i^2=\sum E_i y_i.]</p>
+<p>Eliminating (V_\infty):</p>
+<p>[A=\frac{\sum E_i y_i-\frac{\sum E_i\sum y_i}{N}}{\sum E_i^2-\frac{(\sum E_i)^2}{N}},\qquad V_\infty=\frac{\sum y_i-A\sum E_i}{N}.]</p>
+<p>The implementation first tests 57 logarithmically spaced candidate τ values and then uses 42 <strong>golden-section minimization</strong> steps over the best neighboring interval in (\ln\tau). Each trial solves this two-variable linear least-squares regression exactly. This pedagogical algorithm is called <em>variable projection</em>: eliminate the linear unknowns and search only over nonlinear parameters.</p>
+<p>The residual, RMS and (R^2) are then computed in the original voltage units, not from logarithms of measured voltages.</p>
+<h4>Why not take a logarithm?</h4>
+<p>For a known, exact final value, (\ln|y_i-V_\infty|) is theoretically linear in time. But the final voltage is not perfectly known from a real finite-duration capture, and logarithms greatly amplify measurement errors as voltage approaches the asymptote. Least squares on the <strong>original sampled voltage</strong> is more straightforward to interpret.</p>
+<h4>How the first and last samples are selected</h4>
+<ul>
+<li>Sort CH1 voltage samples and estimate low/high plateaus from the 10th/90th percentiles.</li>
+<li>The CH1 midpoint gives a threshold crossing time; linear interpolation improves sub-sample timing.</li>
+<li>Ignore crossings too close to the previous transition and reject a weak input swing below 0.15 V.</li>
+<li>For each adjacent pair of opposite-direction CH1 edges, exclude three samples at either boundary, rejecting implausible short/long half-cycles.</li>
+<li>Fit CH2 samples only over these <strong>complete half-cycles</strong> so a missing boundary is not mistaken for a full exponential.</li>
+<li>Require both a complete RISE and a complete FALL, a sufficient exponential amplitude, and sensible polarity relative to CH1.</li>
+</ul>
+<h3>08 — The actual code, step by step</h3>
+<p>The file <code>examples/libraries/RCStepAnalysis.mjs</code> is embedded as <code>RCStepAnalysis.mjs</code> in the project's <strong>Libraries</strong> editor, so saving the <code>.wfpanel</code> preserves the mathematical implementation. The Panel source <code>RCStepResponseLaboratory.js</code> handles UI and physical instruments; the module is plain JavaScript without SDK calls.</p>
+<table>
+<thead>
+<tr>
+  <th>Panel teaching step</th>
+  <th>Function / expressions</th>
+  <th>Mathematical meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Find the steps</td>
+  <td><code>edgesFromInput()</code></td>
+  <td>Observed CH1 edge times</td>
+</tr>
+<tr>
+  <td>Isolate windows</td>
+  <td><code>analyzeCapture()</code></td>
+  <td>Select CH2 samples from complete half-cycles</td>
+</tr>
+<tr>
+  <td>Build a candidate exponential</td>
+  <td><code>Math.exp(-(i-first)/(rateHz*tau))</code></td>
+  <td>(e^{-t_i/\tau})</td>
+</tr>
+<tr>
+  <td>Solve two coefficients</td>
+  <td><code>solveAtTau()</code></td>
+  <td>Compute (V_\infty), A and SSE at a fixed τ</td>
+</tr>
+<tr>
+  <td>Find best τ</td>
+  <td><code>fitTransition()</code></td>
+  <td>Coarse log search and golden-section refinement</td>
+</tr>
+<tr>
+  <td>Check independent edge directions</td>
+  <td><code>rises</code>, <code>falls</code>, <code>transitions</code></td>
+  <td>Average RISE and FALL τ and compare</td>
+</tr>
+<tr>
+  <td>Plot and record</td>
+  <td><code>showCapture()</code>, <code>addResult()</code></td>
+  <td>Distinct MODEL/AD3 trace and provenance</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Source experiment:</strong> Change only the synthetic noise slider first and inspect <code>residualRmsV</code>. As a second task, inspect the code for how increasing the number of candidate τ samples affects computational effort and accuracy. Keep hardware commands unchanged until the simulation is understood.</p>
+<h3>09 — Notebook and exports</h3>
+<p>The 12-column read-only Notebook stores synthetic and physically acquired summaries using their explicit source labels. It does not turn generated voltages into hardware data. Click <strong>EXPORT CSV + JSON</strong> to save a timestamped session under the common PanelData directory. A second export in the same second receives an additional sequence number.</p>
+<p>The exported JSON includes algorithm result summaries and per-edge fit information; it does <strong>not</strong> duplicate the full 8192-point arrays. <strong>EXPORT LAST REAL AD3 WAVEFORM</strong> separately exports the physical CH1 and CH2 voltages together with their sample times. It refuses to export synthetic data as an AD3 waveform. The in-memory Notebook clears on runtime restart; existing files remain in shared PanelData unless the operator intentionally deletes them.</p>
+<h3>10 — Connect to the AC Network Laboratory</h3>
+<p>The previous physical experiment used a sinusoidal drive to estimate gain and phase near the cutoff. For R=980 Ω and C=571 nF, the component-derived predictions are</p>
+<p>[\boxed{\tau=980\cdot571\times10^{-9}=559.58\ \mu\mathrm{s}}]</p>
+<p>[\boxed{f_c=\frac{1}{2\pi\cdot559.58\times10^{-6}}\approx284.42\ \mathrm{Hz}}.]</p>
+<p>Earlier WFScript and WaveForms sweeps measured a cutoff around 284–285 Hz. The <strong>new physical step measurement has not yet been validated on a connected AD3</strong>; that experiment is the next validation task, and agreement must not be claimed in advance.</p>
+<p>Suggested comparison: divide a new time-domain measured cutoff from Page 05 by the earlier AC fitted cutoff. If those independently computed numbers differ, investigate finite square-wave rise time, sampling and scope range, component tolerance, capacitor frequency behavior, stray capacitance, contact resistance, and the fitting model.</p>
+<h2>Student challenge questions</h2>
+<ol>
+<li>What physical property makes capacitor voltage continuous when a voltage step is applied through a resistor? What happens to the resistor voltage instantly after the step?</li>
+<li>Starting from (RC, dv_C/dt+v_C=V_\infty), derive the general exponential response without memorizing a formula.</li>
+<li>With R = 980 Ω and C = 571 nF, calculate τ, 5τ, the fraction settled at 1τ, and the cutoff frequency.</li>
+<li>Why should the physical square-wave half-period exceed 6τ for this experiment? What happens when the capacitor never reaches its nominal plateau?</li>
+<li>Why can fitting an exponential with an unknown final voltage be more robust than fitting (\ln(V_\infty-v(t)))?</li>
+<li>What does a high (R^2) or a low residual RMS actually establish—and what does it not establish?</li>
+<li>Which is more stable under simulated noise: one threshold crossing or hundreds of least-squares samples? Why?</li>
+<li>How would a finite W1 edge rise time distort the early part of the capacitor response?</li>
+<li>What physical error could make τrise and τfall measurably different?</li>
+<li>After the actual AD3 measurement, compare its (f_c) from fitted τ to the earlier AC sine-wave cutoff. Is the comparison independent of the AD3 hardware and calibration?</li>
+</ol>
+<h2>Make one small change</h2>
+<p>In the simulation, set the noise parameter to 0 and run one synthetic measurement; record fitted τ and RMS residual. Repeat at 1 mV, 5 mV and 10 mV noise, without changing R or C. Explain why τ may remain stable even as the residual increases. Then inspect <code>Step.solveAtTau</code> and connect its <code>sumE</code>, <code>sumEE</code>, <code>sumY</code>, and <code>sumEY</code> to the normal equations above. This exercise requires no hardware and does not modify a single native C++ file.</p>
+<h2>Safety and scope</h2>
+<ul>
+<li>The square-wave functionality is supported by the existing Wavegen1 script API; actual AD3 square-wave capture and the new exponential-fitting integration still require physical user verification.</li>
+<li>The applied W1 output is limited in script to ±0.50 V peak (1 Vpp), no offset; changing this code removes that guarantee.</li>
+<li>This code requests W1 OFF after each physical capture and on errors; an SDK stop failure or a blocking API cannot be made safe by JavaScript alone.</li>
+<li>Scope CH1 and CH2 read a common time base; the input edge time is detected from <strong>CH1 measured samples</strong>, not assumed from a W1 software command.</li>
+<li>The fit estimates a first-order model. A real capacitor may have equivalent series resistance, leakage, frequency dependence, dielectric absorption, or other nonideal effects.</li>
+<li>Source labels distinguish MODEL from AD3. R and C are operator-entered component measurements; only the physical Scope samples are acquired by the AD3.</li>
+<li>File exports are explicit and go to PanelData, not inside the <code>.wfpanel</code>; a self-contained panel is not the same as an automatically persisted dataset.</li>
+</ul>
+<h2>Instructor extension ideas</h2>
+<p>Ask students to compare their RC circuit with a 1-kΩ/100-nF circuit, measure response over several square frequencies, investigate R/C component tolerance, plot normal and logarithmic residuals for model diagnostics (do not fit logarithms by default), or implement an alternative nonlinear optimizer and compare accuracy/complexity. For advanced analysis, propagate resistor and capacitor measurement uncertainty into τ and fc, remembering that a fit's residual does <strong>not</strong> by itself describe those uncertainties.</p>
+<p class="doc-footnote">Source: <code>examples/guides/RCStepResponseLaboratory.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

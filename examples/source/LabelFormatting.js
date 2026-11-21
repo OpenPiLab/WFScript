@@ -1,3 +1,20 @@
+// ┌─ WFScript LEARNING LAB: Multiline and Rich Text Labels
+// │ Level: Beginner
+// │
+// │ GOAL: Use plain multiline text and formatted HTML in Label widgets.
+// │ BEFORE RUN: No hardware or files required.
+// │ TRY FIRST: Run the Panel and click UPDATE RICH TEXT LABEL.
+// │ TRACE: `demoUpdate` → `onDemoUpdateClicked()` → `ui.set()` updates the rendered label.
+// │ EDIT SAFELY: Change an HTML `<b>` fragment or a line break in the script and observe the
+// │    difference.
+// │ REMEMBER: Labels can be static instructional material or dynamic status displays; HTML
+// │    needs escaping for untrusted data.
+// │
+// │ EVENT TIP: Select `demoUpdate` in Design mode → Properties → Events → Go to Handler.
+// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.
+// │ FULL LAB GUIDE: examples/guides/LabelFormatting.md (in the complete source ZIP).
+// └────────────────────────────────────────────────────────────────────────────
+
 /**
  * WFScript Example: Multiline and Rich Text Labels
  *
@@ -25,9 +42,13 @@ const message = [
 ].join('');
 
 // EVENTS -----------------------------------------------------------------
-ui.on('demoUpdate', 'clicked', function () {
+/**
+ * CORE LESSON — Uses ui.set() on a formatted Label. Treat text originating outside the script as
+ * untrusted and escape it before including it in rich HTML.
+ */
+function onDemoUpdateClicked() {
     // This Label is configured as Rich Text in its design properties.
     // QLabel interprets supported HTML tags; this is not a browser engine.
     ui.set('demoLive', message);
     print('Updated a Rich Text label from JavaScript.');
-});
+}

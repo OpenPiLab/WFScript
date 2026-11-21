@@ -1,0 +1,131 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 36 — Communications Terminal — Serial / TCP / UDP · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 36 — Communications Terminal — Serial / TCP / UDP</h1>
+<p><strong>Level:</strong> Beginner–Intermediate<br />
+<strong>Category:</strong> Communications<br />
+<strong>Pages:</strong> 01 TCP — Local Echo → 02 UDP — Local Echo → 03 Serial — COM Port</p>
+<h2>What you will build or observe</h2>
+<p>Reuse one native Terminal widget with TCP, UDP and optional PC Serial connections.</p>
+<h2>Before you run</h2>
+<p>TCP/UDP use localhost; the Serial Page needs a COM device or virtual port pair.</p>
+<h2>Follow along</h2>
+<ol>
+<li>On TCP, click START LOCAL TCP; send text and then a Hex bytes probe.</li>
+<li>On UDP, click START LOCAL UDP and repeat; compare datagrams with TCP.</li>
+<li>Use Display mode Text/Hex/Both and Clear.</li>
+<li>On Serial, discover/select/open a COM port only if one is available.</li>
+</ol>
+<h2>Follow the JavaScript</h2>
+<p><code>termTcp</code> sendRequested → <code>sendTcp(payload)</code> → <code>TCP.write()</code>; native socket callbacks call <code>traffic()</code>.</p>
+<p>All entries below come from <strong>saved widget Properties → Events</strong> bindings in this <code>.wfpanel</code> (not from manual <code>ui.on()</code> calls). The script contains the named functions.</p>
+<table>
+<thead>
+<tr>
+  <th>Page</th>
+  <th>Control (ID)</th>
+  <th>Event</th>
+  <th>JavaScript function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>01 TCP — Local Echo</td>
+  <td><code>tcpStartTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>startTcp()</code></td>
+</tr>
+<tr>
+  <td>01 TCP — Local Echo</td>
+  <td><code>tcpBinaryTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>sendTcpProbe()</code></td>
+</tr>
+<tr>
+  <td>01 TCP — Local Echo</td>
+  <td><code>tcpStopTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>stopTcp()</code></td>
+</tr>
+<tr>
+  <td>01 TCP — Local Echo</td>
+  <td><code>termTcp</code> (communications_terminal)</td>
+  <td><code>sendRequested</code></td>
+  <td><code>sendTcp()</code></td>
+</tr>
+<tr>
+  <td>02 UDP — Local Echo</td>
+  <td><code>udpStartTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>startUdp()</code></td>
+</tr>
+<tr>
+  <td>02 UDP — Local Echo</td>
+  <td><code>udpBinaryTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>sendUdpProbe()</code></td>
+</tr>
+<tr>
+  <td>02 UDP — Local Echo</td>
+  <td><code>udpStopTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>stopUdp()</code></td>
+</tr>
+<tr>
+  <td>02 UDP — Local Echo</td>
+  <td><code>termUdp</code> (communications_terminal)</td>
+  <td><code>sendRequested</code></td>
+  <td><code>sendUdp()</code></td>
+</tr>
+<tr>
+  <td>03 Serial — COM Port</td>
+  <td><code>serialDiscoverTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>discoverSerial()</code></td>
+</tr>
+<tr>
+  <td>03 Serial — COM Port</td>
+  <td><code>serialSelectTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>selectSerial()</code></td>
+</tr>
+<tr>
+  <td>03 Serial — COM Port</td>
+  <td><code>serialOpenTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>openSerial()</code></td>
+</tr>
+<tr>
+  <td>03 Serial — COM Port</td>
+  <td><code>serialBinaryTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>sendSerialProbe()</code></td>
+</tr>
+<tr>
+  <td>03 Serial — COM Port</td>
+  <td><code>serialCloseTerm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>closeSerial()</code></td>
+</tr>
+<tr>
+  <td>03 Serial — COM Port</td>
+  <td><code>termSerial</code> (communications_terminal)</td>
+  <td><code>sendRequested</code></td>
+  <td><code>sendSerial()</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Make one small change</h2>
+<p>Add a new INFO message or change the binary <code>probe</code> bytes; rerun localhost echo.</p>
+<p>To modify the example in the app, choose <strong>Stop / Design</strong>, open the Script Editor, find the named function or constant, make one change, and run the Panel again. When you like it, use <strong>Save As</strong> to keep your own project.</p>
+<h2>Why this works</h2>
+<p>Terminal widgets display and request sends; JavaScript chooses the transport. TX acceptance is not confirmed remote delivery.</p>
+<h2>Safety and scope</h2>
+<p>No network traffic or COM connection starts until an operator explicitly requests it.</p>
+<h2>If something does not work</h2>
+<p>If the terminal reports not connected, start its transport first; Send by itself cannot open hardware.</p>
+<h2>Related files</h2>
+<ul>
+<li><strong>Editable project:</strong> <code>examples/panels/CommunicationsTerminalLab.wfpanel</code></li>
+<li><strong>Readable JavaScript:</strong> <code>examples/source/CommunicationsTerminalLab.js</code></li>
+<li>The <code>.wfpanel</code> embeds the script, Pages and event assignments; opening it in WFScript does not require the <code>.js</code> file alongside it.</li>
+<li>In the complete source tree run <code>python tools/build_examples.py</code> after modifying the readable <code>.js</code> version.</li>
+</ul>
+<p class="doc-footnote">Source: <code>examples/guides/CommunicationsTerminalLab.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

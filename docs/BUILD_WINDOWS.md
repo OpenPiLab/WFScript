@@ -1,65 +1,43 @@
-# Building WFScript on Windows
+# Building WFScript v0.2 on Windows
 
-The primary validated environment for **WFScript v0.1** is:
+## Supported toolchains
 
-- **Qt Creator**
-- **Qt 6.9.2**
-- **Desktop MinGW 64-bit kit**
-- **CMake 3.21+**
+The primary owner-validated development setup is **Qt Creator with Qt 6.9.2 MinGW 64-bit**, CMake 3.21+, C++17. The repository's GitHub Actions job uses **MSVC 2022** and the matching Qt `win64_msvc2022_64` build; validate CI separately from MinGW builds.
 
-## Recommended Qt Creator workflow
+Install Qt components **Widgets, Qml, Sql, Network, SerialPort**. The SerialPort add-on must match the selected Qt kit.
 
-1. Extract or clone the repository to a short path such as `C:\Dev\WFScript`.
-2. Open `CMakeLists.txt` with **File → Open File or Project...** in Qt Creator.
-3. At **Configure Project**, choose your real installed **Desktop Qt 6.9.2 MinGW 64-bit** kit.
-4. Use a fresh build folder, for example `C:\Dev\WFBuild`.
-5. Configure and build the `WFScript` target.
-6. Run the application and start with **Panel Designer → Examples → Getting Started** in **Simulation** mode.
+## Qt Creator (recommended)
 
-## Enable the native tests
+1. Extract or clone WFScript into a short folder such as `C:\Dev\WFScript-v02`. Avoid mixing the v0.1 and v0.2 build directories.
+2. Open `CMakeLists.txt` in Qt Creator and choose your Qt 6.9.2 **Desktop MinGW 64-bit** kit.
+3. Use a **new build directory** outside the source tree, such as `C:\Dev\WFBuild-v02`.
+4. Under Projects → CMake, set `WFSCRIPT_BUILD_TESTS=ON`, reconfigure, and **Build All**.
+5. Run `WFScript.exe`. The main application window should say exactly **WFScript v0.2**.
+6. Open Examples → Getting Started and the AC/RC laboratories in **Simulation** mode before physical tests.
 
-To build the native smoke/regression tests, enable the CMake option:
-
-- `WFSCRIPT_BUILD_TESTS=ON`
-
-In Qt Creator this can be done from the project's CMake configuration, then **Run CMake** again.
-
-## Command-line build
-
-Application only:
+## PowerShell (matching Qt kit shell)
 
 ```powershell
-cmake -S . -B C:\Dev\WFBuild -G Ninja -DCMAKE_BUILD_TYPE=Release -DWFSCRIPT_BUILD_TESTS=OFF
-cmake --build C:\Dev\WFBuild --parallel
+cmake -S . -B C:\Dev\WFBuild-v02 -G Ninja -DCMAKE_BUILD_TYPE=Release -DWFSCRIPT_BUILD_TESTS=ON
+cmake --build C:\Dev\WFBuild-v02 --parallel 2
+ctest --test-dir C:\Dev\WFBuild-v02 --output-on-failure -j 2
 ```
 
-Application plus tests:
+Run the commands in a terminal with your matching Qt/CMake/C++ compiler paths configured; mixing MSVC libraries with MinGW is not supported. CMake cache from an older kit should not be reused.
+
+## Offline repository checks
 
 ```powershell
-cmake -S . -B C:\Dev\WFBuild -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWFSCRIPT_BUILD_TESTS=ON
-cmake --build C:\Dev\WFBuild --parallel
+python tools/check_repo.py
+python tools/build_examples.py --check
+python tools/check_release.py
+python tools/run_offline_tests.py    # Requires Node.js
 ```
 
-## Run the full validated test suite
+## AD3 / SDK runtime
 
-```powershell
-ctest --test-dir C:\Dev\WFBuild -j 2 --output-on-failure
-```
+WFScript dynamically loads the Digilent WaveForms SDK for supported physical instrument operations. Install WaveForms separately so the system can find `dwf.dll`. No Digilent runtime DLL is shipped in this repository. Verify real hardware output and shutdown with a known safe circuit.
 
-The validated underlying source baseline passed **66/66 native CTests**. The repackaged v0.1 source has not yet been independently rebuilt; please run all 66 tests again in a fresh build directory.
+## Portable Windows release (optional)
 
-## Digilent runtime note
-
-WFScript loads the Digilent WaveForms SDK dynamically at runtime for physical-device use. Install Digilent WaveForms separately so `dwf.dll` is available. No Digilent runtime binaries are shipped in this repository.
-
-## Deploying a Windows build
-
-After a successful Release build, use the matching Qt kit's `windeployqt` to gather runtime Qt dependencies for a distributable folder. Then test that deployed folder on a clean Windows machine before sharing binaries.
-
-## Final warning-cleanup gate
-
-The initial v0.1 Debug build succeeded with compiler warnings. The cleanup
-candidate has no global warning suppression; the revised source must be
-compiled on Windows before release. Enable `WFSCRIPT_BUILD_TESTS=ON`, run
-**Build All**, review any new `warning:` lines, then run the complete native
-CTest suite. See [the audit](WARNING_CLEANUP_AUDIT.md).
+After building in Release, create a fresh deployment folder, copy `WFScript.exe`, run the **matching Qt kit's** `windeployqt` there, and verify on a Windows machine without the Qt SDK installed. Do not claim a portable package was tested until you have performed this clean-system verification. Review [Qt licensing notes](QT_OPEN_SOURCE_NOTES.md) and third-party license notices first.

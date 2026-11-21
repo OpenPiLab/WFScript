@@ -2,13 +2,16 @@
 
 #include <QWidget>
 #include <QVariant>
-#include <QVector>
+#include <deque>
+#include <cstdint>
 #include <QString>
 
-class QTableWidget;
+class QTableView;
+class QAbstractTableModel;
 class QComboBox;
 class QLabel;
 class QPushButton;
+class QShowEvent;
 
 // Panel-facing, bounded, read-only event log. All changes are delivered on the
 // GUI thread; script-owned QJSValues must be converted by PanelUiBridge first.
@@ -36,15 +39,24 @@ public:
     int visibleEntryCount() const;
     QString csvText() const;
     void clearEvents();
+protected:
+    void changeEvent(QEvent* event) override;
 private:
+    void applyTheme();
     static bool parseEntry(const QVariant& value, Entry* out);
     bool appendEvents(const QVariant& payload);
     bool replaceEvents(const QVariantList& entries);
     void trimToCapacity();
-    void refresh();
+    void refresh();                 // full refresh on filter/replace/configuration
+    void showEvent(QShowEvent* event) override;
     void exportCsv();
     void copySelected();
-    QVector<Entry> m_entries;
+    // Constant-time front eviction, even after the log reaches 100k entries.
+    // m_firstId is the stable ID of m_entries.front(); m_nextId is the ID
+    // assigned to the next append. IDs are never reused on clear/replace.
+    std::deque<Entry> m_entries;
+    std::uint64_t m_firstId=0;
+    std::uint64_t m_nextId=0;
     QString m_title=QStringLiteral("Event Log");
     int m_maxEntries=500;
     bool m_autoScroll=true;
@@ -52,5 +64,7 @@ private:
     bool m_showSource=true;
     QLabel* m_heading=nullptr;
     QComboBox* m_filter=nullptr;
-    QTableWidget* m_table=nullptr;
+    QTableView* m_table=nullptr;
+    QAbstractTableModel* m_model=nullptr;
+    bool m_viewDirty=false;       // coalesce hidden-Page appends until shown
 };

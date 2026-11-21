@@ -47,8 +47,8 @@ def run(check: bool) -> int:
                 panelpath.write_text(json.dumps(project,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
         # Embedded test-library source is authoritative alongside the main
         # .js example; keep the module portable inside its .wfpanel archive.
-        if stem == 'AutomatedTestStation':
-            libnames=('TestSteps.mjs',)
+        if stem in ('AutomatedTestStation','ProtocolUartAsync','DigitalInputMonitor','AD3HardwareTestStation','JavaScriptDSPStudio','ACNetworkLaboratory','RCStepResponseLaboratory'):
+            libnames={'AutomatedTestStation':('TestSteps.mjs',), 'ProtocolUartAsync':('UARTEchoTestSteps.mjs',), 'DigitalInputMonitor':('DigitalMonitorTestSteps.mjs',), 'AD3HardwareTestStation':('AD3LoopbackSteps.mjs',), 'JavaScriptDSPStudio':('DSPCore.mjs','SignalPackage.mjs','vendor/fraction.mjs','vendor/pako.mjs','vendor/base64.mjs'), 'ACNetworkLaboratory':('CircuitLab.mjs','CaptureAnalysis.mjs','SignalPackage.mjs','vendor/fraction.mjs','vendor/pako.mjs','vendor/base64.mjs'),'RCStepResponseLaboratory':('RCStepAnalysis.mjs',)}[stem]
             expected=[{'name':name,'source':(EX/'libraries'/name).read_text(encoding='utf-8')} for name in libnames]
             if project.get('libraries')!=expected:
                 if check:

@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 1: How WFScript fits together · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="active">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 1 — How WFScript fits together</h2>
+<p>A typical WFScript application has four layers. The <strong>Panel Designer</strong> stores the visual structure; the <strong>JavaScript runtime</strong> handles actions and calculations; native <strong>bridges</strong> perform Qt, file, communication and instrument operations; and the optional <strong>Test Executive</strong> schedules verifiable steps and creates reports.</p>
+<p>Most simple applications use just the first two. A dashboard may add Panel Data and charts. An automated measurement application may use all four.</p>
+<table>
+<thead>
+<tr>
+  <th>Layer</th>
+  <th>Responsible for</th>
+  <th>Generally avoid putting here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Panel/Page</td>
+  <td>Layout, widget properties, visual event bindings, named variables</td>
+  <td>Instrument transaction sequences</td>
+</tr>
+<tr>
+  <td>Main Panel script</td>
+  <td>Initialization, UI event handlers, small application coordination</td>
+  <td>Hundreds of repetitive test procedures</td>
+</tr>
+<tr>
+  <td>Embedded modules</td>
+  <td>Reusable signal processing, drivers and operations</td>
+  <td>Hidden UI changes that make behavior hard to trace</td>
+</tr>
+<tr>
+  <td>Native Test Executive</td>
+  <td>Step state, timing, expansion, limits, Cleanup and report lifecycle</td>
+  <td>Ad-hoc scheduling through long blocking JavaScript loops</td>
+</tr>
+</tbody>
+</table>
+<p>A Panel can have many Pages but shares one active script environment during a run. When designing multi-page interfaces, use Pages to organize operator tasks rather than starting separate processes for each Page. A multi-page Panel is still one program.</p>
+<h3>What the runtime is—and isn't</h3>
+<p>Panel scripts run in Qt <strong>QJSEngine</strong>, not Node.js or a browser. There is no implied browser DOM, <code>fetch()</code>, Node <code>require()</code> or Node filesystem module. WFScript supplies its own native services, such as <code>Serial</code>, <code>TCP</code>, <code>UDP</code>, <code>FileIO</code>, <code>Database</code>, <code>Binary</code>, <code>Tool</code>, <code>Data</code> and <code>plots</code> when available in the relevant context. Embedded <code>.mjs</code> libraries use the application's supported module mechanism.</p>
+<p>The long-lived Panel script worker processes callbacks and Qt-backed events. A blocking JavaScript loop or <code>wait()</code> delays other work on that worker. Keep event handlers finite; schedule later actions with a timer or a bridge callback when possible.</p>
+<h3>When to use the standalone Script Editor</h3>
+<p>Use it for concise experiments, API exploration and direct instrument exercises. Use a Panel when you want persistent controls, an operator interface, named shared data, communication sessions, or a visual test sequence. These are different contexts, and not every Panel-only global is available to standalone scripts.</p>
+<div class="pager"><span></span><a href="guide-02.html">Next chapter →</a></div></article></main></div></body></html>

@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 8: Digital timing, I/O and protocols · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="active">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 8 — Digital timing, I/O and protocols</h2>
+<p>The Analog Discovery digital pins make WFScript useful for timing and protocol experiments. The digital services have distinct jobs: <strong>StaticIO</strong> reads or controls immediate pin state; <strong>Patterns1</strong> produces hardware-timed output patterns; <strong>Logic1</strong> captures digital samples; and <strong>Protocol1</strong> performs supported protocol operations.</p>
+<h3>Static signals are not waveforms</h3>
+<p>A static input monitor can poll pin levels, including optional change callbacks. It is appropriate for button state or relatively slow logic, but its Qt polling interval is not a hardware timestamp. To capture narrow pulses or accurately count fast transitions, use <code>Logic1</code> hardware-timed sampling.</p>
+<h3>Pattern generation and logic capture</h3>
+<p><code>Patterns1</code> can generate digital sequences without requiring JavaScript to toggle pins on every clock edge. The encoder example produces synchronized quadrature A/B/index signals. <code>Logic1</code> captures 16-bit sample words across the device's digital channels, subject to hardware and configured sampling limits.</p>
+<p>For a basic loopback, connect one Digital Out pin to a compatible Digital In pin through an appropriate resistor or test fixture, select correct voltage thresholds, and capture the generated transitions. Confirm direction, common ground and ownership: two actively driven outputs should not be tied together.</p>
+<h3>Protocol1 versus PC communications</h3>
+<p><code>Protocol1.UART</code>, <code>Protocol1.SPI</code>, <code>Protocol1.I2C</code>, <code>Protocol1.CAN</code> and <code>Protocol1.SWD</code> operate through the Digilent digital interface. They are <strong>not</strong> aliases for a Windows serial COM port or a TCP socket. The PC interfaces <code>Serial</code>, <code>TCP</code> and <code>UDP</code> belong to a different native service and have different timing and framing semantics.</p>
+<table>
+<thead>
+<tr>
+  <th>Interface</th>
+  <th>Typical connection</th>
+  <th>Specific considerations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>UART via Protocol1</td>
+  <td>DIO TX/RX and common ground</td>
+  <td>Baud, parity, inversion, framing</td>
+</tr>
+<tr>
+  <td>SPI</td>
+  <td>Clock, MOSI, MISO, chip select</td>
+  <td>Mode, chip select, voltage compatibility</td>
+</tr>
+<tr>
+  <td>I²C</td>
+  <td>SCL/SDA with suitable pull-ups</td>
+  <td>Open-drain electrical behavior and addresses</td>
+</tr>
+<tr>
+  <td>CAN</td>
+  <td>DIO through external CAN transceiver</td>
+  <td>Never connect DIO directly to CAN_H/CAN_L</td>
+</tr>
+<tr>
+  <td>SWD</td>
+  <td>SWCLK, SWDIO and target ground</td>
+  <td>Target voltage and reset requirements</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>UART Async Lab</strong> illustrates a native receive-queue pattern and terminal widget. The <strong>Logic Analyzer</strong> and <strong>Digital Timing Charts</strong> examples illustrate timing acquisition. All hardware demonstrations need safe wiring and must distinguish a successful simulated transfer from a physical-device verification.</p>
+<h3>Timeouts, releases and shared pins</h3>
+<p>Protocols and digital output generators may compete for the same device pins. Choose a single owner, reserve pins deliberately, and stop one service before handing pins to another. Protocol calls can return an error or require a stop/release operation; don't leave a pin driven merely because a script reached its last line.</p>
+<div class="pager"><a href="guide-07.html">← Previous chapter</a><a href="guide-09.html">Next chapter →</a></div></article></main></div></body></html>

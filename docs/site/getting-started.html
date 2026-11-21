@@ -1,0 +1,178 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Getting Started · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="active">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Getting Started with WFScript</h1>
+<p><strong>Build an application, not just a script.</strong></p>
+<p>WFScript combines a visual Panel Designer, a JavaScript runtime, native instrumentation, charts, and a Test Executive in one Windows application. You arrange the interface, give its controls meaningful IDs, and connect user actions to JavaScript procedures. When the Panel runs, those same components become an operator interface.</p>
+<p><img src="assets/hero-dsp.png" alt="The JavaScript DSP Studio running as a finished WFScript operator application" /></p>
+<p><em>The DSP Studio is a bundled, simulation-only example. It demonstrates interactive controls, native plots, and reusable JavaScript modules without requiring hardware.</em></p>
+<p>This guide follows the shortest useful path: open an example, change it, build a small Panel from scratch, work with shared data, then explore instrumentation and automated testing. You do not need to connect an Analog Discovery 3 or a Rigol instrument to complete the first exercises.</p>
+<h2>1. A map of the workspace</h2>
+<p>WFScript has a few distinct working areas. The <strong>Panel Designer</strong> is where you arrange Pages and widgets; <strong>Script Editor</strong> is where you write JavaScript; device-specific tools expose the instrument APIs; and the <strong>Test Sequence Editor</strong> lets you define native, reportable test steps.</p>
+<table>
+<thead>
+<tr>
+  <th>Area</th>
+  <th>What you do there</th>
+  <th>What it produces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Panel Designer</td>
+  <td>Add Pages, widgets, IDs, styles, events, and shared variables</td>
+  <td>A visual application</td>
+</tr>
+<tr>
+  <td>Script Editor</td>
+  <td>Write functions, callbacks, processing code and module calls</td>
+  <td>Application behavior</td>
+</tr>
+<tr>
+  <td>Properties / Events</td>
+  <td>Configure the selected widget and connect events to named handlers</td>
+  <td>Saved, inspectable event bindings</td>
+</tr>
+<tr>
+  <td>Properties / Panel Data</td>
+  <td>Define typed values shared across Pages</td>
+  <td>State and value bindings</td>
+</tr>
+<tr>
+  <td>Test Sequence Editor</td>
+  <td>Configure Setup, Main, Cleanup, limits, sweeps, branching and reports</td>
+  <td>A project-owned automated test</td>
+</tr>
+<tr>
+  <td>Operator View</td>
+  <td>Use the Panel as an application, without developer controls</td>
+  <td>The working interface</td>
+</tr>
+</tbody>
+</table>
+<p>A <strong>Panel</strong> is the complete project, normally saved as a <code>.wfpanel</code> file. A Panel can contain multiple Pages, controls, JavaScript, embedded libraries, data definitions, and a Test Executive. It is not just a screenshot of a UI or a link to an external script.</p>
+<h2>2. Open your first example</h2>
+<p>From <strong>Panel Designer</strong>, choose <strong>Examples</strong> and open <strong>Getting Started</strong>. It has a Guide Page and an Events Tutorial Page. Read the Guide Page, then switch to <strong>Events Tutorial</strong>.</p>
+<p>In Design mode, select the <strong>CLICK ME</strong> button, open <strong>Properties → Events</strong>, and inspect its <code>clicked</code> binding. The saved handler is <code>onTourButtonClicked()</code>. Use <strong>Go to Handler</strong> to jump to the implementation in the script editor. This illustrates an important rule: a widget's event binding belongs to the Panel project; JavaScript supplies the named function that runs when the event fires.</p>
+<p>Choose <strong>Run Panel</strong>, click the tutorial button twice, and watch the count change. Then use <strong>Stop / Design</strong>, change a line in the handler, and run again. A developer can iterate on a Panel without rebuilding the C++ application.</p>
+<blockquote>
+<p>The bundled example is the authority for the exact handler body. Do not replace its counter code with the shorter snippets in an introduction unless you intend to change its behavior.</p>
+</blockquote>
+<h2>3. Understand Design and Run</h2>
+<p><strong>Design mode</strong> is for editing layout and properties. Selecting a widget opens its configuration instead of performing the operator action. <strong>Run mode</strong> starts the Panel's JavaScript runtime and makes those controls operational.</p>
+<p>A focused operator view gives the application more space, hiding most editing tools. <strong>F11</strong> or <strong>Esc</strong> restores the development layout without necessarily stopping the active Panel. <strong>Stop / Design</strong> ends the Panel runtime and returns it to editing mode. That difference is useful when debugging: you can inspect live data without treating every change of view as a new run.</p>
+<p>Save a copy of examples under your own <code>.wfpanel</code> filename before making extensive changes. Run-time values are not always the saved design-time defaults; Panel Data initial values, for example, belong to the project, while its live values belong to the current execution.</p>
+<h2>4. Build your first Panel from a blank Page</h2>
+<p>Let's create an ideal voltage-divider calculator. This exercise covers the full design → JavaScript → run loop and has a result you can check by hand. <strong>It calculates a voltage; it does not measure one.</strong></p>
+<p>Add these controls to a new Panel. In each Properties pane, set the <strong>ID</strong> exactly as shown. Use sensible initial values and any compact layout you like.</p>
+<table>
+<thead>
+<tr>
+  <th>Widget</th>
+  <th>ID</th>
+  <th>Caption</th>
+  <th>Initial value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Numeric Stepper</td>
+  <td><code>supplyVoltage</code></td>
+  <td>Supply (V)</td>
+  <td><code>5</code></td>
+</tr>
+<tr>
+  <td>Numeric Stepper</td>
+  <td><code>topResistor</code></td>
+  <td>R1 (kΩ)</td>
+  <td><code>10</code></td>
+</tr>
+<tr>
+  <td>Numeric Stepper</td>
+  <td><code>bottomResistor</code></td>
+  <td>R2 (kΩ)</td>
+  <td><code>10</code></td>
+</tr>
+<tr>
+  <td>Digital Display</td>
+  <td><code>dividerOutput</code></td>
+  <td>Calculated output (V)</td>
+  <td><code>0</code></td>
+</tr>
+<tr>
+  <td>Label</td>
+  <td><code>dividerStatus</code></td>
+  <td>Status</td>
+  <td>Press CALCULATE</td>
+</tr>
+<tr>
+  <td>Button</td>
+  <td><code>calculateButton</code></td>
+  <td>CALCULATE</td>
+  <td>—</td>
+</tr>
+</tbody>
+</table>
+<p>Select the button and bind its <code>clicked</code> event to <code>onCalculateClicked</code> in <strong>Properties → Events</strong>. Open the script editor and add:</p>
+<pre><code class="language-javascript">function onCalculateClicked() {
+    const vin = Number(ui.get('supplyVoltage'));
+    const r1 = Number(ui.get('topResistor'));
+    const r2 = Number(ui.get('bottomResistor'));
+
+    if (![vin, r1, r2].every(Number.isFinite) || r1 &lt;= 0 || r2 &lt;= 0) {
+        ui.set('dividerStatus', 'Enter positive resistor values.');
+        return;
+    }
+
+    const volts = vin * r2 / (r1 + r2);
+    ui.set('dividerOutput', volts);
+    ui.set('dividerStatus', 'SIMULATED — ideal, unloaded divider.');
+}
+</code></pre>
+<p>Run the Panel. With 5 V, 10 kΩ and 10 kΩ, the result should be <strong>2.5 V</strong>. Change R2 to 20 kΩ and the result becomes approximately <strong>3.333 V</strong>. Save the Panel as a new <code>.wfpanel</code> project.</p>
+<p><strong>Why it works:</strong> <code>ui.get()</code> reads a widget's current value; <code>ui.set()</code> updates a widget that is not already controlled by a Panel Data binding. The designer routes the click to the named handler. IDs, not visible captions, are the bridge between layout and code.</p>
+<h2>5. Make the calculation update automatically</h2>
+<p>The button can remain, but try binding all three Numeric Stepper controls' <code>valueChanged</code> events to the <strong>same</strong> <code>onCalculateClicked</code> function. You now have a reactive calculator without a separate hand-written event-registration block.</p>
+<p>Do not add a second <code>ui.on()</code> subscription for an event already bound in the Events editor. Duplicating the connection can make an action run twice. The preferred pattern for user-created Panels is one visible saved event binding and one named function.</p>
+<p>A common mistake is changing a widget's visible text and forgetting that JavaScript still refers to its ID. Captions can change freely; treat IDs like stable names in a program.</p>
+<h2>6. Work with shared Panel Data</h2>
+<p><img src="assets/panel-data-workbench.png" alt="The Panel Data Lab in design view" /></p>
+<p>A one-page calculator can read and write widgets directly. For applications with multiple Pages—or several controls showing the same value—use <strong>Panel Data</strong>. You declare a named typed value once, bind widgets to it, and allow the runtime to keep those displays synchronized.</p>
+<p>Open <strong>Examples → Panel Data Lab</strong>. On its <strong>Live Workbench</strong> Page, inspect the controls on the left and the digital readouts and gauge on the right. In <strong>Properties → Panel Data</strong>, you will find variables including <code>Motor.TargetRPM</code>, <code>Motor.ActualRPM</code>, <code>Motor.LoadPct</code>, <code>Motor.Ready</code>, <code>Motor.Mode</code>, <code>Motor.Status</code>, and <code>Motor.TargetRPS</code>.</p>
+<p>The example uses simulated speed, not a real motor. Several right-hand displays follow <code>Motor.ActualRPM</code>; changing that one variable updates them together. The derived <code>Motor.TargetRPS</code> is registered in JavaScript:</p>
+<pre><code class="language-javascript">Data.computed('Motor.TargetRPS', ['Motor.TargetRPM'], function(rpm) {
+    return Number((rpm / 60).toFixed(2));
+});
+</code></pre>
+<p><code>Data.get(name)</code> reads a declared variable; <code>Data.set(name,value)</code> changes a writable variable; <code>Data.onChange()</code> notifies handlers when a value changes. A computed value becomes read-only for that run, so bind it to a display rather than an editable control.</p>
+<p>When a widget has a <strong>Value Binding</strong> to Panel Data, update the variable with <code>Data.set()</code>, not the widget with <code>ui.set()</code>. The binding owns the widget value. This prevents two competing sources of truth.</p>
+<h2>7. Put JavaScript where it belongs</h2>
+<p><img src="assets/javascript-editor.png" alt="The WFScript JavaScript editor and API Explorer" /></p>
+<p>WFScript uses Qt's <strong>QJSEngine</strong>, not a browser or a Node.js process. Its JavaScript integrates with native APIs that are made available by the application. It can call <code>ui</code>, <code>Data</code>, <code>plots</code>, <code>Binary</code>, <code>FileIO</code>, <code>Database</code>, <code>Tool</code>, communications objects, and the selected instrumentation APIs in their supported contexts.</p>
+<p>Most Panel scripts are easiest to maintain when they contain a short initialization section and a small set of descriptive event handlers. Move reusable signal processing, instrument drivers and substantial test logic into embedded <code>.mjs</code> libraries, loaded with <code>modules.load()</code> or referenced by the Test Executive.</p>
+<p>Avoid using <code>wait()</code> to pause an interactive Panel: it blocks the script worker's event loop and delays updates or callbacks. Use native timers and asynchronous instrument operations for activities that should not freeze the interface.</p>
+<p>The <strong>Instrument &amp; Script API Explorer</strong>, autocomplete and F1 help can show the available methods. Consult the reference for their actual parameter contracts instead of guessing from a familiar API in another framework.</p>
+<h2>8. Explore interactive charts</h2>
+<p><img src="assets/hero-dsp.png" alt="DSP Studio operator view with time-domain, FFT and frequency-response charts" /></p>
+<p>Open the <strong>JavaScript DSP Studio</strong> example in Run mode. Try changing the waveform selection, frequency, noise and low-pass cutoff. The three plots show time-domain input/output, FFT, and a filter response. The example is intentionally simulation-only; it can demonstrate the display and signal processing before you connect an instrument.</p>
+<p>Charts in WFScript can display calculated data or measured samples. A useful distinction is <strong>data acquisition versus data presentation</strong>: the Scope API obtains hardware samples; <code>plots</code> renders them. This separation lets a single chart display AD3 measurements, SCPI results, CSV data or synthetic data.</p>
+<p>Zoom, inspect measurements, change series visibility, and compare what the plots reveal about the signal. When capturing large waveforms or using several traces, prefer the native bulk-data and chart APIs instead of making thousands of one-sample calls across the JavaScript/C++ boundary.</p>
+<h2>9. Understand the instrument boundary</h2>
+<p>WFScript can use the Digilent WaveForms SDK to control a connected <strong>Analog Discovery 3</strong>. The <code>Device</code>, <code>Scope1</code>, <code>Wavegen1</code>, <code>Supplies</code>, <code>StaticIO</code>, <code>Patterns1</code>, <code>Logic1</code> and <code>Protocol1</code> objects cover supported native instrument capabilities. Hardware features and valid ranges depend on the connected device.</p>
+<p>The program can also control external instruments through <strong>TCP/SCPI</strong>. The Rigol examples demonstrate four devices: a DP932A supply, DM858 multimeter, DG902 Pro waveform generator and MHO954 oscilloscope. Those Rigol drivers are <strong>embedded application libraries</strong>, not built-in global WFScript APIs. The visual Test Station uses a guarded test-facing library, not a second direct socket per test step.</p>
+<blockquote>
+<p>Simulated Panel behavior is not evidence of physical measurement. A simulation message concerning the native hardware context does not necessarily mean that an independently connected TCP/SCPI instrument is simulated. Confirm the actual endpoint and output state before running hardware tests.</p>
+</blockquote>
+<h2>10. The Test Executive is more than a script loop</h2>
+<p><img src="assets/sequence-editor.png" alt="The native Visual Test Sequence Editor with sweeps and callback procedures" /></p>
+<p>WFScript's Test Executive allows you to author an entire sequence in a visual editor. It owns Setup, Main and Cleanup, expands sweeps, evaluates conditions and named measurement limits, tracks each step's deadline, and records results.</p>
+<p>A procedure can return a scalar or structured measurement object. In <strong>callback mode</strong>, it calls <code>TestRunner.complete(token,result)</code> or <code>TestRunner.fail(token,reason)</code> when the asynchronous operation finishes. A returned Promise is <strong>not automatically awaited</strong> by the Test Executive; the library must connect the Promise's completion to the current step token.</p>
+<p>Open the <strong>Automated Test Station</strong> example with no hardware connected; its embedded <code>TestSteps.mjs</code> uses simulated measurements. In Design mode choose <strong>Test Sequence</strong>. Inspect a numeric step, change a limit, and review the result when the test runs. The sequence definition is stored in the Panel, not reconstructed by a startup JavaScript script.</p>
+<h2>11. Browse archived results</h2>
+<p><img src="assets/results-browser.png" alt="Archived test runs in the Test Results Browser" /></p>
+<p>The <strong>Test Results Browser</strong> lets an operator search previous runs, inspect steps and measurements, review Run Information and export JSON/CSV data. Run metadata and numeric acceptance results are more useful when they are kept with the test record rather than copied into a console message.</p>
+<p>The image is from an earlier development build. The sample Rigol entries should not be interpreted as validation of the newer synchronized dual-channel and RAW acquisition workflow, which remains pending physical verification.</p>
+<h2>12. Save, share and build with confidence</h2>
+<p>A <code>.wfpanel</code> is designed to keep Pages, widgets, script, event bindings, embedded libraries and the Test Executive definition together. Save a copy before experimenting with an example; use the source tree's readable <code>.js</code> files only if you are editing and rebuilding bundled examples.</p>
+<p>When a project has external serial devices or TCP instruments, the project file cannot bundle physical cables, passwords or guarantee that a device is available. Document the required wiring, safe initial states, power-up behavior and cleanup in the application itself.</p>
+<p>When you're ready for the next step, move to the <strong>User Guide</strong> for deeper workflows or the searchable <strong>API Reference</strong> for exact method signatures. WFScript should make it possible to go from an idea to a working measurement or test interface without turning every edit into a C++ rebuild.</p>
+<hr />
+<p><strong>Source and validation note.</strong> This edition is based on the WFScript RC1.5.14.10.8 source archive, including its built-in example guides. That version compiled and passed all 116 registered native CTests on Windows Qt 6.9.2 MinGW. Screenshots were provided from development sessions and may show an earlier title or an illustrative simulated run. The documentation itself is not a claim that every physical instrument feature has been verified.</p>
+</article></main></div></body></html>

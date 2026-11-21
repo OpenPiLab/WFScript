@@ -1,0 +1,130 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 05 — File I/O &amp; Operator Dialogs · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 05 — File I/O &amp; Operator Dialogs</h1>
+<p><strong>Level:</strong> Beginner<br />
+<strong>Category:</strong> Getting Started<br />
+<strong>Pages:</strong> 01 Data Logging → 02 Operator Dialogs</p>
+<h2>What you will build or observe</h2>
+<p>Write and read CSV, JSON and binary data; use asynchronous operator dialogs.</p>
+<h2>Before you run</h2>
+<p>No connected device. FileIO writes only to the application-managed data directory unless a user explicitly grants another file.</p>
+<h2>Follow along</h2>
+<ol>
+<li>On Data Logging, press START LOGGING and then STOP LOGGING.</li>
+<li>Use READ CSV and SAVE/READ JSON CONFIG to inspect stored data.</li>
+<li>On Operator Dialogs, try CONFIRM and TEXT INPUT.</li>
+</ol>
+<h2>Follow the JavaScript</h2>
+<p><code>startLog</code> → <code>onStartLogClicked()</code> → timer/file work; dialog buttons → <code>Tool</code> callbacks → label updates.</p>
+<p>All entries below come from <strong>saved widget Properties → Events</strong> bindings in this <code>.wfpanel</code> (not from manual <code>ui.on()</code> calls). The script contains the named functions.</p>
+<table>
+<thead>
+<tr>
+  <th>Page</th>
+  <th>Control (ID)</th>
+  <th>Event</th>
+  <th>JavaScript function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>startLog</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onStartLogClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>stopLog</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>stopLogging()</code></td>
+</tr>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>saveConfig</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onSaveConfigClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>readConfig</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onReadConfigClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>readCsv</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onReadCsvClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>writeBinary</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onWriteBinaryClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>exportCsv</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onExportCsvClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Data Logging</td>
+  <td><code>importCsv</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onImportCsvClicked()</code></td>
+</tr>
+<tr>
+  <td>02 Operator Dialogs</td>
+  <td><code>askConfirm</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAskConfirmClicked()</code></td>
+</tr>
+<tr>
+  <td>02 Operator Dialogs</td>
+  <td><code>askText</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAskTextClicked()</code></td>
+</tr>
+<tr>
+  <td>02 Operator Dialogs</td>
+  <td><code>askNumber</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAskNumberClicked()</code></td>
+</tr>
+<tr>
+  <td>02 Operator Dialogs</td>
+  <td><code>askItem</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAskItemClicked()</code></td>
+</tr>
+<tr>
+  <td>02 Operator Dialogs</td>
+  <td><code>askFileOpen</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAskFileOpenClicked()</code></td>
+</tr>
+<tr>
+  <td>02 Operator Dialogs</td>
+  <td><code>askFileSave</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAskFileSaveClicked()</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Make one small change</h2>
+<p>Change one field in the saved JSON configuration and inspect the value after reading it back.</p>
+<p>To modify the example in the app, choose <strong>Stop / Design</strong>, open the Script Editor, find the named function or constant, make one change, and run the Panel again. When you like it, use <strong>Save As</strong> to keep your own project.</p>
+<h2>Why this works</h2>
+<p>Dialog results arrive through callbacks; saving a file and asking an operator are separate operations.</p>
+<h2>Safety and scope</h2>
+<p>Avoid hardcoded paths outside the FileIO sandbox. Do not assume an operator accepted a dialog.</p>
+<h2>If something does not work</h2>
+<p>If a file appears missing, use File → Open Shared Panel Data Folder and inspect the application-managed directory.</p>
+<h2>Related files</h2>
+<ul>
+<li><strong>Editable project:</strong> <code>examples/panels/ScriptUtilityLab.wfpanel</code></li>
+<li><strong>Readable JavaScript:</strong> <code>examples/source/ScriptUtilityLab.js</code></li>
+<li>The <code>.wfpanel</code> embeds the script, Pages and event assignments; opening it in WFScript does not require the <code>.js</code> file alongside it.</li>
+<li>In the complete source tree run <code>python tools/build_examples.py</code> after modifying the readable <code>.js</code> version.</li>
+</ul>
+<p class="doc-footnote">Source: <code>examples/guides/ScriptUtilityLab.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

@@ -22,8 +22,18 @@ QVector<WidgetProperty> DigitalTimingPlotFactory::properties() const {
     }
     return props;
 }
-QWidget* DigitalTimingPlotFactory::create(const PanelControl& d,QWidget* parent,EventSink) const {
-    auto* w=new PanelChartWidget(parent);applyDefinition(w,d);return w;
+QVector<PanelEventDefinition> DigitalTimingPlotFactory::events() const {
+    // Same viewport payload and visual event binding as an ordinary Data Plot.
+    return PanelPlotFactory().events();
+}
+QWidget* DigitalTimingPlotFactory::create(const PanelControl& d,QWidget* parent,EventSink onUserEvent) const {
+    auto* w=new PanelChartWidget(parent);
+    applyDefinition(w,d);
+    QObject::connect(w,&PanelChartWidget::viewChanged,w,
+        [onUserEvent](const QVariantMap& view){
+            if(onUserEvent)onUserEvent(QStringLiteral("viewChanged"),view);
+        });
+    return w;
 }
 void DigitalTimingPlotFactory::applyDefinition(QWidget* widget,const PanelControl& def) const {
     auto* chart=qobject_cast<PanelChartWidget*>(widget);

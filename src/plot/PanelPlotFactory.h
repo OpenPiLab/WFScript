@@ -8,6 +8,7 @@ public:
     QString displayName() const override {return QStringLiteral("Data Plot");}
     PanelControl defaultDefinition(const QString& id) const override;
     QVector<WidgetProperty> properties() const override;
+    QVector<PanelEventDefinition> events() const override;
     QWidget* create(const PanelControl& def,QWidget* parent,EventSink onUserEvent) const override;
     void applyDefinition(QWidget* widget,const PanelControl& def) const override;
     void readDefinition(QWidget* widget,PanelControl& def) const override;

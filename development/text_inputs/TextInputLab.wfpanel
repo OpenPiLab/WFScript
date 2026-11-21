@@ -1,0 +1,559 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "name": "Text and IPv4 Input Widgets — QA",
+  "description": "Two native input widgets with label positions, callbacks, validation and Panel Data binding. No instrument activity.",
+  "scriptName": "TextInputLab.js",
+  "activePageId": "text_inputs",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "#101a27",
+    "showDesignGrid": false
+  },
+  "panelData": [
+    {
+      "name": "Bench.Alias",
+      "type": "text",
+      "initial": "Oscilloscope"
+    },
+    {
+      "name": "Bench.ScopeIp",
+      "type": "text",
+      "initial": "192.168.6.2"
+    }
+  ],
+  "pages": [
+    {
+      "id": "text_inputs",
+      "name": "01 Text and IP",
+      "width": 1060,
+      "height": 730,
+      "controls": [
+        {
+          "id": "heading",
+          "type": "label",
+          "text": "TEXT INPUTS  /  NATIVE WIDGET QA",
+          "x": 24,
+          "y": 16,
+          "width": 1030,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        },
+        {
+          "id": "subtitle",
+          "type": "label",
+          "text": "Four label positions · free text · validated IPv4 · native ui.get()/ui.set() · saved visual event handlers",
+          "x": 24,
+          "y": 74,
+          "width": 1030,
+          "height": 44,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        },
+        {
+          "id": "operatorName",
+          "type": "text_input",
+          "text": "Operator name",
+          "x": 24,
+          "y": 137,
+          "width": 480,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "valueChanged": {
+              "handler": "onOperatorNameChanged",
+              "enabled": true
+            },
+            "editingFinished": {
+              "handler": "onOperatorNameFinished",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "labelPosition": "Top",
+            "defaultText": "Test Operator",
+            "placeholder": "Type an operator name",
+            "maxLength": 256,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "inputBottom",
+          "type": "text_input",
+          "text": "Bottom label",
+          "x": 538,
+          "y": 137,
+          "width": 480,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "labelPosition": "Bottom",
+            "defaultText": "Editable note",
+            "placeholder": "Text below control",
+            "maxLength": 256,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "inputLeft",
+          "type": "text_input",
+          "text": "Instrument alias",
+          "x": 24,
+          "y": 247,
+          "width": 480,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "labelPosition": "Left",
+            "defaultText": "MHO954",
+            "placeholder": "Friendly name",
+            "maxLength": 256,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "inputRight",
+          "type": "text_input",
+          "text": "Comment",
+          "x": 538,
+          "y": 247,
+          "width": 480,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "labelPosition": "Right",
+            "defaultText": "",
+            "placeholder": "Enter description",
+            "maxLength": 256,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "scopeIp",
+          "type": "ip_address_input",
+          "text": "MHO954 IP address",
+          "x": 24,
+          "y": 361,
+          "width": 480,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "valueChanged": {
+              "handler": "onScopeAddressChanged",
+              "enabled": true
+            },
+            "editingFinished": {
+              "handler": "onScopeAddressFinished",
+              "enabled": true
+            },
+            "validationFailed": {
+              "handler": "onScopeAddressInvalid",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "labelPosition": "Top",
+            "defaultText": "192.168.6.2",
+            "placeholder": "192.168.0.1",
+            "maxLength": 15,
+            "required": true,
+            "readOnly": false,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "ipLeft",
+          "type": "ip_address_input",
+          "text": "IP address",
+          "x": 538,
+          "y": 361,
+          "width": 480,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "labelPosition": "Left",
+            "defaultText": "192.168.6.4",
+            "placeholder": "x.x.x.x",
+            "maxLength": 15,
+            "required": false,
+            "readOnly": false,
+            "accent": "green"
+          }
+        },
+        {
+          "id": "inputHint",
+          "type": "label",
+          "text": "IP field accepts four decimal octets (0–255). Invalid input is outlined in red when committed and is never emitted as a valueChanged event.",
+          "x": 24,
+          "y": 477,
+          "width": 1000,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        },
+        {
+          "id": "inspectButton",
+          "type": "button",
+          "text": "READ CURRENT VALUES",
+          "x": 24,
+          "y": 549,
+          "width": 325,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onViewInputs",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "setButton",
+          "type": "button",
+          "text": "SET EXAMPLE VALUES",
+          "x": 365,
+          "y": 549,
+          "width": 325,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSetExamples",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "clearButton",
+          "type": "button",
+          "text": "CLEAR NAME",
+          "x": 706,
+          "y": 549,
+          "width": 312,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onClearName",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "inputStatus",
+          "type": "label",
+          "text": "READY",
+          "x": 24,
+          "y": 623,
+          "width": 994,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "data_bindings",
+      "name": "02 Linked Inputs",
+      "width": 1060,
+      "height": 730,
+      "controls": [
+        {
+          "id": "bindHeading",
+          "type": "label",
+          "text": "PANEL DATA  /  EDITABLE STRING BINDINGS",
+          "x": 24,
+          "y": 16,
+          "width": 1030,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        },
+        {
+          "id": "bindDesc",
+          "type": "label",
+          "text": "The two aliases share one text variable; the two IPv4 boxes share another. Edits in either field synchronize the other.",
+          "x": 24,
+          "y": 77,
+          "width": 1018,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        },
+        {
+          "id": "dataAlias1",
+          "type": "text_input",
+          "text": "Alias A",
+          "x": 24,
+          "y": 159,
+          "width": 475,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "valueChanged": {
+              "handler": "onDataAliasChanged",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "labelPosition": "Top",
+            "defaultText": "Oscilloscope",
+            "placeholder": "Enter a value...",
+            "maxLength": 256,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          },
+          "bindings": {
+            "value": "Bench.Alias"
+          }
+        },
+        {
+          "id": "dataAlias2",
+          "type": "text_input",
+          "text": "Alias B",
+          "x": 538,
+          "y": 159,
+          "width": 475,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "labelPosition": "Left",
+            "defaultText": "Oscilloscope",
+            "placeholder": "Enter a value...",
+            "maxLength": 256,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          },
+          "bindings": {
+            "value": "Bench.Alias"
+          }
+        },
+        {
+          "id": "dataIp1",
+          "type": "ip_address_input",
+          "text": "Scope IP A",
+          "x": 24,
+          "y": 278,
+          "width": 475,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "valueChanged": {
+              "handler": "onDataIpChanged",
+              "enabled": true
+            },
+            "validationFailed": {
+              "handler": "onDataInvalid",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "labelPosition": "Top",
+            "defaultText": "192.168.6.2",
+            "placeholder": "Enter a value...",
+            "maxLength": 15,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          },
+          "bindings": {
+            "value": "Bench.ScopeIp"
+          }
+        },
+        {
+          "id": "dataIp2",
+          "type": "ip_address_input",
+          "text": "Scope IP B",
+          "x": 538,
+          "y": 278,
+          "width": 475,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "labelPosition": "Right",
+            "defaultText": "192.168.6.2",
+            "placeholder": "Enter a value...",
+            "maxLength": 15,
+            "required": false,
+            "readOnly": false,
+            "accent": "cyan"
+          },
+          "bindings": {
+            "value": "Bench.ScopeIp"
+          }
+        },
+        {
+          "id": "setDataButton",
+          "type": "button",
+          "text": "SET PANEL DATA",
+          "x": 24,
+          "y": 407,
+          "width": 475,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onPanelDataDemo",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "readDataButton",
+          "type": "button",
+          "text": "READ PANEL DATA",
+          "x": 538,
+          "y": 407,
+          "width": 475,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onReadDataDemo",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "dataStatus",
+          "type": "label",
+          "text": "READY",
+          "x": 24,
+          "y": 499,
+          "width": 994,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        },
+        {
+          "id": "dataHint",
+          "type": "label",
+          "text": "Binding replaces direct ui.set() for those fields. Use Data.set() to update all linked controls. An incomplete IPv4 edit is not published.",
+          "x": 24,
+          "y": 591,
+          "width": 994,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false,
+            "cornerRadius": 6
+          }
+        }
+      ]
+    }
+  ],
+  "script": "/**\n * WFScript Text Input Lab — no instruments, no network connections.\n *\n * Event bindings are saved in the Panel Designer. The status labels and\n * buttons below illustrate the difference between accepted edits, invalid\n * IPv4 text, and programmatic ui.set()/Data.set() updates.\n */\nfunction textStatus(message) {\n    ui.set('inputStatus', message);\n    print('[TEXT INPUT LAB] ' + message);\n}\n\nfunction onOperatorNameChanged(text) {\n    textStatus('Accepted name: ' + text);\n}\nfunction onOperatorNameFinished(text) {\n    textStatus('Name committed: ' + text);\n}\nfunction onScopeAddressChanged(text) {\n    textStatus('Valid IPv4: ' + text);\n}\nfunction onScopeAddressFinished(text) {\n    textStatus('IPv4 committed: ' + text);\n}\nfunction onScopeAddressInvalid(text) {\n    textStatus('Invalid IPv4 (not published): ' + text);\n}\nfunction onViewInputs() {\n    textStatus('Name=' + ui.get('operatorName') + ' | IPv4=' + ui.get('scopeIp'));\n}\nfunction onSetExamples() {\n    // Programmatic changes update the native field without firing user events.\n    ui.set('operatorName', 'Bench Operator');\n    ui.set('scopeIp', '192.168.6.2');\n    textStatus('Script updated two controls using ui.set().');\n}\nfunction onClearName() {\n    ui.set('operatorName', '');\n    textStatus('Name cleared from JavaScript.');\n}\nfunction onPanelDataDemo() {\n    Data.set('Bench.Alias', 'Oscilloscope A');\n    Data.set('Bench.ScopeIp', '192.168.6.2');\n    ui.set('dataStatus', 'Data.set updated both linked input pairs.');\n}\nfunction onReadDataDemo() {\n    ui.set('dataStatus',\n        'Alias: ' + Data.get('Bench.Alias') + ' | IP: ' + Data.get('Bench.ScopeIp'));\n}\nfunction onDataAliasChanged(text) {\n    ui.set('dataStatus', 'Linked alias changed: ' + text);\n}\nfunction onDataIpChanged(text) {\n    ui.set('dataStatus', 'Linked IPv4 changed: ' + text);\n}\nfunction onDataInvalid(text) {\n    ui.set('dataStatus', 'Rejected address: ' + text);\n}\n\ntextStatus('READY — edit an input or use the buttons.');\nui.set('dataStatus', 'Edit either linked field; both copies share Panel Data.');\n",
+  "libraries": []
+}

@@ -1,7 +1,9 @@
 #pragma once
 #include "WidgetFactory.h"
 #include <QWidget>
-#include <QTableWidget>
+#include <QTableView>
+#include "ExperimentTableData.h"
+#include "ExperimentTableModel.h"
 #include <QImage>
 #include <QColor>
 #include <QVariantList>
@@ -50,24 +52,60 @@ public:
     void applyRuntimeValue(QWidget* widget,const PanelControl&,const QVariant& v) const override;
 };
 
-class ExperimentDataTableWidget final : public QTableWidget {
+class QLabel;
+class QPushButton;
+class QCheckBox;
+class QTimer;
+class ExperimentDataTableWidget final : public QWidget {
 public:
     using ChangeSink=WidgetFactory::EventSink;
     explicit ExperimentDataTableWidget(QWidget* parent=nullptr);
     void configure(const PanelControl& d);
     bool setRows(const QVariant& rows);
+    bool applyValue(const QVariant& value);
     QVariantList rows() const;
     bool exportCsv(const QString& path, QString* error=nullptr) const;
+    bool importCsv(const QString& path, QString* error=nullptr);
     void setChangeSink(ChangeSink sink) {m_sink=std::move(sink);}
-    QSize sizeHint() const override {return QSize(660,270);}
+    ExperimentTableModel* tableModel() const {return m_model;}
+    QAbstractItemModel* model() const {return m_model;} // compatibility for native tests
+    QTableView* tableView() const {return m_view;}
+    int rowCount() const {return m_model->rowCount();}
+    int columnCount() const {return m_model->columnCount();}
+    QSize sizeHint() const override {return QSize(660,300);}
+    bool importCsvAction(const QString& optionalPath={});
+    bool exportCsvAction(const QString& optionalPath={});
+    void clearFromToolbar();
+    void setTableTitle(const QString& text);
+    void setTableStatus(const QString& text);
+    void setAutoScroll(bool enabled);
+protected:
+    void changeEvent(QEvent* event) override;
 private:
-    int m_maxRows=250;
+    void applyTheme();
+    void updateCount();
+    void scheduleCount();
+    void publishSelection();
+    void copySelection();
+    ExperimentTableModel* m_model=nullptr;
+    QTableView* m_view=nullptr;
+    QWidget* m_toolbar=nullptr;
+    QLabel* m_heading=nullptr;
+    QLabel* m_count=nullptr;
+    QLabel* m_status=nullptr;
+    QPushButton* m_importButton=nullptr;
+    QPushButton* m_exportButton=nullptr;
+    QPushButton* m_copyButton=nullptr;
+    QPushButton* m_clearButton=nullptr;
+    QCheckBox* m_follow=nullptr;
+    QTimer* m_countTimer=nullptr;
+    bool m_autoScroll=true;
+    int m_maxRows=ExperimentTableLimits::DefaultRows;
     bool m_editable=false;
-    bool m_busy=false;
+    bool m_emitFullChange=false;
     QStringList m_columns;
-    QString m_initialSource; // detect design-time Initial rows edits
+    QString m_initialSource;
     ChangeSink m_sink;
-    void installRows(const QVariantList& rows);
 };
 class ExperimentDataTableFactory final : public WidgetFactory {
 public:

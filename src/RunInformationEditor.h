@@ -7,6 +7,7 @@ class RunInformationEditor final : public QDialog {
 public:
     explicit RunInformationEditor(const QJsonObject& schema,QWidget* parent=nullptr);
     QJsonObject schema() const {return m_schema;}
+    bool applyFields(QString* error=nullptr);
 private:
     QTableWidget* m_table=nullptr;
     QJsonObject m_schema;

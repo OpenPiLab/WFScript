@@ -1,0 +1,2266 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Eleven-page, fully self-contained RC step-response engineering laboratory: differential-equation derivation, annotated numerical JavaScript, simulation, AD3 square-wave 2-channel capture with auto-OFF, least-squares exponential tau, 63.2% crossing, residuals, Notebook and AC-cutoff comparison.",
+  "scriptName": "RCStepResponseLaboratory.js",
+  "activePageId": "intro",
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "intro",
+      "name": "00  MISSION + ROADMAP",
+      "width": 1460,
+      "height": 990,
+      "controls": [
+        {
+          "id": "rcStartHero",
+          "type": "label",
+          "text": "RC STEP RESPONSE  /  DIFFERENTIAL EQUATIONS YOU CAN MEASURE",
+          "x": 22,
+          "y": 14,
+          "width": 1416,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "rcStartIntro",
+          "type": "label",
+          "text": "A self-contained 11-Page engineering laboratory. Learn exponential charging, inspect the exact numerical algorithm, simulate measurement noise, and optionally record REAL AD3 voltage samples.",
+          "x": 22,
+          "y": 89,
+          "width": 1416,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "start1",
+          "type": "instruction_card",
+          "text": "01  START WITH PHYSICS",
+          "x": 22,
+          "y": 190,
+          "width": 452,
+          "height": 170,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Derive the capacitor equation from Kirchhoff’s voltage law and i = C dv/dt. Learn why the exponential arises and what τ = RC actually means.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "start2",
+          "type": "instruction_card",
+          "text": "02  USE THE SAME COMPONENTS",
+          "x": 503,
+          "y": 190,
+          "width": 451,
+          "height": 170,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Your measured resistor is 980 Ω and capacitor 571 nF at 1 kHz. Theory predicts τ = 559.58 µs and cutoff fc = 284.42 Hz.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "start3",
+          "type": "instruction_card",
+          "text": "03  RUN WITHOUT AN AD3",
+          "x": 982,
+          "y": 190,
+          "width": 456,
+          "height": 170,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Page 03 generates MODEL ONLY waveforms. Alter noise or R,C and watch the fit, its residual and the 63.2% crossing change.",
+            "tone": "Success"
+          }
+        },
+        {
+          "id": "start4",
+          "type": "instruction_card",
+          "text": "04  BUILD AND CAPTURE",
+          "x": 22,
+          "y": 379,
+          "width": 688,
+          "height": 174,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Wire AD3 W1 to the resistor input, C to ground, Scope CH1=VIN, CH2=VCAP. Check wiring. One button captures and automatically stops W1.",
+            "tone": "Warning"
+          }
+        },
+        {
+          "id": "start5",
+          "type": "instruction_card",
+          "text": "05  FOLLOW THE MATHEMATICS",
+          "x": 731,
+          "y": 379,
+          "width": 707,
+          "height": 174,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Pages 06–08 connect the 63.2% graphical method to an exponential least-squares solver written in a small, readable JavaScript module.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "start6",
+          "type": "instruction_card",
+          "text": "06  RECORD EXPERIMENTAL EVIDENCE",
+          "x": 22,
+          "y": 572,
+          "width": 1416,
+          "height": 176,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Use the Notebook to distinguish synthetic MODEL and physical AD3 results. Compare τ, fc, rise vs fall, fit RMS and percentage error.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "startEq",
+          "type": "equation",
+          "text": "The bridge between your AC laboratory and the step-response laboratory",
+          "x": 22,
+          "y": 767,
+          "width": 1416,
+          "height": 121,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\tau=RC\\qquad f_c=\\frac{1}{2\\pi RC}=\\frac{1}{2\\pi\\tau}",
+            "pointSize": 22,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "startFooter",
+          "type": "label",
+          "text": "START HERE: Page 01 Theory → Page 02 Wiring → Page 03 Synthetic → Page 04 AD3 (optional) → Pages 05–10 Analysis & Challenges.",
+          "x": 22,
+          "y": 904,
+          "width": 1416,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "physical_theory",
+      "name": "01  DIFFERENTIAL EQUATION",
+      "width": 1460,
+      "height": 991,
+      "controls": [
+        {
+          "id": "theoryHeader",
+          "type": "label",
+          "text": "01  WHY A CAPACITOR CHARGES EXPONENTIALLY",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "theoryIntro",
+          "type": "label",
+          "text": "Follow the physics: R limits current, capacitor current changes voltage, and the voltage difference shrinks as the capacitor approaches its new final value.",
+          "x": 22,
+          "y": 79,
+          "width": 1416,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "physics1",
+          "type": "instruction_card",
+          "text": "1. KIRCHHOFF’S VOLTAGE LAW",
+          "x": 22,
+          "y": 160,
+          "width": 685,
+          "height": 176,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "For VIN → R → capacitor → ground: VIN = VR + VC. Ohm’s law gives VR = R·i, while the capacitor current is i = C·dVC/dt.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "physics2",
+          "type": "instruction_card",
+          "text": "2. THE DIFFERENTIAL EQUATION",
+          "x": 729,
+          "y": 160,
+          "width": 707,
+          "height": 176,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Substitute current: RC·dVC/dt + VC = VIN. For a constant input level after the step, this is a first-order linear differential equation.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "physicsEq1",
+          "type": "equation",
+          "text": "Physical law in time-domain form",
+          "x": 22,
+          "y": 351,
+          "width": 1414,
+          "height": 112,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "RC\\,\\frac{dv_C}{dt}+v_C=v_{in}",
+            "pointSize": 21,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "physics3",
+          "type": "instruction_card",
+          "text": "3. THE HOMOGENEOUS SOLUTION",
+          "x": 22,
+          "y": 478,
+          "width": 685,
+          "height": 175,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Let u=VC−Vfinal. Then du/dt = −u/(RC). Separating variables and integrating gives ln|u| = −t/(RC)+constant.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "physics4",
+          "type": "instruction_card",
+          "text": "4. THE EXPONENTIAL STEP RESPONSE",
+          "x": 729,
+          "y": 478,
+          "width": 707,
+          "height": 175,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "VC(t)=Vfinal+(Vinitial−Vfinal)exp(−t/τ), where τ=RC. This equation describes charge AND discharge; only the endpoints change.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "physicsEq2",
+          "type": "equation",
+          "text": "General response to a constant-voltage step",
+          "x": 22,
+          "y": 667,
+          "width": 1414,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "v_C(t)=V_\\infty+(v_C(0)-V_\\infty)e^{-t/\\tau},\\quad\\tau=RC",
+            "pointSize": 19,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "physics5",
+          "type": "instruction_card",
+          "text": "5. WHAT DOES ONE TIME CONSTANT MEAN?",
+          "x": 22,
+          "y": 794,
+          "width": 685,
+          "height": 172,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "After 1τ the remaining error is e^−1 ≈ 36.79%; the voltage has traveled 63.21% toward its new level. At 5τ it is 99.33% settled.",
+            "tone": "Success"
+          }
+        },
+        {
+          "id": "physics6",
+          "type": "instruction_card",
+          "text": "6. CONNECT TO THE AC MEASUREMENT",
+          "x": 729,
+          "y": 794,
+          "width": 707,
+          "height": 172,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The same equation predicts H(jω)=1/(1+jωRC), and the −3 dB frequency fc=1/(2πRC). We can measure τ in time and fc in frequency independently.",
+            "tone": "Success"
+          }
+        }
+      ]
+    },
+    {
+      "id": "build",
+      "name": "02  WIRING + PRE-FLIGHT",
+      "width": 1460,
+      "height": 985,
+      "controls": [
+        {
+          "id": "wiringHeader",
+          "type": "label",
+          "text": "02  BUILD THE RC STEP-RESPONSE CIRCUIT",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "wiringIntro",
+          "type": "label",
+          "text": "The low-pass wiring is the same as the AC Network Laboratory. Only the stimulus changes: W1 outputs a controlled square wave rather than a sine wave.",
+          "x": 22,
+          "y": 77,
+          "width": 1416,
+          "height": 70,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "wiringDiagram",
+          "type": "image",
+          "text": "Labeled square-wave RC schematic",
+          "x": 22,
+          "y": 163,
+          "width": 1416,
+          "height": 478,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "imageName": "rc_step_connections.png",
+            "imageData": "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"
+          }
+        },
+        {
+          "id": "wiringOne",
+          "type": "instruction_card",
+          "text": "BREADBOARD  /  ONE SHARED GROUND",
+          "x": 22,
+          "y": 657,
+          "width": 452,
+          "height": 211,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "W1 → one end of R. The far end is VCAP. Put capacitor from VCAP to ground. CH1+ senses W1 side of R. CH2+ senses VCAP. Tie W1 GND, 1− and 2− to common ground.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "wiringTwo",
+          "type": "instruction_card",
+          "text": "COMPONENT AND VOLTAGE LIMITS",
+          "x": 503,
+          "y": 657,
+          "width": 451,
+          "height": 211,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Use a non-polarized capacitor. For the supplied circuit: R=980 Ω, C≈571 nF. W1 square is ±0.5 V (1 Vpp), zero DC offset. No supply rails or external energized circuits.",
+            "tone": "Warning"
+          }
+        },
+        {
+          "id": "wiringThree",
+          "type": "instruction_card",
+          "text": "BEFORE A PHYSICAL CAPTURE",
+          "x": 982,
+          "y": 657,
+          "width": 456,
+          "height": 211,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Turn W1 OFF when moving leads. Verify instrument ground and input nodes. Select Physical Device, check R,C and half-period ≥6τ, enable WIRING VERIFIED, then click CAPTURE. The software cannot detect miswiring.",
+            "tone": "Warning"
+          }
+        },
+        {
+          "id": "wiringFooter",
+          "type": "label",
+          "text": "A ground mistake or connection to an energized circuit can damage equipment. The confirmation switch is an operator checklist, not a safety interlock.",
+          "x": 22,
+          "y": 886,
+          "width": 1416,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "sim",
+      "name": "03  SYNTHETIC EXPERIMENT",
+      "width": 1460,
+      "height": 1040,
+      "controls": [
+        {
+          "id": "simHeaderRC",
+          "type": "label",
+          "text": "03  INTERACTIVE RC STEP SIMULATOR  /  MODEL ONLY",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "modelSource",
+          "type": "label",
+          "text": "THEORY ONLY • no AD3 operations",
+          "x": 22,
+          "y": 80,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "rcR",
+          "type": "numeric_stepper",
+          "text": "RESISTOR R",
+          "x": 22,
+          "y": 151,
+          "width": 272,
+          "height": 86,
+          "value": 980,
+          "min": 100,
+          "max": 100000,
+          "events": {
+            "valueChanged": {
+              "handler": "changeConfig",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "unit": "Ω",
+            "step": 10,
+            "decimals": 0,
+            "accent": "cyan",
+            "toolTip": "This is an entered theoretical/commanded value, not a verified physical component measurement."
+          }
+        },
+        {
+          "id": "rcC",
+          "type": "numeric_stepper",
+          "text": "CAPACITOR C",
+          "x": 308,
+          "y": 151,
+          "width": 272,
+          "height": 86,
+          "value": 571,
+          "min": 1,
+          "max": 1000,
+          "events": {
+            "valueChanged": {
+              "handler": "changeConfig",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "unit": "nF",
+            "step": 1,
+            "decimals": 0,
+            "accent": "cyan",
+            "toolTip": "This is an entered theoretical/commanded value, not a verified physical component measurement."
+          }
+        },
+        {
+          "id": "rcFreq",
+          "type": "numeric_stepper",
+          "text": "SQUARE FREQUENCY",
+          "x": 594,
+          "y": 151,
+          "width": 272,
+          "height": 86,
+          "value": 100,
+          "min": 40,
+          "max": 200,
+          "events": {
+            "valueChanged": {
+              "handler": "changeConfig",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "unit": "Hz",
+            "step": 5,
+            "decimals": 0,
+            "accent": "cyan",
+            "toolTip": "This is an entered theoretical/commanded value, not a verified physical component measurement."
+          }
+        },
+        {
+          "id": "rcVpk",
+          "type": "numeric_stepper",
+          "text": "W1 PEAK COMMAND",
+          "x": 880,
+          "y": 151,
+          "width": 272,
+          "height": 86,
+          "value": 0.5,
+          "min": 0.2,
+          "max": 0.5,
+          "events": {
+            "valueChanged": {
+              "handler": "changeConfig",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "unit": "Vpk",
+            "step": 0.05,
+            "decimals": 2,
+            "accent": "cyan",
+            "toolTip": "This is an entered theoretical/commanded value, not a verified physical component measurement."
+          }
+        },
+        {
+          "id": "rcNoise",
+          "type": "numeric_stepper",
+          "text": "SYNTHETIC NOISE RMS",
+          "x": 1166,
+          "y": 151,
+          "width": 272,
+          "height": 86,
+          "value": 0.4,
+          "min": 0,
+          "max": 30,
+          "events": {
+            "valueChanged": {
+              "handler": "onSyntheticSettingsChanged",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "unit": "mV",
+            "step": 0.2,
+            "decimals": 1,
+            "accent": "cyan",
+            "toolTip": "This is an entered theoretical/commanded value, not a verified physical component measurement."
+          }
+        },
+        {
+          "id": "generateModel",
+          "type": "button",
+          "text": "RUN SYNTHETIC EXPERIMENT  •  NO AD3",
+          "x": 22,
+          "y": 252,
+          "width": 666,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSyntheticClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "returnModel",
+          "type": "button",
+          "text": "SHOW CURRENT MODEL",
+          "x": 714,
+          "y": 252,
+          "width": 339,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onShowModelClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "theoryTau",
+          "type": "label",
+          "text": "RC = ...",
+          "x": 22,
+          "y": 335,
+          "width": 448,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "theoryFc",
+          "type": "label",
+          "text": "fc ...",
+          "x": 489,
+          "y": 335,
+          "width": 447,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "theoryHalf",
+          "type": "label",
+          "text": "Half-period ...",
+          "x": 953,
+          "y": 335,
+          "width": 485,
+          "height": 62,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "stepWavePlot",
+          "type": "plot",
+          "text": "stepWavePlot",
+          "x": 22,
+          "y": 415,
+          "width": 1416,
+          "height": 360,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "rcStatus",
+          "type": "label",
+          "text": "Ready",
+          "x": 22,
+          "y": 790,
+          "width": 1416,
+          "height": 66,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "simulationHint",
+          "type": "instruction_card",
+          "text": "TRY THIS FIRST",
+          "x": 22,
+          "y": 875,
+          "width": 1416,
+          "height": 148,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Set R=980 Ω, C=571 nF, 100 Hz, 0.5 Vpk, then click RUN SYNTHETIC. Raise noise from 0 to 5 mV. The fitted time constant should stay close to RC while residual RMS increases. MODEL data are NOT physical observations.",
+            "tone": "Procedure"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ad3",
+      "name": "04  PHYSICAL AD3 CAPTURE",
+      "width": 1460,
+      "height": 1074,
+      "controls": [
+        {
+          "id": "measureHeaderRC",
+          "type": "label",
+          "text": "04  MEASURE A REAL RC STEP WITH THE AD3",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "captureIntro",
+          "type": "label",
+          "text": "PHYSICAL ONLY. Select an actual AD3 before Run; use the wiring on Page 02. The button starts W1 Square, waits 300 ms, acquires both Scope channels, then requests W1 OFF.",
+          "x": 22,
+          "y": 81,
+          "width": 1416,
+          "height": 85,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "stepWiringVerified",
+          "type": "switch_button",
+          "text": "WIRING VERIFIED  /  PHYSICAL DEVICE",
+          "x": 22,
+          "y": 186,
+          "width": 404,
+          "height": 94,
+          "value": 0,
+          "min": 0,
+          "max": 1,
+          "events": {
+            "toggled": {
+              "handler": "onWiringChanged",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "onText": "CHECKED",
+            "offText": "NOT VERIFIED",
+            "accent": "green",
+            "toolTip": "Operator confirmation only; not a protective electrical interlock."
+          }
+        },
+        {
+          "id": "stepCapture",
+          "type": "button",
+          "text": "CAPTURE PHYSICAL CH1 + CH2",
+          "x": 445,
+          "y": 186,
+          "width": 503,
+          "height": 94,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCaptureClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "stepStop",
+          "type": "button",
+          "text": "STOP / ABORT W1 NOW",
+          "x": 968,
+          "y": 186,
+          "width": 469,
+          "height": 94,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "hardwareOutput",
+          "type": "label",
+          "text": "W1 OFF",
+          "x": 22,
+          "y": 297,
+          "width": 1416,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "captureStatus",
+          "type": "label",
+          "text": "No AD3 capture recorded",
+          "x": 22,
+          "y": 370,
+          "width": 1416,
+          "height": 68,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "stepPhysicalPlot",
+          "type": "plot",
+          "text": "stepPhysicalPlot",
+          "x": 22,
+          "y": 451,
+          "width": 1416,
+          "height": 320,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "hardwareSampling",
+          "type": "instruction_card",
+          "text": "WHAT THE SCRIPT DOES",
+          "x": 22,
+          "y": 787,
+          "width": 688,
+          "height": 185,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The W1 Square amplitude is capped at 0.50 Vpeak with zero offset. Scope captures 8,192 paired samples at requested 250 kS/s, then reads back the ACTUAL sample rate. CH1 identifies transitions; CH2 supplies fitted capacitor samples.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "hardwareLimits",
+          "type": "instruction_card",
+          "text": "REQUIRED MEASUREMENT WINDOW",
+          "x": 729,
+          "y": 787,
+          "width": 709,
+          "height": 185,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Physical R≥900 Ω, 70 µs≤RC≤1200 µs, frequency 60–150 Hz, and each half period must be ≥6τ. Need complete RISE and FALL half-cycles. Failure or abort requests both Scope and W1 stops. No fake readings are substituted.",
+            "tone": "Warning"
+          }
+        },
+        {
+          "id": "physicalFooter",
+          "type": "label",
+          "text": "IMPORTANT: the resistor and capacitor numbers are entered estimates; the Scope measures voltage versus time, not R or C directly.",
+          "x": 22,
+          "y": 992,
+          "width": 1416,
+          "height": 67,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "quality",
+      "name": "05  FIT + RESIDUALS",
+      "width": 1460,
+      "height": 1065,
+      "controls": [
+        {
+          "id": "resultsHeader",
+          "type": "label",
+          "text": "05  RECONSTRUCT THE EXPONENTIAL AND INSPECT ERRORS",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "analysisOrigin",
+          "type": "label",
+          "text": "SYNTHETIC MODEL ONLY",
+          "x": 22,
+          "y": 79,
+          "width": 1416,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "inspectModel",
+          "type": "button",
+          "text": "INSPECT SYNTHETIC FIT",
+          "x": 22,
+          "y": 157,
+          "width": 670,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onShowModelClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "inspectReal",
+          "type": "button",
+          "text": "INSPECT LAST PHYSICAL AD3 FIT",
+          "x": 708,
+          "y": 157,
+          "width": 729,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onShowRealClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "stepFitPlot",
+          "type": "plot",
+          "text": "stepFitPlot",
+          "x": 22,
+          "y": 231,
+          "width": 696,
+          "height": 335,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "stepResidualPlot",
+          "type": "plot",
+          "text": "stepResidualPlot",
+          "x": 736,
+          "y": 231,
+          "width": 702,
+          "height": 335,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "measuredTau",
+          "type": "label",
+          "text": "τ FIT",
+          "x": 22,
+          "y": 582,
+          "width": 701,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "measured63",
+          "type": "label",
+          "text": "63.2%",
+          "x": 737,
+          "y": 582,
+          "width": 701,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "measuredRise",
+          "type": "label",
+          "text": "RISE",
+          "x": 22,
+          "y": 653,
+          "width": 701,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "measuredFall",
+          "type": "label",
+          "text": "FALL",
+          "x": 737,
+          "y": 653,
+          "width": 701,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "measuredFc",
+          "type": "label",
+          "text": "fc FIT",
+          "x": 22,
+          "y": 724,
+          "width": 701,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "measuredResidual",
+          "type": "label",
+          "text": "RESIDUAL",
+          "x": 737,
+          "y": 724,
+          "width": 701,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "measuredError",
+          "type": "label",
+          "text": "ERROR",
+          "x": 22,
+          "y": 795,
+          "width": 1416,
+          "height": 59,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "transitionDetail",
+          "type": "label",
+          "text": "TRANSITION",
+          "x": 22,
+          "y": 866,
+          "width": 1416,
+          "height": 73,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "measurementCaution",
+          "type": "label",
+          "text": "SOURCE CAUTION",
+          "x": 22,
+          "y": 950,
+          "width": 1416,
+          "height": 93,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "method63",
+      "name": "06  THE 63.2% METHOD",
+      "width": 1460,
+      "height": 950,
+      "controls": [
+        {
+          "id": "crossHeader",
+          "type": "label",
+          "text": "06  ONE TIME CONSTANT  /  THE 63.2% METHOD",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "cross1",
+          "type": "instruction_card",
+          "text": "STEP 1 — FIND BOTH PLATEAUS",
+          "x": 22,
+          "y": 88,
+          "width": 688,
+          "height": 171,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "In a full charging or discharging interval identify the starting voltage V0 and the final steady voltage V∞. With a ±0.5 V square wave, the final value alternates high and low.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "cross2",
+          "type": "instruction_card",
+          "text": "STEP 2 — MEASURE THE MOVEMENT",
+          "x": 730,
+          "y": 88,
+          "width": 708,
+          "height": 171,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The change is ΔV = V∞−V0. At t=τ, the capacitor has made (1−e⁻¹)=63.212% of this movement, regardless of whether ΔV is positive or negative.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "crossEquation",
+          "type": "equation",
+          "text": "How to locate one time constant on any step",
+          "x": 22,
+          "y": 279,
+          "width": 1416,
+          "height": 135,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "v_C(\\tau)=V_\\infty+(V_0-V_\\infty)e^{-1}=V_0+0.63212(V_\\infty-V_0)",
+            "pointSize": 17,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "cross3",
+          "type": "instruction_card",
+          "text": "STEP 3 — FIND THE SAMPLE CROSSING",
+          "x": 22,
+          "y": 430,
+          "width": 688,
+          "height": 181,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Locate the 63.2% threshold in the sampled CH2 waveform, interpolate between adjacent samples, and subtract the CH1 input threshold crossing time. This is a graphical estimate of τ.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "cross4",
+          "type": "instruction_card",
+          "text": "STEP 4 — WHY LEAST SQUARES CAN BE BETTER",
+          "x": 730,
+          "y": 430,
+          "width": 708,
+          "height": 181,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The crossing method uses a single threshold and is sensitive to noise, input-edge slew, and uncertain plateaus. A fit uses hundreds of sampled voltages and estimates asymptote as well as τ.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "crossEquation2",
+          "type": "equation",
+          "text": "The response after 5 time constants",
+          "x": 22,
+          "y": 631,
+          "width": 1416,
+          "height": 103,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "1-e^{-5}=0.993262\\approx99.33\\%",
+            "pointSize": 22,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "cross5",
+          "type": "instruction_card",
+          "text": "STUDENT EXERCISE",
+          "x": 22,
+          "y": 752,
+          "width": 688,
+          "height": 170,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Use 980 Ω and 571 nF. Calculate τ, 5τ and fc; then compare your 63.2% estimate with the least-squares τ from Page 05. Why can those values differ even when the RC model is correct?",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "cross6",
+          "type": "instruction_card",
+          "text": "METHOD NOTE — NOT FULLY INDEPENDENT",
+          "x": 730,
+          "y": 752,
+          "width": 708,
+          "height": 170,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Our 63.2% calculation uses the fitted asymptote and extrapolates the fitted amplitude back to the CH1 edge instant. The sampled threshold-crossing time is then interpolated. This is a useful cross-check, not an independent calibration.",
+            "tone": "Warning"
+          }
+        }
+      ]
+    },
+    {
+      "id": "least_squares",
+      "name": "07  FIT THEORY + DERIVATION",
+      "width": 1460,
+      "height": 1005,
+      "controls": [
+        {
+          "id": "derivationHeader",
+          "type": "label",
+          "text": "07  EXPONENTIAL LEAST-SQUARES  /  ONE NONLINEAR PARAMETER",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "derivationIntro",
+          "type": "label",
+          "text": "We do not simply take the logarithm of measured voltage: log transformation can amplify errors and needs a known final value. Instead we fit the original voltage samples directly.",
+          "x": 22,
+          "y": 81,
+          "width": 1416,
+          "height": 70,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "derivationEq1",
+          "type": "equation",
+          "text": "A general exponential model with three unknown parameters",
+          "x": 22,
+          "y": 169,
+          "width": 1416,
+          "height": 110,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "y_i=V_\\infty+A\\,e^{-t_i/\\tau}+\\varepsilon_i",
+            "pointSize": 21,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "derive1",
+          "type": "instruction_card",
+          "text": "1 — UNKNOWN PARAMETERS",
+          "x": 22,
+          "y": 296,
+          "width": 686,
+          "height": 184,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The desired τ appears inside the exponential (nonlinear). However for ANY fixed trial τ, the final voltage V∞ and coefficient A multiply known basis functions and are linear least-squares unknowns.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "derive2",
+          "type": "instruction_card",
+          "text": "2 — DEFINE A TRIAL BASIS",
+          "x": 729,
+          "y": 296,
+          "width": 709,
+          "height": 184,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "At trial τ: E[i]=exp(−t[i]/τ). Minimize SSE=Σ[y[i]−V∞−A·E[i]]² over V∞ and A. This is a two-column regression matrix X=[1,E] and target vector y.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "derivationEq2",
+          "type": "equation",
+          "text": "Solve the inner linear least-squares problem exactly",
+          "x": 22,
+          "y": 497,
+          "width": 1416,
+          "height": 124,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "A=\\frac{\\Sigma Ey-(\\Sigma E)(\\Sigma y)/N}{\\Sigma E^2-(\\Sigma E)^2/N},\\quad V_\\infty=\\frac{\\Sigma y-A\\Sigma E}{N}",
+            "pointSize": 16,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "derive3",
+          "type": "instruction_card",
+          "text": "3 — SEARCH ONLY OVER τ",
+          "x": 22,
+          "y": 639,
+          "width": 686,
+          "height": 180,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Evaluate SSE for 57 logarithmically spaced candidate τ values. Pick the lowest SSE neighborhood. Refine it using golden-section minimization in log(τ). No black-box optimizer is required.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "derive4",
+          "type": "instruction_card",
+          "text": "4 — REPEAT ON BOTH EDGE DIRECTIONS",
+          "x": 729,
+          "y": 639,
+          "width": 709,
+          "height": 180,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Determine transitions from CH1, keep complete half-cycles, and fit CH2 separately for each RISE and FALL. Compute τrise, τfall and mean τ; inspect residuals for mismatch.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "derive5",
+          "type": "instruction_card",
+          "text": "5 — FIT QUALITY AND INTERPRETATION",
+          "x": 22,
+          "y": 837,
+          "width": 1416,
+          "height": 150,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "For each transition, RMS residual=√(SSE/N) in volts. R²=1−SSE/SST. A low residual means the exponential describes the captured waveform; it does NOT prove the AD3 or RC components are calibrated.",
+            "tone": "Warning"
+          }
+        }
+      ]
+    },
+    {
+      "id": "source_walk",
+      "name": "08  ALGORITHM WALKTHROUGH",
+      "width": 1460,
+      "height": 981,
+      "controls": [
+        {
+          "id": "sourceHeader",
+          "type": "label",
+          "text": "08  READ THE EXACT JAVASCRIPT  /  RCStepAnalysis.mjs",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "sourceIntro",
+          "type": "label",
+          "text": "These snippets are taken from the implementation saved INSIDE this .wfpanel. Open Libraries → RCStepAnalysis.mjs to inspect, edit, and test the full source.",
+          "x": 22,
+          "y": 80,
+          "width": 1416,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "source1",
+          "type": "instruction_card",
+          "text": "STEP 1 — DETECT CH1 EDGES",
+          "x": 22,
+          "y": 171,
+          "width": 684,
+          "height": 186,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "edgesFromInput(ch1, rateHz, fHz)\nFind 10% and 90% plateaus; threshold at their midpoint.\nIdentify rising/falling CH1 crossings; enforce minimum spacing.\nReject weak/noisy square-wave inputs.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "source2",
+          "type": "instruction_card",
+          "text": "STEP 2 — FIND COMPLETE HALF-CYCLES",
+          "x": 731,
+          "y": 171,
+          "width": 707,
+          "height": 186,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "for (let k=0; k<edges.length-1; k++) {\n  const first=edge.index+3, last=next.index-3;\n  ... fitTransition(ch2, first, last, rateHz, direction);\n}\nWe exclude partial intervals and a few edge samples.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "source3",
+          "type": "instruction_card",
+          "text": "STEP 3 — BUILD EXPONENTIAL BASIS",
+          "x": 22,
+          "y": 376,
+          "width": 684,
+          "height": 187,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "const e=Math.exp(-(i-first)/(rateHz*tau));\nn++; sumE+=e; sumEE+=e*e;\nsumY+=y; sumEY+=e*y;\nNo arbitrary assumed final capacitor voltage is needed.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "source4",
+          "type": "instruction_card",
+          "text": "STEP 4 — SOLVE FOR FINAL VOLTAGE + A",
+          "x": 731,
+          "y": 376,
+          "width": 707,
+          "height": 187,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "const ssE=sumEE-sumE*sumE/n;\nconst amplitude=(sumEY-sumE*sumY/n)/ssE;\nconst finalV=(sumY-amplitude*sumE)/n;\nThe fit is linear in these two parameters when tau is fixed.",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "source5",
+          "type": "instruction_card",
+          "text": "STEP 5 — MINIMIZE SSE OVER TAU",
+          "x": 22,
+          "y": 582,
+          "width": 684,
+          "height": 187,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "const L=Math.log(minTau), H=Math.log(maxTau);\n// Coarse logarithmic search, then golden-section refinement.\n// Each trial calls solveAtTau(...); no external solver.\nreturn {...fitted, first,last,direction};",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "source6",
+          "type": "instruction_card",
+          "text": "STEP 6 — DERIVE RC + CUTOFF",
+          "x": 731,
+          "y": 582,
+          "width": 707,
+          "height": 187,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "const riseTau=avg(rises,'tauS');\nconst fallTau=avg(falls,'tauS');\nconst tau=avg(transitions,'tauS');\nconst fc=1/(2*Math.PI*tau);",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "source7",
+          "type": "instruction_card",
+          "text": "STEP 7 — CHECK RESIDUALS",
+          "x": 22,
+          "y": 787,
+          "width": 684,
+          "height": 169,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "const pred=finalV+amplitude*Math.exp(-t/tau);\nconst diff=samples[i]-pred;\nsse+=diff*diff;\nrmseV=Math.sqrt(sse/n);\nCompare CH2 measured vs fitted curve and plot residual.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "source8",
+          "type": "instruction_card",
+          "text": "BOUNDARIES YOU SHOULD UNDERSTAND",
+          "x": 731,
+          "y": 787,
+          "width": 707,
+          "height": 169,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The fit assumes first-order RC behavior and a square-wave stimulus. CH1 has a finite edge slope. Scope sample noise and offsets can bias τ. A single RC model will not explain ringing, nonlinear elements, or clipping.",
+            "tone": "Warning"
+          }
+        }
+      ]
+    },
+    {
+      "id": "notebook",
+      "name": "09  NOTEBOOK + EXPORT",
+      "width": 1460,
+      "height": 1090,
+      "controls": [
+        {
+          "id": "notebookHeader",
+          "type": "label",
+          "text": "09  EXPERIMENT NOTEBOOK  /  SEPARATE MODEL FROM MEASUREMENT",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "notebookCount",
+          "type": "label",
+          "text": "0 rows",
+          "x": 22,
+          "y": 81,
+          "width": 1416,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "stepNotebook",
+          "type": "experiment_table",
+          "text": "RC Step Response Records",
+          "x": 22,
+          "y": 148,
+          "width": 1416,
+          "height": 500,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Source|R Ω|C nF|Square Hz|τ model µs|τ rise µs|τ fall µs|τ mean µs|τ 63% µs|fc fit Hz|RMS mV|τ error %",
+            "initialRows": "",
+            "maxRows": 500,
+            "editable": false
+          }
+        },
+        {
+          "id": "exportStepNotebook",
+          "type": "button",
+          "text": "EXPORT CSV + JSON (UNIQUE NAMES)",
+          "x": 22,
+          "y": 668,
+          "width": 449,
+          "height": 67,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onExportClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "exportAD3Wave",
+          "type": "button",
+          "text": "EXPORT LAST REAL AD3 WAVEFORM",
+          "x": 489,
+          "y": 668,
+          "width": 484,
+          "height": 67,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onWaveExportClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "clearStepNotebook",
+          "type": "button",
+          "text": "CLEAR IN-MEMORY SESSION",
+          "x": 991,
+          "y": 668,
+          "width": 447,
+          "height": 67,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onClearClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "exportPath",
+          "type": "label",
+          "text": "No file written",
+          "x": 22,
+          "y": 751,
+          "width": 1416,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "notebookStatus",
+          "type": "label",
+          "text": "Status",
+          "x": 22,
+          "y": 825,
+          "width": 1416,
+          "height": 65,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "notebookInfo",
+          "type": "instruction_card",
+          "text": "WHAT IS ACTUALLY SAVED?",
+          "x": 22,
+          "y": 910,
+          "width": 1416,
+          "height": 167,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The .wfpanel is a portable executable LAB containing its diagrams, text, numerical methods, widgets and event assignments. Recorded results live in memory until CSV+JSON export. A physical waveform CSV contains actual sampled voltages. Exports are timestamped to avoid overwriting earlier sessions.",
+            "tone": "Information"
+          }
+        }
+      ]
+    },
+    {
+      "id": "comparison",
+      "name": "10  AC ↔ TRANSIENT + CHALLENGES",
+      "width": 1460,
+      "height": 1054,
+      "controls": [
+        {
+          "id": "compareHeader",
+          "type": "label",
+          "text": "10  JOIN THE TIME DOMAIN AND FREQUENCY DOMAIN",
+          "x": 22,
+          "y": 12,
+          "width": 1416,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "theoryComparison",
+          "type": "label",
+          "text": "Theory",
+          "x": 22,
+          "y": 89,
+          "width": 1416,
+          "height": 67,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "compareLesson",
+          "type": "label",
+          "text": "Fitted result",
+          "x": 22,
+          "y": 170,
+          "width": 1416,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "compareEq",
+          "type": "equation",
+          "text": "One first-order system, two ways to interrogate it",
+          "x": 22,
+          "y": 266,
+          "width": 1416,
+          "height": 117,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "RC\\frac{dv_C}{dt}+v_C=v_{in}\\quad\\Longleftrightarrow\\quad H(j\\omega)=\\frac{1}{1+j\\omega RC}",
+            "pointSize": 18,
+            "titleVisible": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "compare1",
+          "type": "instruction_card",
+          "text": "EXPERIMENT A — AC SINE RESPONSE",
+          "x": 22,
+          "y": 401,
+          "width": 688,
+          "height": 204,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "The AC Network Laboratory fits CH1 and CH2 sinusoids and measures gain and phase across frequency. Its cutoff occurs where |H|=1/√2 (−3.0103 dB). Previous physical results were near 284–285 Hz.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "compare2",
+          "type": "instruction_card",
+          "text": "EXPERIMENT B — STEP TRANSIENT",
+          "x": 729,
+          "y": 401,
+          "width": 709,
+          "height": 204,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "This laboratory finds CH1 square-wave transitions and fits CH2 exponential responses. The measured τ implies fc=1/(2πτ). This predicts a frequency property using only a time-domain experiment.",
+            "tone": "Information"
+          }
+        },
+        {
+          "id": "acPrediction",
+          "type": "label",
+          "text": "AC theory prediction",
+          "x": 22,
+          "y": 628,
+          "width": 1416,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "compare3",
+          "type": "instruction_card",
+          "text": "DISCUSSION QUESTIONS",
+          "x": 22,
+          "y": 721,
+          "width": 688,
+          "height": 207,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Why do rising and falling edges have similar τ? Does changing square-wave amplitude change τ in a linear circuit? What happens to the fit if 1/2 period is too short? Which differences arise from noise, finite input rise time, component tolerance and instrument bandwidth?",
+            "tone": "Procedure"
+          }
+        },
+        {
+          "id": "compare4",
+          "type": "instruction_card",
+          "text": "MEASUREMENT INTEGRITY",
+          "x": 729,
+          "y": 721,
+          "width": 709,
+          "height": 207,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "body": "Theoretical values come from entered R and C; synthetic results come from generated equations; AD3 results come from physically captured samples. WaveForms comparisons use the same AD3 but a separate analysis path, not an independent calibration standard.",
+            "tone": "Warning"
+          }
+        },
+        {
+          "id": "showChallengeAnswer",
+          "type": "button",
+          "text": "CALCULATE CURRENT R,C ANSWER",
+          "x": 22,
+          "y": 951,
+          "width": 530,
+          "height": 61,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAnswerClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "toolTip": "Runs on click only, never on page load."
+          }
+        },
+        {
+          "id": "challengeAnswer",
+          "type": "label",
+          "text": "Explain the relationship before revealing the numerical result.",
+          "x": 568,
+          "y": 951,
+          "width": 870,
+          "height": 83,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "libraries": [
+    {
+      "name": "RCStepAnalysis.mjs",
+      "source": "/**\n * RCStepAnalysis.mjs — transparent, pure-JavaScript RC step response laboratory.\n * A REAL acquisition can be analyzed by this module; a MODEL is generated only\n * by syntheticCapture(). The returned source is always supplied by the caller.\n *\n * For every COMPLETE half-cycle found from CH1 edges, fit the measured CH2\n * waveform to v(t)=Vinf+A exp(-t/tau). Tau is nonlinear; Vinf and A are linear\n * at a fixed tau. We search one dimension (log(tau)), and analytically solve\n * the two linear least-squares coefficients at each trial tau.\n * No external optimizer or hidden native DSP function is used.\n */\nconst TWO_PI = 2 * Math.PI;\n/**\n * THEORY: a series R / shunt C obeys RC*(dv/dt) + v = Vin.\n * Tau=R*C is in seconds. Cnf is nanofarads, hence the 1e-9 conversion.\n * The cutoff frequency in hertz is 1/(2*pi*tau).\n */\nexport function theory(R, Cnf, fHz) {\n    if (!(Number.isFinite(R) && R >= 100 && R <= 100000 && Number.isFinite(Cnf) && Cnf >= 1 && Cnf <= 1000))\n        throw Error('R=100..100000 ohm; C=1..1000 nF required');\n    const tau = R * Cnf * 1e-9,\n        fc = 1 / (TWO_PI * tau);\n    if (!(Number.isFinite(fHz) && fHz >= 1 && fHz <= 2000)) throw Error('Step frequency must be 1..2000 Hz');\n    const half = 0.5 / fHz;\n    return {\n        R,\n        Cnf,\n        tau,\n        fc,\n        fHz,\n        halfPeriodS: half,\n        halfPeriodsPerTau: half / tau,\n        settle5TauS: 5 * tau,\n        decayAfterHalf: Math.exp(-half / tau)\n    };\n}\n/** Exact periodic steady-state response for a symmetric +/-V square wave. */\n/**\n * MATHEMATICAL MODEL: produce a steady-periodic capacitor response to a\n * +/-V square wave. MODEL output is NOT measurement data.\n * Optional deterministic pseudo-random voltage noise makes exercises repeat.\n */\nexport function syntheticCapture(options = {}) {\n    const R = Number((options.R === undefined ? 980 : options.R)),\n        Cnf = Number((options.Cnf === undefined ? 571 : options.Cnf)),\n        fHz = Number((options.fHz === undefined ? 100 : options.fHz));\n    const Vpk = Number((options.amplitudeVpk === undefined ? 0.5 : options.amplitudeVpk)),\n        noiseRmsMv = Number((options.noiseRmsMv === undefined ? 0 : options.noiseRmsMv));\n    const count = Number((options.count === undefined ? 8192 : options.count)),\n        rateHz = Number((options.rateHz === undefined ? 250000 : options.rateHz));\n    if (!Number.isInteger(count) || count < 1024 || count > 16384 || !(rateHz > 10 * fHz) ||\n        !(Vpk >= 0.2 && Vpk <= 1) || !(noiseRmsMv >= 0 && noiseRmsMv <= 50)) throw Error('Invalid synthetic capture settings');\n    const p = theory(R, Cnf, fHz),\n        half = p.halfPeriodS,\n        q = Math.exp(-half / p.tau);\n    const edgeFirst = 0.25 / fHz;\n    const upStart = -Vpk * (1 - q) / (1 + q),\n        downStart = -upStart;\n    const ch1 = [],\n        ch2 = [];\n    let rng = 34987;\n    function uniform() {\n        rng = (Math.imul(1664525, rng) + 1013904223) >>> 0;\n        return (rng + 0.5) / 4294967296;\n    }\n    function noise() {\n        return noiseRmsMv * 1e-3 * Math.sqrt(-2 * Math.log(uniform())) * Math.cos(TWO_PI * uniform());\n    }\n    for (let i = 0; i < count; i++) {\n        const t = i / rateHz,\n            part = Math.floor((t - edgeFirst) / half);\n        // Before the first rising transition, the preceding low half-cycle is already in steady state.\n        let vin,\n            vout;\n        if (t < edgeFirst) {\n            vin = -Vpk;\n            vout = -Vpk + (downStart + Vpk) * Math.exp(-(t + half - edgeFirst) / p.tau);\n        } else {\n            const age = t - (edgeFirst + part * half);\n            const rising = part % 2 === 0;\n            vin = rising ? Vpk : -Vpk;\n            vout = vin + ((rising ? upStart : downStart) - vin) * Math.exp(-age / p.tau);\n        }\n        ch1.push(vin + noise());\n        ch2.push(vout + noise());\n    }\n    return {\n        source: 'MODEL',\n        ch1,\n        ch2,\n        rateHz,\n        fHz,\n        R,\n        Cnf,\n        amplitudeVpk: Vpk,\n        noiseRmsMv,\n        description: 'SYNTHETIC: exact steady-state first-order RC response plus deterministic generated noise'\n    };\n}\nfunction finiteArray(a, name) {\n    if (!a || typeof a.length !== 'number' || a.length < 1024 || a.length > 65536) throw Error(name + ' must have 1024..65536 samples');\n    const o = new Array(a.length);\n    for (let i = 0; i < a.length; i++) {\n        const v = Number(a[i]);\n        if (!Number.isFinite(v)) throw Error(name + ' non-finite sample ' + i);\n        o[i] = v;\n    }\n    return o;\n}\nfunction quantile(sorted, q) {\n    return sorted[Math.min(sorted.length - 1, Math.floor(q * (sorted.length - 1)))];\n}\n/**\n * FIND THE TIME ORIGIN for each transient by detecting CH1 threshold crossings.\n * Interpolation between consecutive samples estimates the edge time. We use\n * CH1, not CH2, to locate the excitation so that response delay is measurable.\n */\nfunction edgesFromInput(vin, rateHz, fHz) {\n    const sorted = vin.slice().sort((a, b) => a - b);\n    const lo = quantile(sorted, .10),\n        hi = quantile(sorted, .90),\n        swing = hi - lo;\n    if (!(swing >= 0.15 && swing <= 3)) throw Error('CH1 input lacks a safe square-wave swing (>=0.15 V)');\n    const mid = (hi + lo) / 2;\n    const minSamples = Math.max(16, Math.floor(rateHz / fHz * .28));\n    const edges = [];\n    let last = -minSamples;\n    for (let i = 1; i < vin.length; i++) {\n        if (i - last < minSamples) continue;\n        const a = vin[i - 1] - mid,\n            b = vin[i] - mid;\n        if ((a < 0 && b >= 0) || (a > 0 && b <= 0)) {\n            const slope = vin[i] - vin[i - 1];\n            if (Math.abs(slope) < 0.02) continue;\n            // ignore chatter close to threshold\n            const frac = Math.max(0, Math.min(1, (mid - vin[i - 1]) / slope));\n            edges.push({\n                index: i,\n                timeS: (i - 1 + frac) / rateHz,\n                direction: slope > 0 ? 'RISE' : 'FALL'\n            });\n            last = i;\n        }\n    }\n    if (edges.length < 3) throw Error('Need >=3 CH1 transitions for complete rising and falling windows; adjust frequency/rate');\n    return {\n        edges,\n        lo,\n        hi,\n        mid,\n        swing\n    };\n}\n/** A trial tau; solve [1, exp(-t/tau)] using centered 2x2 normal equations. */\n/**\n * LEAST SQUARES AT A FIXED TIME CONSTANT.\n *\n *   y_i = Vinf + A*e_i, where e_i = exp(-t_i/tau).\n *   Unknowns Vinf and A enter linearly, so minimize sum(y_i - yhat_i)^2.\n *   The centered normal equations give:\n *\n *     A    = (sum(e*y)-sum(e)*sum(y)/N) /\n *            (sum(e*e)-sum(e)^2/N)\n *     Vinf = (sum(y)-A*sum(e))/N\n *\n * This function evaluates *one trial* tau and returns the residual SSE.\n * The outer optimizer changes tau; this inner calculation stays transparent.\n */\nexport function solveAtTau(samples, first, last, rateHz, tau) {\n    if (!(tau > 0 && last - first >= 20)) throw Error('Invalid exponential fit window');\n    let n = 0,\n        sumE = 0,\n        sumEE = 0,\n        sumY = 0,\n        sumEY = 0;\n    for (let i = first; i < last; i++) {\n        const e = Math.exp(-(i - first) / (rateHz * tau)),\n            y = samples[i];\n        n++;\n        sumE += e;\n        sumEE += e * e;\n        sumY += y;\n        sumEY += e * y;\n    }\n    const ssE = sumEE - sumE * sumE / n;\n    if (!(ssE > 1e-9)) return null;\n    const amplitude = (sumEY - sumE * sumY / n) / ssE;\n    const finalV = (sumY - amplitude * sumE) / n;\n    let sse = 0,\n        sst = 0,\n        peak = 0;\n    const mean = sumY / n;\n    for (let i = first; i < last; i++) {\n        const pred = finalV + amplitude * Math.exp(-(i - first) / (rateHz * tau));\n        const diff = samples[i] - pred;\n        sse += diff * diff;\n        sst += (samples[i] - mean) ** 2;\n        peak = Math.max(peak, Math.abs(diff));\n    }\n    return {\n        tauS: tau,\n        finalV,\n        amplitude,\n        initialV: finalV + amplitude,\n        sse,\n        n,\n        rmseV: Math.sqrt(sse / n),\n        rSquared: sst > 0 ? 1 - sse / sst : null,\n        peakResidualV: peak\n    };\n}\n/** Minimize SSE over log(tau), with linear Vinf, A estimated at each trial. */\n/**\n * NONLINEAR PARAMETER SEARCH, BUT ONLY IN ONE DIMENSION.\n *\n * Start with coarse log-spaced tau candidates, then narrow the best interval\n * using a golden-section search. Every candidate uses solveAtTau() to find\n * its own best Vinf and A. This avoids needing a black-box optimizer.\n *\n * The 63.2% threshold is inferred from the fitted Vinf and A; this makes its\n * crossing-time estimate a useful check, but not a fully independent method.\n */\nexport function fitTransition(samples, first, last, rateHz, direction) {\n    if (last - first < 80) throw Error('Too few usable samples in step transition');\n    const duration = (last - first) / rateHz;\n    const minTau = 2 / rateHz,\n        maxTau = duration * 0.75;\n    if (maxTau <= minTau * 3) throw Error('Step window too short');\n    const L = Math.log(minTau),\n        H = Math.log(maxTau),\n        count = 56;\n    let best = null,\n        bestI = 0;\n    for (let i = 0; i <= count; i++) {\n        const trial = solveAtTau(samples, first, last, rateHz, Math.exp(L + (H - L) * i / count));\n        if (trial && (!best || trial.sse < best.sse)) {\n            best = trial;\n            bestI = i;\n        }\n    }\n    if (!best) throw Error('No identifiable exponential fit');\n    let left = L + (H - L) * Math.max(0, bestI - 1) / count;\n    let right = L + (H - L) * Math.min(count, bestI + 1) / count;\n    const golden = (Math.sqrt(5) - 1) / 2;\n    let x1 = right - golden * (right - left),\n        x2 = left + golden * (right - left);\n    let q1 = solveAtTau(samples, first, last, rateHz, Math.exp(x1));\n    let q2 = solveAtTau(samples, first, last, rateHz, Math.exp(x2));\n    for (let i = 0; i < 42; i++) {\n        if (!q2 || (q1 && q1.sse <= q2.sse)) {\n            right = x2;\n            x2 = x1;\n            q2 = q1;\n            x1 = right - golden * (right - left);\n            q1 = solveAtTau(samples, first, last, rateHz, Math.exp(x1));\n        }\n        else {\n            left = x1;\n            x1 = x2;\n            q1 = q2;\n            x2 = left + golden * (right - left);\n            q2 = solveAtTau(samples, first, last, rateHz, Math.exp(x2));\n        }\n    }\n    let fitted = [best, q1, q2].filter(Boolean).sort((a, b) => a.sse - b.sse)[0];\n    if (!(fitted && Math.abs(fitted.amplitude) >= 0.06)) throw Error('CH2 exponential amplitude too small; verify capacitor node');\n    if ((direction === 'RISE' && fitted.amplitude >= 0) || (direction === 'FALL' && fitted.amplitude <= 0))\n        throw Error('CH2 direction opposite CH1 transition; verify connections');\n    // Crossing calculation happens in analyzeCapture(), where the CH1 edge\n    // instant is available. The threshold below is for the fitted sample origin.\n    const threshold = fitted.finalV + fitted.amplitude / Math.E;\n    let crossingS = null;\n    for (let i = first + 1; i < last; i++) {\n        const prev = samples[i - 1] - threshold,\n            cur = samples[i] - threshold;\n        if ((direction === 'RISE' && prev < 0 && cur >= 0) || (direction === 'FALL' && prev > 0 && cur <= 0)) {\n            const denominator = samples[i] - samples[i - 1];\n            if (Math.abs(denominator) > 1e-12) {\n                const frac = (threshold - samples[i - 1]) / denominator;\n                crossingS = (i - 1 + frac) / rateHz;\n            }\n            break;\n        }\n    }\n    // The fit is a new per-transition result. Append metadata directly rather\n    // than using object-spread syntax, which fails under the target QJSEngine.\n    fitted.first = first;\n    fitted.last = last;\n    fitted.direction = direction;\n    fitted.thresholdV = threshold;\n    fitted.crossing63S = crossingS;\n    return fitted;\n}\n/** Reconstruct one CH2 voltage using the fitted exponential coefficients. */\nexport function predict(fit, i, rateHz) {\n    return fit.finalV + fit.amplitude * Math.exp(-(i - fit.first) / (rateHz * fit.tauS));\n}\n/**\n * COMPLETE EXPERIMENT PIPELINE.\n * Validate genuine paired arrays -> detect input edges -> fit each full\n * rise/fall window -> average fitted tau -> infer fc = 1/(2*pi*tau).\n *\n * Model and hardware use identical analysis. Input `source` must identify\n * where the samples came from; the module never invents physical samples.\n */\nexport function analyzeCapture(capture) {\n    const ch1 = finiteArray(capture.ch1, 'CH1'),\n        ch2 = finiteArray(capture.ch2, 'CH2');\n    if (ch1.length !== ch2.length) throw Error('Scope channels must have paired equal-length samples');\n    const rateHz = Number(capture.rateHz),\n        fHz = Number(capture.fHz);\n    if (!(Number.isFinite(rateHz) && rateHz >= 10000 && rateHz <= 10000000 && Number.isFinite(fHz) && fHz >= 20 && fHz <= 200))\n        throw Error('Invalid acquired sample rate or step frequency');\n    if (rateHz / fHz < 60) throw Error('Need at least 60 samples per commanded cycle');\n    const e = edgesFromInput(ch1, rateHz, fHz);\n    const transitions = [];\n    for (let k = 0; k < e.edges.length - 1; k++) {\n        const edge = e.edges[k],\n            next = e.edges[k + 1];\n        if (edge.direction === next.direction) continue;\n        // Start 3 samples after CH1 threshold crossing to avoid edge slew / ringing.\n        const first = edge.index + 3,\n            last = next.index - 3;\n        if (last - first < 100) continue;\n        // Reject half periods implausibly short/long versus commanded frequency.\n        const half = (next.timeS - edge.timeS),\n            target = 0.5 / fHz;\n        if (half < target * .65 || half > target * 1.35) continue;\n        const fit = fitTransition(ch2, first, last, rateHz, edge.direction);\n        // 63% method must refer to the INPUT edge time, not the fit window's\n        // first sample. If data are noisy it is only a cross-check, not a fit input.\n        // Convert the fitted A at the first analysis sample back to the observed\n        // CH1 edge instant. Only then is 63.2% relative to the physical step.\n        const edgeAmplitude = fit.amplitude * Math.exp((first / rateHz - edge.timeS) / fit.tauS);\n        const edgeThreshold = fit.finalV + edgeAmplitude / Math.E;\n        let cross = null;\n        for (let i = first + 1; i < last; i++) {\n            const before = ch2[i - 1] - edgeThreshold,\n                after = ch2[i] - edgeThreshold;\n            if ((edge.direction === 'RISE' && before < 0 && after >= 0) ||\n                (edge.direction === 'FALL' && before > 0 && after <= 0)) {\n                const slope = ch2[i] - ch2[i - 1];\n                if (Math.abs(slope) > 1e-12) cross = (i - 1 + (edgeThreshold - ch2[i - 1]) / slope) / rateHz;\n                break;\n            }\n        }\n        const tau63 = cross === null ? null : cross - edge.timeS;\n        fit.edgeTimeS = edge.timeS;\n        fit.edgeIndex = edge.index;\n        fit.tau63S = tau63 !== null && tau63 > 0 && tau63 < half ? tau63 : null;\n        fit.halfPeriodS = half;\n        transitions.push(fit);\n    }\n    const rises = transitions.filter(x => x.direction === 'RISE'),\n        falls = transitions.filter(x => x.direction === 'FALL');\n    if (!rises.length || !falls.length) throw Error('A complete rising and falling transition are both required');\n    function avg(xs, key) {\n        return xs.reduce((t, x) => t + x[key], 0) / xs.length;\n    }\n    const riseTau = avg(rises, 'tauS'),\n        fallTau = avg(falls, 'tauS'),\n        tau = avg(transitions, 'tauS');\n    const tau63values = transitions.map(x => x.tau63S).filter(x => x !== null);\n    const pooledRMSE = Math.sqrt(transitions.reduce((sum, x) => sum + x.sse, 0) / transitions.reduce((sum, x) => sum + x.n, 0));\n    const p = theory(Number(capture.R), Number(capture.Cnf), fHz);\n    const phys = capture.source === 'AD3';\n    return {\n        source: phys ? 'AD3' : 'MODEL',\n        device: phys ? String(capture.device || 'AD3') : 'SYNTHETIC',\n        R: p.R,\n        Cnf: p.Cnf,\n        rateHz,\n        fHz,\n        count: ch1.length,\n        inputSwingV: e.swing,\n        theoryTauS: p.tau,\n        theoryFcHz: p.fc,\n        fitTauS: tau,\n        riseTauS: riseTau,\n        fallTauS: fallTau,\n        fitFcHz: 1 / (TWO_PI * tau),\n        tau63S: tau63values.length ? tau63values.reduce((a, b) => a + b, 0) / tau63values.length : null,\n        residualRmsV: pooledRMSE,\n        relativeResidualPct: 100 * pooledRMSE / e.swing,\n        errorPct: 100 * (tau / p.tau - 1),\n        transitions,\n        edgeCount: e.edges.length,\n        edges: e.edges,\n        ch1,\n        ch2,\n        halfPeriodTau: p.halfPeriodsPerTau\n    };\n}\n"
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: RC Step Response and Time Constant\n// │ GOAL: Connect the RC differential equation, exponential charge/discharge,\n// │       least-squares time-constant fitting, and a real AD3 Scope capture.\n// │ MODE: The MODEL is fully usable without hardware. AD3 is explicitly armed\n// │       only by a button after verified wiring; W1 shuts off after capture.\n// │ TRY FIRST: Page 03 -> RUN SYNTHETIC EXPERIMENT. No instrument is touched.\n// │ TRACE: stepCapture.clicked -> onCaptureClicked() -> capturePhysical() ->\n// │        Step.analyzeCapture() -> Step.fitTransition() -> Step.solveAtTau().\n// │ EDIT SAFELY: Change the synthetic noise value and watch residuals change.\n// │ NOTE: The supplied 980 ohm / 571 nF are operator-entered LCR values.\n// │ FULL LAB GUIDE: examples/guides/RCStepResponseLaboratory.md\n// └───────────────────────────────────────────────────────────────────────────\n\n/**\n * RC Step Response Laboratory — v0.2-dev.8.9.3.2.\n * A separate, self-contained .wfpanel; no changes to the validated AC Lab.\n * SOURCES: 'MODEL' => generated ideal RC + optional deterministic noise;\n *          'AD3'   => actual two-channel physical Scope sample arrays.\n * SAFETY: W1 is not touched on startup, simulation, parameter adjustment or\n * page switching. A real output requires an explicit wiring toggle and user\n * click. W1 uses only Square, 0 V offset, 0.5 V peak; stops automatically.\n * This is an educational experiment, not calibrated metrology or an interlock.\n */\n// READING MAP\n//   Step.theory()          -> tau = R*C; cutoff = 1/(2*pi*tau).\n//   runSynthetic()         -> generated circuit and controlled artificial noise.\n//   onCaptureClicked()     -> operator validation, then physical W1 setup.\n//   capturePhysical()      -> actual paired CH1 and CH2 AD3 samples.\n//   Step.analyzeCapture()  -> edge detection and exponential fitting.\n//   showCapture()          -> plots of samples, fitted curve and residuals.\n//   addResult()            -> Notebook rows labeled MODEL or AD3.\n// Each result includes the original data source; no synthetic fallback is made.\nvar Step = modules.load('RCStepAnalysis.mjs');\nvar state = {\n    busy: false,\n    pending: 0,\n    energized: false,\n    verified: false,\n    records: [],\n    lastModel: null,\n    lastPhysical: null,\n    display: 'MODEL',\n    lastResult: null,\n    sessionCounter: 0\n};\nconst COLORS = {\n    input: '#6fc7fb',\n    output: '#f4b66d',\n    fit: '#60ddb0',\n    residual: '#ef9bb6',\n    theory: '#b59dff'\n};\nconst SAMPLE_RATE = 250000,\n    SAMPLE_COUNT = 8192,\n    MAX_RECORDS = 500;\nfunction isPhysical() {\n    return String(Device.SN) !== 'DEMO' && String(Device.SN).length > 0;\n}\nfunction number(id, lo, hi) {\n    const value = Number(ui.get(id));\n    if (!Number.isFinite(value) || value < lo || value > hi) throw Error(id + ': expected ' + lo + ' .. ' + hi);\n    return value;\n}\n/**\n * Read the parameters from visible controls in their native displayed units.\n * Theory converts capacitance from nanofarads to farads inside Step.theory().\n * Keeping the parameter reading here makes both MODELS and hardware use the\n * same operator-entered component values.\n */\nfunction config() {\n    const R = number('rcR', 100, 100000),\n        Cnf = number('rcC', 1, 1000),\n        fHz = number('rcFreq', 40, 200),\n        Vpk = number('rcVpk', .2, .5),\n        noiseRmsMv = number('rcNoise', 0, 30),\n        p = Step.theory(R, Cnf, fHz);\n    return {\n        R,\n        Cnf,\n        fHz,\n        Vpk,\n        noiseRmsMv,\n        p\n    };\n}\nfunction status(s) {\n    ui.set('rcStatus', s);\n    ui.set('captureStatus', s);\n    ui.set('notebookStatus', s);\n    print('[RC Step] ' + s);\n}\nfunction safe(name, fn) {\n    try {\n        fn();\n    } catch (err) {\n        if (state.energized || state.pending) stopHardware('Acquisition error');\n        status('ERROR ' + name + ': ' + String(err));\n    }\n}\nfunction changeConfig() {\n    safe('settings', function () {\n        if (state.energized || state.pending) stopHardware('Settings changed');\n        ui.set('stepWiringVerified', false);\n        updateTheory();\n        runSynthetic(false);\n    });\n}\nfunction updateTheory() {\n    const s = config(),\n        p = s.p;\n    ui.set('theoryTau', 'RC = ' + (p.tau * 1e6).toFixed(2) + ' microseconds');\n    ui.set('theoryFc', '1/(2πRC) = ' + p.fc.toFixed(2) + ' Hz');\n    ui.set('theoryHalf', 'Half period / τ = ' + p.halfPeriodsPerTau.toFixed(2) + '   •   After 5τ: ' + (100 * (1 - Math.exp(-5))).toFixed(2) + '% settled');\n    ui.set('theoryComparison', 'Same physical RC:  τ = ' + (p.tau * 1e6).toFixed(2) + ' µs  ↔  fc = ' + p.fc.toFixed(2) + ' Hz');\n    ui.set('modelSource', 'THEORY ONLY • R ' + s.R + ' Ω / C ' + s.Cnf + ' nF / square ' + s.fHz + ' Hz • NOT a measurement');\n    ui.set('acPrediction', 'AC frequency-response prediction from entered R,C: fc = ' + p.fc.toFixed(2) + ' Hz  |  compare to the separately measured AC Laboratory cutoff.');\n}\nfunction stopHardware(reason) {\n    if (state.pending) {\n        try {\n            clearTimeout(state.pending);\n        } catch (ignore) { }\n        state.pending = 0;\n    }\n    let errors = [];\n    if (state.energized || state.busy) {\n        try {\n            if (Scope1.stop() === false) errors.push('Scope.stop() returned false');\n        } catch (e) {\n            errors.push('Scope: ' + String(e));\n        }\n        try {\n            if (Wavegen1.stop() === false) errors.push('Wavegen1.stop() returned false');\n        } catch (e) {\n            errors.push('W1: ' + String(e));\n        }\n    }\n    state.busy = false;\n    state.energized = false;\n    ui.set('hardwareOutput', errors.length ? 'STOP FAILED — verify device output manually: ' + errors.join('; ') : 'W1 OFF • no active laboratory waveform');\n    if (reason) status((errors.length ? 'STOP REQUEST ERROR' : 'W1 OFF') + ' • ' + reason);\n    return errors.length === 0;\n}\nfunction onStopClicked() {\n    stopHardware('Operator STOP');\n}\nfunction onWiringChanged() {\n    if (ui.get('stepWiringVerified') !== true && Number(ui.get('stepWiringVerified')) !== 1) {\n        if (state.energized || state.pending) stopHardware('Wiring verification revoked');\n    }\n}\n/**\n * HARDWARE PREFLIGHT: an output can be started only by an explicit operator\n * action after the wiring check. The software restrictions are conservative\n * laboratory limits, not a substitute for electrical safety.\n */\nfunction validatedPhysical() {\n    const s = config();\n    if (!isPhysical()) throw Error('Select an actual Physical Device; simulation never energizes W1');\n    if (ui.get('stepWiringVerified') !== true && Number(ui.get('stepWiringVerified')) !== 1) throw Error('Verify flywires and enable WIRING VERIFIED first');\n    if (s.R < 900) throw Error('For hardware R must be >=900 Ω (nominal 1 kΩ class)');\n    if (s.p.tau < 0.000070 || s.p.tau > 0.00120) throw Error('For this 250 kS/s exercise, RC must be 70..1200 µs');\n    if (s.fHz < 60 || s.fHz > 150) throw Error('Hardware square-wave frequency must be 60..150 Hz');\n    if (s.p.halfPeriodsPerTau < 6) throw Error('Choose a slower square wave: each half-cycle must be at least 6τ');\n    return s;\n}\nfunction onCaptureClicked() {\n    safe('physical capture', function () {\n        if (state.busy) throw Error('Capture already running. STOP before retrying');\n        const s = validatedPhysical();\n        state.busy = true;\n        try {\n            Wavegen1.Channel1.enable = true;\n            Wavegen1.Channel2.enable = false;\n            Wavegen1.Channel1.Mode.text = 'Simple';\n            Wavegen1.Channel1.Simple.Type.text = 'Square';\n            Wavegen1.Channel1.Simple.Frequency.value = s.fHz;\n            Wavegen1.Channel1.Simple.Amplitude.value = s.Vpk;\n            Wavegen1.Channel1.Simple.Offset.value = 0;\n            if (Wavegen1.Channel1.Simple.Type.text !== 'Square') throw Error('W1 rejected Square');\n            // Mark ownership BEFORE starting: even a failed start/readback requests OFF.\n            state.energized = true;\n            if (!Wavegen1.run()) throw Error('Wavegen1.run() failed: ' + Wavegen1.lastError);\n            const rb = Wavegen1.status(1);\n            if (rb && rb.carrierFunction && rb.carrierFunction !== 'Square') throw Error('W1 SDK readback is ' + rb.carrierFunction + ', expected Square');\n            ui.set('hardwareOutput', 'W1 ACTIVE • ' + s.fHz + ' Hz Square • ' + s.Vpk.toFixed(2) + ' Vpk • 0 V DC • auto-stop after capture');\n            status('PHYSICAL AD3 • Waiting 300 ms for the RC steady-periodic response; then acquiring CH1 and CH2');\n            state.pending = setTimeout(function () {\n                state.pending = 0;\n                try {\n                    capturePhysical(s);\n                } catch (err) {\n                    status('ERROR physical acquisition: ' + String(err));\n                }\n                finally {\n                    stopHardware('Physical capture finished — W1 automatically disabled');\n                }\n            }, 300);\n        } catch (err) {\n            stopHardware('Physical setup failed');\n            throw err;\n        }\n    });\n}\n/**\n * PHYSICAL CAPTURE — CH1 is the driven square wave; CH2 is the capacitor node.\n * The sample rate comes from the SDK readback, not merely from our request.\n * Step.analyzeCapture() analyzes only the acquired paired voltage arrays.\n */\nfunction capturePhysical(s) {\n    if (!state.energized) throw Error('W1 no longer armed');\n    Scope1.Time.Samples.value = SAMPLE_COUNT;\n    Scope1.Time.Rate.value = SAMPLE_RATE;\n    Scope1.Channel1.Range.value = 5;\n    Scope1.Channel2.Range.value = 5;\n    Scope1.Trigger.Trigger.text = 'None';\n    // no reliance on unverified trigger configuration\n    if (!Scope1.single()) throw Error('Scope.single() failed: ' + Scope1.lastError);\n    if (!Scope1.wait(3)) throw Error('Scope.wait() failed: ' + Scope1.lastError);\n    const ch1 = Array.from(Scope1.Channel1.getData(), Number),\n        ch2 = Array.from(Scope1.Channel2.getData(), Number);\n    const info = Scope1.captureInfo();\n    const actualRate = Number(info.sampleRateHz) || Number(Scope1.Time.Rate.real);\n    if (!(actualRate > 0)) throw Error('Scope did not report its actual sample rate');\n    const capture = {\n        source: 'AD3',\n        device: String(Device.SN),\n        ch1,\n        ch2,\n        rateHz: actualRate,\n        fHz: s.fHz,\n        R: s.R,\n        Cnf: s.Cnf,\n        amplitudeVpk: s.Vpk,\n        measuredAtISO: new Date().toISOString()\n    };\n    const result = Step.analyzeCapture(capture);\n    // NO MODEL fallback on failure\n    state.lastPhysical = capture;\n    addResult(result);\n    state.display = 'AD3';\n    showCapture(capture, result);\n    status('AD3 MEASURED • ' + (result.fitTauS * 1e6).toFixed(2) + ' µs • ' + result.transitions.length + ' complete edges • ' + (result.residualRmsV * 1000).toFixed(3) + ' mV residual');\n}\n/**\n * SIMULATION PATH — pure mathematics. Never enable an AWG or request a Scope\n * capture here. The deterministic noise source makes repeated demonstrations\n * reproducible, but repeated MODEL rows are not independent hardware trials.\n */\nfunction runSynthetic(record) {\n    const s = config();\n    if (s.p.tau < 0.000040 || s.p.halfPeriodsPerTau < 3)\n        throw Error('For the fixed 250 kS/s demonstration use τ >= 40 µs and each half-period >= 3τ; change R, C or frequency.');\n    const capture = Step.syntheticCapture({\n        R: s.R,\n        Cnf: s.Cnf,\n        fHz: s.fHz,\n        amplitudeVpk: s.Vpk,\n        noiseRmsMv: s.noiseRmsMv,\n        rateHz: SAMPLE_RATE,\n        count: SAMPLE_COUNT\n    });\n    const result = Step.analyzeCapture(capture);\n    state.lastModel = capture;\n    state.display = 'MODEL';\n    showCapture(capture, result);\n    if (record) addResult(result);\n    status('SYNTHETIC MODEL ONLY • fitted ' + (result.fitTauS * 1e6).toFixed(2) + ' µs; no device operations');\n}\nfunction onSyntheticClicked() {\n    safe('synthetic experiment', function () {\n        runSynthetic(true);\n    });\n}\nfunction onSyntheticSettingsChanged() {\n    if (state.display === 'MODEL') safe('synthetic update', function () {\n        updateTheory();\n        runSynthetic(false);\n    });\n}\nfunction onShowRealClicked() {\n    safe('show physical', function () {\n        if (!state.lastPhysical) throw Error('No genuine AD3 capture yet; use Page 04');\n        const r = Step.analyzeCapture(state.lastPhysical);\n        state.display = 'AD3';\n        showCapture(state.lastPhysical, r);\n    });\n}\nfunction onShowModelClicked() {\n    safe('show model', function () {\n        runSynthetic(false);\n    });\n}\nfunction formatTau(v) {\n    return v === null ? 'n/a' : (v * 1e6).toFixed(2) + ' µs';\n}\n/**\n * PRESENTATION — reconstructed voltage uses v(t)=Vinf+A*exp(-t/tau).\n * The plotted residual is actual/sample-model minus the reconstructed curve.\n * Small residuals demonstrate model agreement, not calibrated accuracy.\n */\nfunction showCapture(capture, result) {\n    state.lastResult = result;\n    const real = result.source === 'AD3',\n        source = real ? 'PHYSICAL AD3' : 'SYNTHETIC MODEL ONLY';\n    ui.set('analysisOrigin', source + ' • ' + result.count + ' paired samples • ' + result.rateHz.toFixed(1) + ' samples/s • ' + result.fHz + ' Hz');\n    ui.set('measuredTau', source + '  τ = ' + formatTau(result.fitTauS));\n    ui.set('measuredRise', 'RISING τ = ' + formatTau(result.riseTauS));\n    ui.set('measuredFall', 'FALLING τ = ' + formatTau(result.fallTauS));\n    ui.set('measured63', '63.2% CROSSING = ' + formatTau(result.tau63S));\n    ui.set('measuredFc', 'FROM FIT:  fc = ' + result.fitFcHz.toFixed(2) + ' Hz');\n    ui.set('measuredResidual', 'FIT RESIDUAL ' + (result.residualRmsV * 1000).toFixed(3) + ' mV RMS  •   ' + result.relativeResidualPct.toFixed(3) + '% of CH1 swing');\n    ui.set('measuredError', 'vs ENTERED R,C: ' + result.errorPct.toFixed(2) + '% τ error  •   ' + result.transitions.length + ' complete transitions');\n    ui.set('measurementCaution', (real ? 'AD3 Scope samples, not a simulated waveform. ' : 'Generated mathematical samples, not AD3 data. ') +\n        'R and C are operator-entered values. Residual is model mismatch, NOT calibrated instrument accuracy.');\n    const { ch1, ch2, rateHz } = capture;\n    const x = [],\n        a = [],\n        b = [],\n        step = Math.max(1, Math.floor(ch1.length / 650));\n    for (let i = 0; i < ch1.length; i += step) {\n        x.push(i * 1000 / rateHz);\n        a.push(ch1[i]);\n        b.push(ch2[i]);\n    }\n    for (const id of ['stepWavePlot', 'stepPhysicalPlot']) {\n        plots.clear(id);\n        plots.configure(id, {\n            title: source + ' • CH1 square wave and CH2 capacitor voltage',\n            chartType: 'XY',\n            xLabel: 'Time (ms)',\n            yLabel: 'Voltage (V)',\n            showLegend: true,\n            showGrid: true,\n            xAuto: true,\n            yAuto: true\n        });\n        plots.setSeries(id, 'CH1 input ' + source, x, a, {\n            color: COLORS.input,\n            width: 1.5\n        });\n        plots.setSeries(id, 'CH2 output ' + source, x, b, {\n            color: COLORS.output,\n            width: 2.1\n        });\n    }\n    const tr = result.transitions[0],\n        start = tr.first,\n        end = tr.last,\n        indices = [],\n        sample = [],\n        fitted = [],\n        residual = [];\n    const inc = Math.max(1, Math.floor((end - start) / 520));\n    for (let i = start; i < end; i += inc) {\n        const fit = Step.predict(tr, i, rateHz);\n        indices.push((i / rateHz - tr.edgeTimeS) * 1000);\n        sample.push(ch2[i]);\n        fitted.push(fit);\n        residual.push((ch2[i] - fit) * 1000);\n    }\n    plots.clear('stepFitPlot');\n    plots.configure('stepFitPlot', {\n        title: source + ' • ' + tr.direction + ' measured vs exponential fit',\n        chartType: 'XY',\n        xLabel: 'Time since CH1 edge (ms)',\n        yLabel: 'CH2 voltage (V)',\n        showLegend: true,\n        showGrid: true,\n        xAuto: true,\n        yAuto: true\n    });\n    plots.setSeries('stepFitPlot', 'CH2 samples', indices, sample, {\n        color: COLORS.output,\n        width: 1.2\n    });\n    plots.setSeries('stepFitPlot', 'Exponential least-squares fit', indices, fitted, {\n        color: COLORS.fit,\n        width: 2.6\n    });\n    plots.clear('stepResidualPlot');\n    plots.configure('stepResidualPlot', {\n        title: source + ' • CH2 sample minus fit',\n        chartType: 'XY',\n        xLabel: 'Time since CH1 edge (ms)',\n        yLabel: 'Residual (mV)',\n        showLegend: true,\n        showGrid: true,\n        xAuto: true,\n        yAuto: true\n    });\n    plots.setSeries('stepResidualPlot', 'Residuals', indices, residual, {\n        color: COLORS.residual,\n        width: 1.5\n    });\n    ui.set('transitionDetail', tr.direction + ' edge • V∞ ' + tr.finalV.toFixed(4) + ' V • A ' + tr.amplitude.toFixed(4) + ' V • τ ' +\n        (tr.tauS * 1e6).toFixed(2) + ' µs • R² ' + (tr.rSquared === null ? 'n/a' : tr.rSquared.toFixed(8)));\n    ui.set('compareLesson', 'THEORY: τ=' + formatTau(result.theoryTauS) + ' → fc=' + result.theoryFcHz.toFixed(2) + ' Hz    |    ' +\n        source + ': τ=' + formatTau(result.fitTauS) + ' → fc=' + result.fitFcHz.toFixed(2) + ' Hz');\n}\nfunction rowValues(r) {\n    return [\n        r.source,\n        String(r.R),\n        String(r.Cnf),\n        String(r.fHz),\n        (r.theoryTauS * 1e6).toFixed(2),\n        (r.riseTauS * 1e6).toFixed(2),\n        (r.fallTauS * 1e6).toFixed(2),\n        (r.fitTauS * 1e6).toFixed(2),\n        r.tau63S === null ? 'n/a' : (r.tau63S * 1e6).toFixed(2),\n        r.fitFcHz.toFixed(2),\n        (r.residualRmsV * 1000).toFixed(3),\n        r.errorPct.toFixed(2)\n    ];\n}\n/**\n * NOTEBOOK — save small fit summaries, not thousands of duplicate raw samples.\n * Separate source labels are retained in each exported record. Real waveforms\n * have an independent CSV export so the original samples remain auditable.\n */\nfunction addResult(result) {\n    if (state.records.length >= MAX_RECORDS) throw Error('Notebook is full: export and clear');\n    // Keep numerical summaries, never duplicate 8192-sample arrays in the table/report.\n    // QJSEngine compatibility: copy only scalar/result metadata. Object-rest\n    // and object-spread syntax are not accepted by the target script engine.\n    const summary = {};\n    for (const key of Object.keys(result)) {\n        if (key !== 'transitions' && key !== 'edges' && key !== 'ch1' && key !== 'ch2') summary[key] = result[key];\n    }\n    summary.transitions = result.transitions.map(function (t) {\n        const compact = {};\n        for (const key of Object.keys(t)) {\n            if (key !== 'first' && key !== 'last' && key !== 'crossing63S' && key !== 'edgeIndex') compact[key] = t[key];\n        }\n        return compact;\n    });\n    state.records.push(summary);\n    ui.set('stepNotebook', state.records.map(rowValues));\n    const countAD3 = state.records.filter(r => r.source === 'AD3').length;\n    ui.set('notebookCount', 'SESSION: ' + state.records.length + ' rows • ' + countAD3 + ' genuine AD3 / ' + (state.records.length - countAD3) + ' synthetic');\n}\nfunction exportStem() {\n    // Collision-resistant within this Panel instance; no overwrite of earlier experiment files.\n    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\\..*/, '').replace('T', '_');\n    state.sessionCounter++;\n    return 'rc_step_' + stamp + '_' + String(state.sessionCounter).padStart(3, '0');\n}\nfunction onExportClicked() {\n    safe('export notebook', function () {\n        if (!state.records.length) throw Error('No records. RUN SYNTHETIC or CAPTURE AD3 first');\n        const stem = exportStem(),\n            rows = [[\n                'Source',\n                'R_ohm',\n                'C_nF',\n                'Frequency_Hz',\n                'Tau_theory_us',\n                'Tau_rise_us',\n                'Tau_fall_us',\n                'Tau_fit_us',\n                'Tau_63pct_us',\n                'Cutoff_from_fit_Hz',\n                'Residual_RMS_mV',\n                'Tau_error_pct'\n            ]].concat(state.records.map(rowValues));\n        const path = FileIO.dataPath(stem + '.csv'),\n            json = FileIO.dataPath(stem + '.json');\n        if (!FileIO.writeCsv(path, rows)) throw Error(FileIO.lastError);\n        if (!FileIO.writeJson(json, {\n            schema: 1,\n            app: 'WFScript',\n            lab: 'RC Step Response',\n            exportedAt: new Date().toISOString(),\n            note: 'MODEL rows are generated; AD3 rows are real Scope measurements. Entered R/C are not independently verified.',\n            records: state.records\n        })) throw Error(FileIO.lastError);\n        ui.set('exportPath', 'SAVED ' + path + ' and ' + json);\n        status('Exported ' + state.records.length + ' observations without overwriting earlier exports');\n    });\n}\nfunction onWaveExportClicked() {\n    safe('physical waveform export', function () {\n        const c = state.lastPhysical;\n        if (!c) throw Error('No AD3 waveform; synthetic samples cannot be exported as real hardware');\n        const rows = [['Time_s', 'CH1_Vin_V', 'CH2_Vcap_V']];\n        for (let i = 0; i < c.ch1.length; i++)rows.push([(i / c.rateHz).toFixed(9), c.ch1[i].toFixed(8), c.ch2[i].toFixed(8)]);\n        const path = FileIO.dataPath(exportStem() + '_AD3_waveform.csv');\n        if (!FileIO.writeCsv(path, rows)) throw Error(FileIO.lastError);\n        ui.set('exportPath', 'PHYSICAL WAVEFORM CSV: ' + path);\n        status('Exported ' + c.ch1.length + ' paired REAL AD3 samples');\n    });\n}\nfunction onClearClicked() {\n    safe('clear notebook', function () {\n        if (state.energized || state.busy) throw Error('STOP hardware before clearing');\n        state.records = [];\n        state.lastPhysical = null;\n        ui.set('stepNotebook', []);\n        ui.set('notebookCount', 'SESSION: 0 rows');\n        ui.set('exportPath', 'No files removed; previously exported files remain saved');\n        if (state.display === 'AD3') runSynthetic(false);\n        status('Notebook cleared, previous exports preserved');\n    });\n}\nfunction onAnswerClicked() {\n    safe('student challenge', function () {\n        const p = config().p;\n        ui.set('challengeAnswer', 'For R=' + p.R + ' Ω and C=' + p.Cnf + ' nF, τ=' + formatTau(p.tau) +\n            ', 5τ=' + (p.settle5TauS * 1000).toFixed(3) + ' ms and fc=' + p.fc.toFixed(2) + ' Hz. Half-period/τ=' +\n            p.halfPeriodsPerTau.toFixed(2) + '. Compare observed rising/falling fits and explain any disagreement.');\n    });\n}\nfunction onInitialize() {\n    try {\n        ui.set('hardwareOutput', 'W1 OFF • model does not energize AD3');\n        ui.set('stepWiringVerified', false);\n        ui.set('stepNotebook', []);\n        ui.set('notebookCount', 'SESSION: 0 rows');\n        ui.set('exportPath', 'Exports use distinct timestamped file names in shared PanelData');\n        updateTheory();\n        runSynthetic(false);\n        status('READY • Start Page 03: RUN SYNTHETIC. Physical W1 remains OFF until Page 04 verified capture.');\n    } catch (e) {\n        status('INITIALIZATION ERROR ' + String(e));\n    }\n}\nfunction onShutdown() {\n    if (state.energized || state.busy || state.pending) stopHardware('Panel shutdown');\n}\n"
+}

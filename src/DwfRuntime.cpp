@@ -233,9 +233,11 @@ bool DwfRuntime::open(int deviceIndex, int configIndex, QString* error) {
 void DwfRuntime::close() {
     // Final best-effort DigitalOut shutdown if a caller bypassed PatternsBridge cleanup.
     // Bridge cleanup reports stop failures to the user before this fallback.
+    if (m_handle && !m_protocolOwner.isEmpty()) { QString ignored; protocolStop(&ignored); }
     if (m_handle && m_patternTouched) { QString ignored; patternStop(&ignored); }
     if (m_handle && fClose) fClose(m_handle);
     m_handle = 0;
+    m_protocolOwner.clear();m_logicActive=false;
     m_patternTouched = false; m_patternRunning = false; m_patternPin = -1; m_patternPinMask=0;
     m_scopeSamples = 0; m_scopeRateHz = 0;
     m_appliedScope = AppliedScope{};
@@ -1222,6 +1224,7 @@ bool DwfRuntime::patternStop(QString* error) {
 
 bool DwfRuntime::patternClockConfigure(int pin,double hz,double dutyPercent,bool start,
                                        double* actualHz,double* actualDuty,double* clockHz,QString* error) {
+    if(!m_protocolOwner.isEmpty()) {if(error)*error=QStringLiteral("Protocol ")+m_protocolOwner+QStringLiteral(" owns DigitalIn/Out; call Protocol1.stop() first");return false;}
     if(!connected() || !fPatternConfigure || !fPatternClockInfo || !fPatternCount ||
        !fPatternEnable || !fPatternOutput || !fPatternIdle || !fPatternType ||
        !fPatternDivider || !fPatternCounter || !fPatternCounterInit ||
@@ -1322,6 +1325,7 @@ bool DwfRuntime::patternClockConfigure(int pin,double hz,double dutyPercent,bool
 bool DwfRuntime::patternEncoderConfigure(int aPin,int bPin,int indexPin,int ppr,
                                          double rpm,bool reverse,bool start,
                                          double* actualRpm,double* clockHz,QString* error) {
+    if(!m_protocolOwner.isEmpty()) {if(error)*error=QStringLiteral("Protocol ")+m_protocolOwner+QStringLiteral(" owns DigitalIn/Out; call Protocol1.stop() first");return false;}
     if(!connected() || !fPatternConfigure || !fPatternClockInfo || !fPatternCount ||
        !fPatternEnable || !fPatternOutput || !fPatternIdle || !fPatternType ||
        !fPatternDivider || !fPatternDividerInit || !fPatternDividerInfo ||
@@ -1463,6 +1467,7 @@ bool DwfRuntime::patternEncoderConfigure(int aPin,int bPin,int indexPin,int ppr,
 bool DwfRuntime::patternSequenceConfigure(const QVector<int>& pins,
         const QStringList& bitStrings, double bitRateHz, bool start,
         double* actualRateHz, double* clockHz, int* repeatFactor, QString* error) {
+    if(!m_protocolOwner.isEmpty()) {if(error)*error=QStringLiteral("Protocol ")+m_protocolOwner+QStringLiteral(" owns DigitalIn/Out; call Protocol1.stop() first");return false;}
     if(!connected() || !fPatternConfigure || !fPatternClockInfo || !fPatternCount ||
        !fPatternEnable || !fPatternOutput || !fPatternIdle || !fPatternType ||
        !fPatternDivider || !fPatternDividerInit || !fPatternDividerInfo ||
@@ -1594,6 +1599,10 @@ bool DwfRuntime::patternSequenceConfigure(const QVector<int>& pins,
 }
 
 bool DwfRuntime::staticIOStop(QString* error) {
+    if(!m_protocolOwner.isEmpty()) {
+        if(error)*error=QStringLiteral("Protocol ")+m_protocolOwner+QStringLiteral(" owns the digital resources; stop Protocol1 first");
+        return false;
+    }
     if(m_patternRunning) {
         if(error)*error=QStringLiteral("Stop Patterns before changing StaticIO output ownership");
         return false;
@@ -1610,6 +1619,7 @@ bool DwfRuntime::staticIOStop(QString* error) {
 }
 
 bool DwfRuntime::staticIOApply(quint32 enableMask, quint32 outputMask, QString* error) {
+    if(!m_protocolOwner.isEmpty()) {if(error)*error=QStringLiteral("Protocol ")+m_protocolOwner+QStringLiteral(" owns the digital engines; call Protocol1.stop() first");return false;}
     if(m_patternRunning) {
         if(error)*error=QStringLiteral("Patterns currently owns a digital output; stop Patterns before StaticIO changes");
         return false;
@@ -1645,6 +1655,7 @@ bool DwfRuntime::staticIOApply(quint32 enableMask, quint32 outputMask, QString* 
 }
 
 bool DwfRuntime::setupLogic(int samples, double requestedRateHz, double* effectiveRateHz, QString* error) {
+    if(!m_protocolOwner.isEmpty()) {if(error)*error=QStringLiteral("Protocol ")+m_protocolOwner+QStringLiteral(" owns the digital engines; call Protocol1.stop() first");return false;}
     m_logicLastValidSamples=-1;
     m_logicLastStateCode=-1;
     m_logicLastBytesRequested=0;
@@ -1692,12 +1703,22 @@ bool DwfRuntime::setupLogic(int samples, double requestedRateHz, double* effecti
     return true;
 }
 bool DwfRuntime::logicStart(QString* error) {
+    if(!m_protocolOwner.isEmpty()) {
+        if(error)*error=QStringLiteral("Protocol owns DigitalIn; call Protocol1.stop() first");
+        return false;
+    }
     if (!connected() || !fLogicConfigure(m_handle, 0, 1)) return fail(error, QStringLiteral("Starting logic acquisition"));
+    m_logicActive=true;
     return true;
 }
 bool DwfRuntime::logicStop(QString* error) {
+    if(!m_protocolOwner.isEmpty()) {
+        if(error)*error=QStringLiteral("Protocol owns DigitalIn; call Protocol1.stop() first");
+        return false;
+    }
     if (!connected() || !fLogicConfigure(m_handle,0,0))
         return fail(error,QStringLiteral("Stopping DigitalIn acquisition"));
+    m_logicActive=false;
     return true;
 }
 bool DwfRuntime::logicWait(double seconds, const std::atomic_bool& stop, QString* error) {

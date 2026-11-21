@@ -4,6 +4,8 @@
 #include "panel/PanelAppearance.h"
 #include <QWidget>
 #include <QVariant>
+#include <QJsonArray>
+#include <QVariantMap>
 
 class QListWidget;
 class QTreeWidget;
@@ -12,6 +14,7 @@ class QTabWidget;
 class QTabBar;
 class QPoint;
 class QCheckBox;
+class QComboBox;
 class QLineEdit;
 class QSpinBox;
 class QDoubleSpinBox;
@@ -34,6 +37,11 @@ public:
     bool setPanelSize(const QSize& size);
     QScrollArea* canvasScrollArea() const { return m_scrollArea; }
     void setRunning(bool running);
+    // Removes editing controls in operator full screen without replacing the live canvas.
+    void setOperatorView(bool enabled);
+    bool operatorView() const { return m_operatorView; }
+    void setFitPageEnabled(bool enabled);
+    bool fitPageEnabled() const;
     bool running() const { return m_running; }
     bool focusMode() const { return m_focusMode; }
     bool toolboxShown() const;
@@ -48,10 +56,13 @@ public:
     void setPageAppearance(const PanelAppearance& appearance, const QString& pageBackground,
                            const QString& pageName);
     void setPanelLifecycle(const PanelLifecycleSettings& lifecycle);
+    void setPanelData(const QJsonArray& variables);
+    void setPanelDataRuntimeValue(const QString& name,const QVariant& value);
 signals:
     void pageAppearanceEdited(const QString& themeMode,const QString& panelBackground,
                               const QString& pageBackground,bool showDesignGrid);
     void panelLifecycleEdited(bool initializeEnabled,bool shutdownEnabled);
+    void panelDataEdited(const QJsonArray& variables);
     void panelLifecycleFunctionRequested(const QString& name);
     void newRequested();
     void loadRequested();
@@ -74,6 +85,8 @@ protected:
     bool eventFilter(QObject* watched,QEvent* event) override;
 private:
     void applyPageAppearance();
+    void scheduleFitPage();
+    void updateFitPage();
     PanelCanvas* m_canvas=nullptr;
     QTabBar* m_pageTabs=nullptr;
     // The last QTabBar tab is a non-document "+" action.
@@ -81,6 +94,8 @@ private:
     bool m_canUndoPage=false;
     bool m_canRedoPage=false;
     void showPageContextMenu(const QPoint& localPosition);
+    QWidget* m_editorToolbar=nullptr;
+    bool m_operatorView=false;
     QSplitter* m_splitter=nullptr;
     QScrollArea* m_scrollArea=nullptr;
     QWidget* m_toolboxPane=nullptr;
@@ -88,6 +103,9 @@ private:
     QPushButton* m_toolboxToggle=nullptr;
     QPushButton* m_propertiesToggle=nullptr;
     QPushButton* m_focusToggle=nullptr;
+    QPushButton* m_fitPageToggle=nullptr;
+    QLabel* m_fitPagePercent=nullptr;
+    bool m_fitPageScheduled=false;
     QPushButton* m_designToolsToggle=nullptr;
     QDialog* m_designToolsPalette=nullptr;
     bool m_focusMode=false;
@@ -106,9 +124,23 @@ private:
     QToolButton* m_examples=nullptr;
     QPushButton *m_run=nullptr,*m_stop=nullptr,*m_add=nullptr,*m_delete=nullptr;
     QPushButton *m_undo=nullptr,*m_redo=nullptr,*m_copy=nullptr,*m_paste=nullptr,*m_duplicate=nullptr;
-    QPushButton *m_align=nullptr,*m_arrange=nullptr,*m_snap=nullptr;
+    QPushButton *m_align=nullptr,*m_arrange=nullptr,*m_snap=nullptr,*m_guides=nullptr;
     QLabel* m_propertiesStatus=nullptr;
     QTabWidget* m_inspectorTabs=nullptr;
+    QWidget* m_bindingPanel=nullptr;
+    QComboBox* m_valueBinding=nullptr;
+    QLabel* m_bindingHint=nullptr;
+    QTreeWidget* m_dataTree=nullptr;
+    QPushButton* m_dataAdd=nullptr;
+    QPushButton* m_dataEdit=nullptr;
+    QPushButton* m_dataRemove=nullptr;
+    QJsonArray m_panelData;
+    QVariantMap m_runtimeData;
+    bool m_refreshingBinding=false;
+    void refreshDataTab();
+    void refreshValueBinding();
+    void editDataVariable(bool create,const QString& forcedType={});
+    void removeDataVariable();
     QListWidget* m_eventList=nullptr;
     QLineEdit* m_eventHandler=nullptr;
     QCheckBox* m_eventEnabled=nullptr;

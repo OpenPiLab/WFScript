@@ -206,6 +206,39 @@ private:
             const QString no=infer(colon+1,end,recursion+1);
             return !yes.isEmpty() && yes==no ? yes : QString();
         }
+        // Infer the four native communications object types from known factory
+        // calls without evaluating any JavaScript or probing network devices.
+        // e.g. const client=TCP.create({host:'127.0.0.1',port:5025}); client.
+        if(end-begin>=5 && t.at(begin).identifier &&
+           t.at(begin+1).text==QStringLiteral(".") &&
+           t.at(begin+2).identifier &&
+           t.at(begin+3).text==QStringLiteral("(") &&
+           t.at(end-1).text==QStringLiteral(")")) {
+            QString root=t.at(begin).text;
+            QString alias;
+            if(lookup(root,alias)) { if(alias.isEmpty())return {};root=alias; }
+            const QString method=t.at(begin+2).text;
+            if(root==QStringLiteral("FileIO") && method==QStringLiteral("readBuffer"))
+                return QStringLiteral("BinaryBuffer");
+            if(root==QStringLiteral("Binary")) {
+                if(method==QStringLiteral("stream"))return QStringLiteral("BinaryStream");
+                if(QStringList({"create","pattern","wordPattern","fromArray","fromHex",
+                                "fromUtf8","fromBase64","concat","wrapIEEE"}).contains(method))
+                    return QStringLiteral("BinaryBuffer");
+            }
+            if(root==QStringLiteral("BinaryBuffer")) {
+                if(method==QStringLiteral("decodeSamples"))return QStringLiteral("BinarySamples");
+                if(method==QStringLiteral("slice") || method==QStringLiteral("ieeePayload"))
+                    return QStringLiteral("BinaryBuffer");
+            }
+            if(root==QStringLiteral("BinaryStream") &&
+               (method==QStringLiteral("readIEEE") || method==QStringLiteral("readFixed") ||
+                method==QStringLiteral("readLengthPrefixed")))return QStringLiteral("BinaryBuffer");
+            if(root==QStringLiteral("Serial") && method==QStringLiteral("create"))return QStringLiteral("SerialConnection");
+            if(root==QStringLiteral("TCP") && method==QStringLiteral("create"))return QStringLiteral("TCPConnection");
+            if(root==QStringLiteral("TCP") && method==QStringLiteral("createServer"))return QStringLiteral("TCPServer");
+            if(root==QStringLiteral("UDP") && method==QStringLiteral("create"))return QStringLiteral("UDPConnection");
+        }
         // A member expression only: Root(.field)*. No calls or computed access.
         if (!t.at(begin).identifier) return {};
         QStringList parts={t.at(begin).text};

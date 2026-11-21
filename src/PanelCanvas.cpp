@@ -1,4 +1,5 @@
 #include "PanelCanvas.h"
+#include "panel/PanelSmartGuides.h"
 #include "PanelEventCatalog.h"
 #include "WaveformPlot.h"
 #include "widgets/WidgetRegistry.h"
@@ -18,6 +19,8 @@
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDragLeaveEvent>
 #include <QDropEvent>
 #include <QEvent>
 #include <QFrame>
@@ -43,7 +46,57 @@ constexpr auto kDragMime = "application/x-wfscript-control";
 constexpr auto kClipboardMime = "application/x-wfscript-panel-controls+json";
 constexpr int kGrid = 20;
 
+// Shared, saved widget behavior; not a replacement for per-type styling.
+// Hidden/disabled runtime controls remain editable and selectable in Design.
+void applySharedWidgetProperties(QWidget* widget,const PanelControl& def,
+                                 bool designMode,bool activePage=true) {
+    if(!widget)return;
+    widget->setToolTip(def.properties.value(QStringLiteral("toolTip")).toString());
+    widget->setEnabled(designMode || def.properties.value(QStringLiteral("runEnabled")).toBool(true));
+    if(activePage)
+        widget->setVisible(designMode || def.properties.value(QStringLiteral("runVisible")).toBool(true));
 }
+
+}
+
+// Design-only overlay is painted above native QWidget children, unlike
+// PanelCanvas::paintEvent (which is behind those children). It never takes
+// mouse input and never participates in panel serialization or Run mode.
+class PanelAlignmentOverlay final : public QWidget {
+public:
+    explicit PanelAlignmentOverlay(QWidget* parent) : QWidget(parent) {
+        setObjectName(QStringLiteral("panelAlignmentOverlay"));
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setAttribute(Qt::WA_NoSystemBackground);
+        hide();
+    }
+    void showGuides(const PanelSmartGuides::Match& m, const QRect& preview = {}) {
+        m_x = m.x.matched ? m.x.guide : -1;
+        m_y = m.y.matched ? m.y.guide : -1;
+        m_preview = preview;
+        setVisible(m_x >= 0 || m_y >= 0 || m_preview.isValid());
+        if (isVisible()) { raise(); update(); }
+    }
+    void clear() { m_x = -1; m_y = -1; m_preview = {}; hide(); }
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter painter(this);
+        QPen guidePen(QColor(31, 193, 222, 220), 1, Qt::DashLine);
+        guidePen.setCosmetic(true);
+        painter.setPen(guidePen);
+        if (m_x >= 0) painter.drawLine(m_x, 0, m_x, height() - 1);
+        if (m_y >= 0) painter.drawLine(0, m_y, width() - 1, m_y);
+        if (m_preview.isValid()) {
+            painter.setPen(QPen(QColor(31,193,222,225), 1, Qt::DashLine));
+            painter.setBrush(QColor(31,193,222,28));
+            painter.drawRect(m_preview.adjusted(0,0,-1,-1));
+        }
+    }
+private:
+    int m_x = -1;
+    int m_y = -1;
+    QRect m_preview;
+};
 
 // QUndoStack command stores a complete design-time snapshot. Each drag/resize
 // is one undo step, rather than a command for every mouse-move event.
@@ -99,18 +152,57 @@ PanelCanvas::PanelCanvas(QWidget* parent) : QWidget(parent) {
     m_outline=new QRubberBand(QRubberBand::Rectangle,this);
     m_outline->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_resize=new QFrame(this);
+    m_resize->setObjectName(QStringLiteral("panelResizeHandle"));
     m_resize->setFixedSize(13,13);
     m_resize->setCursor(Qt::SizeFDiagCursor);
     m_resize->setStyleSheet("background:#38a5e4;border:1px solid white;");
     m_resize->installEventFilter(this);
+    m_alignmentOverlay = new PanelAlignmentOverlay(this);
+    m_alignmentOverlay->setGeometry(rect());
     syncSelection();
     m_lastSnapshot=snapshot();
+}
+
+// Run-mode Fit Page changes only the presented pixels. Saved .wfpanel geometry,
+// event binding IDs and the current instrument runtime remain unmodified.
+QSize PanelCanvas::presentedSize() const {
+    return QSize(qMax(1,qRound(m_documentSize.width()*m_presentationScale)),
+                 qMax(1,qRound(m_documentSize.height()*m_presentationScale)));
+}
+
+void PanelCanvas::refreshPresentedGeometry() {
+    setFixedSize(presentedSize());
+    if (m_alignmentOverlay) m_alignmentOverlay->setGeometry(rect());
+    for(auto& item:m_items) {
+        const QRect& g=item.def.geometry;
+        if(m_presentationScale>=0.999) {
+            item.widget->setMinimumSize(25,22);
+            // In Design, live QWidget geometry is authoritative during dragging.
+            // During Run / return from Fit, restore persisted logical geometry.
+            if(!m_designMode)item.widget->setGeometry(g);
+        } else {
+            const qreal z=m_presentationScale;
+            item.widget->setMinimumSize(qMax(12,qRound(25*z)),qMax(12,qRound(22*z)));
+            item.widget->setGeometry(qRound(g.x()*z),qRound(g.y()*z),
+                                     qMax(1,qRound(g.width()*z)),qMax(1,qRound(g.height()*z)));
+        }
+    }
+    updateGeometry();
+}
+
+void PanelCanvas::setPresentationScale(qreal scale) {
+    const qreal newScale=qBound(0.15,scale,1.0);
+    if(m_designMode && newScale<0.999)return; // Dragging always edits document coordinates.
+    if(qAbs(newScale-m_presentationScale)<0.00001)return;
+    m_presentationScale=newScale;
+    refreshPresentedGeometry();
+    update();
 }
 
 QSize PanelCanvas::minimumContentSize() const {
     QSize minimum(320, 240);
     for (const auto& item : m_items) {
-        const QRect geometry = item.widget->geometry();
+        const QRect geometry = m_presentationScale<0.999 ? item.def.geometry : item.widget->geometry();
         minimum.setWidth(qMax(minimum.width(), geometry.x() + geometry.width()));
         minimum.setHeight(qMax(minimum.height(), geometry.y() + geometry.height()));
     }
@@ -118,16 +210,16 @@ QSize PanelCanvas::minimumContentSize() const {
 }
 
 bool PanelCanvas::setDocumentSize(const QSize& requested) {
-    // The widget and saved document must have precisely the same dimensions.
-    // Never clip an existing control when shrinking the document.
+    // The saved document retains its exact logical dimensions. Design displays
+    // those at 100%; Run may temporarily present a smaller Fit Page view.
+    // Never clip existing controls when shrinking the logical document.
     if (requested.width() < 320 || requested.height() < 240 ||
         requested.width() > 8192 || requested.height() > 8192 ||
         requested.width() < minimumContentSize().width() ||
         requested.height() < minimumContentSize().height()) return false;
     if (requested == m_documentSize) return true;
     m_documentSize = requested;
-    setFixedSize(m_documentSize);
-    updateGeometry();
+    refreshPresentedGeometry();
     emit documentChanged();
     recordChange(QStringLiteral("Resize panel"));
     return true;
@@ -142,18 +234,40 @@ void PanelCanvas::growDocumentToFit(const QRect& geometry) {
     if (required.width() > 8192 || required.height() > 8192 ||
         required == m_documentSize) return;
     m_documentSize = required;
-    setFixedSize(m_documentSize);
-    updateGeometry();
+    refreshPresentedGeometry();
     emit documentChanged();
 }
 
 void PanelCanvas::setDesignMode(bool design) {
+    clearAlignmentGuides();
     if (m_designMode==design) return;
+    if(!design) {
+        // Widgets may have been moved/resized using the visual designer.
+        // Preserve those coordinates before any presentation-only scaling.
+        for(auto& item:m_items)item.def.geometry=item.widget->geometry();
+    }
+    // Restore 100% geometry before returning to editable Design coordinates.
+    if(design) {
+        if(m_presentationScale<0.999) {
+            m_presentationScale=1.0;
+            refreshPresentedGeometry();
+        }
+        // Pages visited while zoomed out are retained as hidden QWidget trees.
+        // Reset those too, otherwise switching Pages after Stop shows stale
+        // shrunken widget geometry even though the document is back at 100%.
+        for(auto it=m_inactivePages.begin();it!=m_inactivePages.end();++it) {
+            for(auto& item:it.value().items) {
+                item.widget->setMinimumSize(25,22);
+                item.widget->setGeometry(item.def.geometry);
+            }
+        }
+    }
     m_designMode=design;
     if (!design) { m_marqueeSelecting=false; m_marquee->hide(); m_marqueeBase.clear(); }
-    // Display-only controls remain enabled so Qt does not grey out their text/graphics.
-    // Mouse interactions during design are intercepted by the event filter instead.
-    for (auto& item:m_items) item.widget->setEnabled(true);
+    // In Design mode, all widgets stay visible and enabled for editing.
+    // Saved Run-only visibility/enabled flags take effect only during Run.
+    for(auto& item:m_items)
+        applySharedWidgetProperties(item.widget,item.def,m_designMode);
     if (!design) { m_dragging=false; m_resizing=false; }
     syncSelection();update();
 }
@@ -207,7 +321,10 @@ QWidget* PanelCanvas::createWidget(const PanelControl& def) {
         // know individual widget types or their internal 0-1000 slider scales.
         if(PanelEventCatalog::carriesPersistentState(eventName))
             if(Item* item=findAnyId(id))
-                if(item->def.type!=QStringLiteral("experiment_table"))item->def.value=value.toDouble();
+                if(item->def.type!=QStringLiteral("experiment_table") &&
+                   item->def.type!=QStringLiteral("text_input") &&
+                   item->def.type!=QStringLiteral("ip_address_input"))
+                    item->def.value=value.toDouble();
         emit controlEvent(id,eventName,value);
     });
     if(!widget)return nullptr;
@@ -224,7 +341,11 @@ QWidget* PanelCanvas::createWidget(const PanelControl& def) {
     // In Run mode, the filter passes everything through unchanged.
     for(QWidget* child:widget->findChildren<QWidget*>())
         child->installEventFilter(this);
-    widget->show();
+    applySharedWidgetProperties(widget,def,m_designMode);
+    // Factory constructors often configure before the final canvas appearance
+    // is available. Notify after parenting without resetting instrument data.
+    QEvent themeChanged(QEvent::ThemeChange);
+    QApplication::sendEvent(widget,&themeChanged);
     return widget;
 }
 
@@ -252,6 +373,7 @@ bool PanelCanvas::addControl(const PanelControl& def) {
 }
 
 void PanelCanvas::clearControls() {
+    clearAlignmentGuides();
     selectWidget(nullptr);
     for (auto& item:m_items) delete item.widget;
     m_items.clear();
@@ -266,6 +388,7 @@ void PanelCanvas::clearControls() {
 // visibility and the active designer collection; it does not reconstruct
 // controls, replay event arguments, or maintain a parallel value cache.
 void PanelCanvas::resetPages() {
+    clearAlignmentGuides();
     clearControls();
     for (auto it=m_inactivePages.begin(); it!=m_inactivePages.end(); ++it)
         for (auto& item:it.value().items) delete item.widget;
@@ -278,6 +401,7 @@ void PanelCanvas::resetPages() {
 }
 
 void PanelCanvas::forgetPage(const QString& id) {
+    clearAlignmentGuides();
     // An active Page must be switched away from before it can be deleted.
     if (id==m_activePageId) return;
     auto it=m_inactivePages.find(id);
@@ -293,6 +417,7 @@ bool PanelCanvas::activatePage(const QString& id, const QJsonArray& controls,
         return false;
     }
     if (m_activePageId==id)return true;
+    clearAlignmentGuides();
     const QString oldPage=m_activePageId;
     // The first activation may adopt the existing demo canvas. On other
     // switches, park all existing widgets by hiding them, not deleting them.
@@ -303,7 +428,10 @@ bool PanelCanvas::activatePage(const QString& id, const QJsonArray& controls,
         m_dragging=false;
         m_resizing=false;
         m_dragOriginals.clear();
-        for(auto& item:m_items)item.widget->hide();
+        for(auto& item:m_items) {
+            if(m_designMode)item.def.geometry=item.widget->geometry();
+            item.widget->hide();
+        }
         PageWidgets previous;
         previous.items=std::move(m_items);
         previous.size=m_documentSize;
@@ -314,9 +442,9 @@ bool PanelCanvas::activatePage(const QString& id, const QJsonArray& controls,
         PageWidgets saved=m_inactivePages.take(id);
         m_items=std::move(saved.items);
         m_documentSize=saved.size;
-        setFixedSize(m_documentSize);
-        updateGeometry();
-        for(auto& item:m_items)item.widget->show();
+        refreshPresentedGeometry();
+        for(auto& item:m_items)
+            applySharedWidgetProperties(item.widget,item.def,m_designMode);
     } else if (oldPage.isEmpty() && !m_items.isEmpty()) {
         // Initial example document was built directly on the canvas.
         setDocumentSize(size.expandedTo(minimumContentSize()));
@@ -328,14 +456,16 @@ bool PanelCanvas::activatePage(const QString& id, const QJsonArray& controls,
                 PageWidgets saved=m_inactivePages.take(oldPage);
                 m_items=std::move(saved.items);
                 m_documentSize=saved.size;
-                setFixedSize(m_documentSize);
-                for(auto& item:m_items)item.widget->show();
+                refreshPresentedGeometry();
+                for(auto& item:m_items)
+            applySharedWidgetProperties(item.widget,item.def,m_designMode);
             }
             return false;
         }
         setDocumentSize(size.expandedTo(minimumContentSize()));
     }
     m_activePageId=id;
+    refreshPresentedGeometry(); // A newly activated Page may have different logical bounds.
     // An undo command may only operate on the Page for which it was created.
     // Discard per-canvas undo history on tab switches as the previous design did.
     resetDesignHistory();
@@ -381,9 +511,10 @@ PanelCanvas::Item* PanelCanvas::findId(const QString& id) {
     for (auto& item:m_items) if (item.def.id==id) return &item;
     return nullptr;
 }
-PanelControl PanelCanvas::readItem(const Item& item) {
+PanelControl PanelCanvas::readItem(const Item& item) const {
     PanelControl def=item.def;
-    def.geometry=item.widget->geometry();
+    // Do not persist the temporary Fit Page coordinates into a .wfpanel.
+    if(m_presentationScale>=0.999)def.geometry=item.widget->geometry();
     if(const auto* factory=WidgetRegistry::instance().factory(def.type))
         factory->readDefinition(item.widget,def);
     return def;
@@ -488,6 +619,7 @@ void PanelCanvas::syncSelection() {
     m_outline->raise();
     m_resize->move(r.right()-5,r.bottom()-5);
     if (m_selection.size()==1) m_resize->raise();
+    if (m_alignmentOverlay && m_alignmentOverlay->isVisible()) m_alignmentOverlay->raise();
 }
 
 bool PanelCanvas::updateSelected(const PanelControl& def) {
@@ -508,6 +640,7 @@ bool PanelCanvas::updateSelected(const PanelControl& def) {
     item->widget->setGeometry(def.geometry);
     if(const auto* factory=WidgetRegistry::instance().factory(def.type))
         factory->applyDefinition(item->widget,def);
+    applySharedWidgetProperties(item->widget,def,m_designMode);
     syncSelection();
     growDocumentToFit(item->widget->geometry());
     emit documentChanged();
@@ -559,6 +692,7 @@ bool PanelCanvas::validateJson(const QJsonArray& json, QString* error) {
     return parseControls(json,definitions,error);
 }
 bool PanelCanvas::fromJson(const QJsonArray& json,QString* error) {
+    clearAlignmentGuides();
     QVector<PanelControl> definitions;
     if(!parseControls(json,definitions,error))return false;
     clearControls();
@@ -611,6 +745,33 @@ void PanelCanvas::applyPlotCommand(const PlotCommand& command) {
         f->deliverPlotCommand(item->widget,command);
 }
 
+void PanelCanvas::clearAlignmentGuides() {
+    if (auto* overlay = static_cast<PanelAlignmentOverlay*>(m_alignmentOverlay)) overlay->clear();
+}
+
+void PanelCanvas::setAlignmentGuidesEnabled(bool enabled) {
+    m_alignmentGuidesEnabled = enabled;
+    if (!enabled) clearAlignmentGuides();
+}
+
+QVector<QRect> PanelCanvas::alignmentPeers() const {
+    QVector<QRect> peers;
+    peers.reserve(m_items.size());
+    for (const auto& item : m_items)
+        if (!m_selection.contains(item.widget)) peers.append(item.widget->geometry());
+    return peers;
+}
+
+QRect PanelCanvas::selectionBoundingGeometry() const {
+    QRect bounds;
+    bool initialized = false;
+    for (auto it = m_dragOriginals.cbegin(); it != m_dragOriginals.cend(); ++it) {
+        if (!initialized) { bounds = it.value(); initialized = true; }
+        else bounds = bounds.united(it.value());
+    }
+    return bounds;
+}
+
 bool PanelCanvas::eventFilter(QObject* watched,QEvent* e) {
     if (watched==m_resize && m_designMode) {
         auto* me=dynamic_cast<QMouseEvent*>(e);
@@ -623,12 +784,29 @@ bool PanelCanvas::eventFilter(QObject* watched,QEvent* e) {
                                    qMin(3000,8192-m_originalGeometry.x()));
             const int height=qBound(22,m_originalGeometry.height()+d.y(),
                                     qMin(3000,8192-m_originalGeometry.y()));
-            m_selected->setGeometry(QRect(m_originalGeometry.topLeft(),
-                QSize(m_snapToGrid?qMax(25,snap(width)):width,
-                      m_snapToGrid?qMax(22,snap(height)):height)));
+            int finalWidth = width;
+            int finalHeight = height;
+            PanelSmartGuides::Match guides;
+            if (m_alignmentGuidesEnabled && !(me->modifiers() & Qt::AltModifier)) {
+                const QRect proposed(m_originalGeometry.topLeft(), QSize(width,height));
+                guides = PanelSmartGuides::match(proposed, alignmentPeers(), 6, true);
+                if (guides.x.matched) finalWidth += guides.x.delta;
+                if (guides.y.matched) finalHeight += guides.y.delta;
+            }
+            if (m_snapToGrid) {
+                if (!guides.x.matched) finalWidth = qMax(25,snap(finalWidth));
+                if (!guides.y.matched) finalHeight = qMax(22,snap(finalHeight));
+            }
+            finalWidth=qBound(25,finalWidth,qMin(3000,8192-m_originalGeometry.x()));
+            finalHeight=qBound(22,finalHeight,qMin(3000,8192-m_originalGeometry.y()));
+            if (guides.x.matched && finalWidth!=width+guides.x.delta) guides.x.matched=false;
+            if (guides.y.matched && finalHeight!=height+guides.y.delta) guides.y.matched=false;
+            m_selected->setGeometry(QRect(m_originalGeometry.topLeft(),QSize(finalWidth,finalHeight)));
+            static_cast<PanelAlignmentOverlay*>(m_alignmentOverlay)->showGuides(guides);
             syncSelection();return true;
         }
         if (e->type()==QEvent::MouseButtonRelease && m_resizing) {
+            clearAlignmentGuides();
             m_resizing=false;
             if (m_selected) growDocumentToFit(m_selected->geometry());
             emit documentChanged();
@@ -659,6 +837,7 @@ bool PanelCanvas::eventFilter(QObject* watched,QEvent* e) {
         else {m_selected=w;syncSelection();updateHistorySelection();emit selectedChanged(true);setFocus(Qt::MouseFocusReason);}
         if (!m_selection.contains(w)) return true;
         m_dragging=true;
+        clearAlignmentGuides();
         m_dragOrigin=me->globalPosition().toPoint();
         m_originalGeometry=w->geometry();
         m_dragOriginals.clear();
@@ -667,11 +846,18 @@ bool PanelCanvas::eventFilter(QObject* watched,QEvent* e) {
     }
     if(e->type()==QEvent::MouseMove && me && m_dragging && m_dragOriginals.contains(w)) {
         QPoint delta=me->globalPosition().toPoint()-m_dragOrigin;
+        PanelSmartGuides::Match guides;
+        if (m_alignmentGuidesEnabled && !(me->modifiers() & Qt::AltModifier)) {
+            guides=PanelSmartGuides::match(selectionBoundingGeometry().translated(delta),alignmentPeers());
+            if (guides.x.matched) delta.rx()+=guides.x.delta;
+            if (guides.y.matched) delta.ry()+=guides.y.delta;
+        }
         if (m_snapToGrid) {
             const QPoint anchor=m_originalGeometry.topLeft();
-            delta=QPoint(snap(anchor.x()+delta.x())-anchor.x(),
-                         snap(anchor.y()+delta.y())-anchor.y());
+            if (!guides.x.matched) delta.setX(snap(anchor.x()+delta.x())-anchor.x());
+            if (!guides.y.matched) delta.setY(snap(anchor.y()+delta.y())-anchor.y());
         }
+        const QPoint unclamped=delta;
         int left=0,top=0;
         for (auto it=m_dragOriginals.cbegin();it!=m_dragOriginals.cend();++it) {
             left=qMin(left,it.value().x()+delta.x());
@@ -686,11 +872,15 @@ bool PanelCanvas::eventFilter(QObject* watched,QEvent* e) {
         }
         delta.setX(qMin(delta.x(),8192-maxRight));
         delta.setY(qMin(delta.y(),8192-maxBottom));
+        if (delta.x()!=unclamped.x()) guides.x.matched=false;
+        if (delta.y()!=unclamped.y()) guides.y.matched=false;
         for (auto it=m_dragOriginals.cbegin();it!=m_dragOriginals.cend();++it)
             it.key()->move(it.value().topLeft()+delta);
+        static_cast<PanelAlignmentOverlay*>(m_alignmentOverlay)->showGuides(guides);
         syncSelection();return true;
     }
     if(e->type()==QEvent::MouseButtonRelease && m_dragging) {
+        clearAlignmentGuides();
         m_dragging=false;
         for (QWidget* selected:std::as_const(m_selection)) growDocumentToFit(selected->geometry());
         m_dragOriginals.clear();
@@ -785,7 +975,45 @@ void PanelCanvas::mouseReleaseEvent(QMouseEvent* event) {
 void PanelCanvas::dragEnterEvent(QDragEnterEvent* event) {
     if(m_designMode && event->mimeData()->hasFormat(kDragMime))event->acceptProposedAction();
 }
+
+void PanelCanvas::dragMoveEvent(QDragMoveEvent* event) {
+    if (!m_designMode || !event->mimeData()->hasFormat(kDragMime)) {
+        clearAlignmentGuides();return;
+    }
+    const QString type=QString::fromUtf8(event->mimeData()->data(kDragMime));
+    const auto* factory=WidgetRegistry::instance().factory(type);
+    if (!factory) { clearAlignmentGuides(); return; }
+    const PanelControl def=factory->defaultDefinition(QStringLiteral("preview"));
+    QRect proposed(event->position().toPoint(),def.geometry.size());
+    proposed.moveLeft(qBound(0,proposed.x(),8192-proposed.width()));
+    proposed.moveTop(qBound(0,proposed.y(),8192-proposed.height()));
+    PanelSmartGuides::Match guides;
+    if (m_alignmentGuidesEnabled && !(event->modifiers() & Qt::AltModifier)) {
+        QVector<QRect> peers;
+        for (const auto& item : m_items) peers.append(item.widget->geometry());
+        guides=PanelSmartGuides::match(proposed,peers);
+        proposed.translate(guides.x.matched?guides.x.delta:0,guides.y.matched?guides.y.delta:0);
+    }
+    if (m_snapToGrid) {
+        if (!guides.x.matched) proposed.moveLeft(snap(proposed.x()));
+        if (!guides.y.matched) proposed.moveTop(snap(proposed.y()));
+    }
+    const QPoint before=proposed.topLeft();
+    proposed.moveLeft(qBound(0,proposed.x(),8192-proposed.width()));
+    proposed.moveTop(qBound(0,proposed.y(),8192-proposed.height()));
+    if (proposed.x()!=before.x()) guides.x.matched=false;
+    if (proposed.y()!=before.y()) guides.y.matched=false;
+    static_cast<PanelAlignmentOverlay*>(m_alignmentOverlay)->showGuides(guides,proposed);
+    event->acceptProposedAction();
+}
+
+void PanelCanvas::dragLeaveEvent(QDragLeaveEvent* event) {
+    clearAlignmentGuides();
+    event->accept();
+}
+
 void PanelCanvas::dropEvent(QDropEvent* event) {
+    clearAlignmentGuides();
     if(!m_designMode)return;
     const QString type=QString::fromUtf8(event->mimeData()->data(kDragMime));
     if (!supportedTypes().contains(type))return;
@@ -796,7 +1024,17 @@ void PanelCanvas::dropEvent(QDropEvent* event) {
     def.geometry.moveTopLeft(event->position().toPoint());
     def.geometry.moveTopLeft(QPoint(qBound(0,def.geometry.x(),8192-size.width()),
                                     qBound(0,def.geometry.y(),8192-size.height())));
-    if (m_snapToGrid) def.geometry.moveTopLeft(QPoint(snap(def.geometry.x()),snap(def.geometry.y())));
+    PanelSmartGuides::Match guides;
+    if (m_alignmentGuidesEnabled && !(event->modifiers() & Qt::AltModifier)) {
+        QVector<QRect> peers;
+        for (const auto& item : m_items) peers.append(item.widget->geometry());
+        guides=PanelSmartGuides::match(def.geometry,peers);
+        def.geometry.translate(guides.x.matched?guides.x.delta:0,guides.y.matched?guides.y.delta:0);
+    }
+    if (m_snapToGrid) {
+        if (!guides.x.matched) def.geometry.moveLeft(snap(def.geometry.x()));
+        if (!guides.y.matched) def.geometry.moveTop(snap(def.geometry.y()));
+    }
     def.geometry.moveTopLeft(QPoint(qBound(0,def.geometry.x(),8192-size.width()),
                                     qBound(0,def.geometry.y(),8192-size.height())));
     if (addControl(def)) event->acceptProposedAction();

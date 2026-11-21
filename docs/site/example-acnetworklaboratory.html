@@ -1,0 +1,94 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AC Network Laboratory — interactive simulation to physical AD3 measurements · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>AC Network Laboratory — interactive simulation to physical AD3 measurements</h1>
+<h2>Learning objective</h2>
+<p>Build, understand, and experimentally characterize <strong>first-order passive RC low-pass and high-pass filters</strong>. Compare theoretical complex transfer functions to real two-channel captures, document discrepancies, and produce reproducible results.</p>
+<p>This example is a <strong>ten-Page self-contained <code>.wfpanel</code></strong>. It is more than a drawing: it includes dynamic mathematical simulations, two illustrated breadboard maps, an explicit hardware preflight and W1 enable, single-shot and bounded multi-frequency AC gain/phase captures, comparisons against theory, CSV/JSON reports, lossless compression, and open-source JavaScript modules.</p>
+<h2>Parts, hardware and limits</h2>
+<ul>
+<li>Analog Discovery 3 with flywire harness and USB connection, computer with WFScript.</li>
+<li>Solderless breadboard and three short hookup leads (plus AD3 flywires).</li>
+<li><strong>1 kΩ resistor</strong> (typical 1/4 W) and <strong>100 nF non-polarized ceramic capacitor</strong>.</li>
+<li>The illustrated physical sample has <strong>R = 1000 Ω, C = 100 nF, fC ≈ 1591.55 Hz, τ = 100 μs</strong>.</li>
+<li>No AD3 V+/V− power supplies or external powered circuitry are required.</li>
+<li>Conservative generated sine signal: <strong>0.25–1.00 V peak</strong>, <strong>0 V offset</strong>, <strong>100 Hz–20 kHz</strong>. Do not increase until you understand the circuit and AD3 limits.</li>
+<li>For physical operation the Panel rejects R below <strong>900 Ω</strong> (accepting measured values of nominal 1 kΩ parts, such as 980 Ω). Software R/C values must match installed component values. <strong>The software cannot sense resistor/capacitor values or wire placement.</strong></li>
+</ul>
+<p>Official Digilent AD3 getting-started guide: <a href="https://files.digilent.com/manuals/WaveForms/3.24.4/start10.html">https://files.digilent.com/manuals/WaveForms/3.24.4/start10.html</a>. The AD3 has two differential Scope inputs and W1/W2 analog waveform outputs. The Panel uses W1 and CH1/CH2 only.</p>
+<h2>Build the low-pass circuit (Page 02)</h2>
+<p>Read the labeled diagram <strong>on Page 02</strong>. W1 OFF before constructing anything.</p>
+<ol>
+<li>Use the breadboard's left A–E group, where holes on <strong>one numbered row</strong> connect together. Different rows are isolated. Verify the board's actual hole pattern.</li>
+<li>Place the <strong>1 kΩ resistor from C7 to C13</strong> (in series, connecting VIN row 7 to VOUT row 13).</li>
+<li>Place the <strong>100 nF ceramic capacitor from D13 to D20</strong> (VOUT to GND). It is non-polarized.</li>
+<li><strong>W1 → A7; CH1+ → B7; CH2+ → B13.</strong></li>
+<li><strong>W1 GND → A20; CH1− → B20; CH2− → C20</strong> (same breadboard ground row).</li>
+<li>Inspect carefully for accidental shorts/bridges. Scope channels are differential, but here their negative inputs share the intended GND reference.</li>
+</ol>
+<p>For <strong>high-pass</strong> on Page 03, turn W1 OFF, disconnect the old series/shunt components, and <strong>swap their positions</strong>: 100 nF capacitor <strong>C7 → C13</strong>; 1 kΩ resistor <strong>D13 → D20</strong>. The AD3 leads remain the same. Select <strong>High-pass</strong> in the model before enabling physical output again.</p>
+<p><strong>Never</strong> connect W1 to AD3 supply pins, an externally powered breadboard, mains, or a digital input. The flywire hookup and common reference are specific to the default AD3 harness: do not assume BNC adapter or third-party harness wiring is identical. Use this in a supervised low-voltage lab.</p>
+<h2>Follow along</h2>
+<ol>
+<li><strong>Page 00 — START/MISSION:</strong> Read the equipment list, stages, and safety/provenance notes. Use Simulation mode initially.</li>
+<li><strong>Page 01 — THEORY + SIMULATE:</strong> Try Low-pass, 1000 Ω, 100 nF, and 1600 Hz. The model plots magnitude, phase, and time-domain input/output waveforms. Switch to High-pass and notice the sign of phase. The data is not collected by an AD3.</li>
+<li>Press <strong>ADD MODEL SWEEP TO NOTEBOOK</strong> to record theoretical frequency-response rows as clearly labeled MODEL values.</li>
+<li><strong>Page 02 or 03 — BUILD:</strong> Follow the component and flywire diagram for the selected topology. Make electrical connections with W1 OFF.</li>
+<li>In WFScript choose <strong>Device → Physical Device</strong> <em>before</em> running the Panel. Select the actual AD3 hardware and check the circuit again. On <strong>Page 04</strong>, toggle <strong>WIRING VERIFIED</strong> (an operator declaration, not an electrical interlock).</li>
+<li>Click <strong>ARM W1</strong> to explicitly enable the generated low-amplitude sine; if arming is rejected, follow the reported error. Choose a frequency and press <strong>CAPTURE CH1 + CH2</strong>. The Panel must use actual Scope CH1/CH2 sample arrays to create AD3 rows.</li>
+<li>Press <strong>RUN AD3 FREQUENCY SWEEP</strong> only after confirming that single capture works. The Panel changes W1 frequency one at a time, allows a settling delay, samples both Scope channels, computes a gain/phase pair, and <strong>disables W1 automatically</strong> at the end. The operator can press <strong>STOP W1 / ABORT</strong> at any time.</li>
+<li><strong>Page 05 — NOTEBOOK:</strong> Review the overlay plots: purple line is theoretical and green points are physical AD3 measurements. Table rows retain source, topology, component values, frequency, predictions, observed response, and error.</li>
+<li><strong>Pages 07–09 — LEARN THE FIT:</strong> Derive the linear least-squares equations, follow the JavaScript source step by step, and experiment with synthetic fractional-cycle, noise and harmonic data. Use the Real AD3 button only after a physical capture to inspect measured fit quality. More detail: <code>examples/guides/ACNetworkLeastSquares.md</code>.</li>
+<li>Export <strong>CSV + JSON</strong>. Optional actions export the last physical capture's raw paired samples or compress its data with <strong>Pako + base64-js</strong>, then verify lossless recovery. Output is written to <strong>FileIO.dataDirectory()</strong>, i.e. the WFScript application data folder, not automatically next to the <code>.wfpanel</code>.</li>
+<li><strong>Page 06 — CHALLENGES:</strong> Complete the conceptual questions and include waveform captures, wiring photo, raw table, Bode plots and discussion of uncertainty in a lab report.</li>
+</ol>
+<h2>Mathematical theory</h2>
+<p>For C in farads and f in hertz:</p>
+<p>[
+\tau=RC, \qquad f_c=\frac{1}{2\pi RC}
+]</p>
+<p>Low-pass, VOUT across capacitor:</p>
+<p>[
+H_{LP}(j\omega)=\frac{1}{1+j\omega RC}
+]</p>
+<p>High-pass, VOUT across resistor:</p>
+<p>[
+H_{HP}(j\omega)=\frac{j\omega RC}{1+j\omega RC}
+]</p>
+<p>Voltage gain is (|H|=V_{OUT,peak}/V_{IN,peak}), logarithmic gain is (20\log_{10}|H|) dB, and phase is the output phasor angle minus the input phasor angle. At the corner frequency, both networks have magnitude (1/\sqrt{2}) (−3.0103 dB); phase is −45° for the low-pass and +45° for the high-pass.</p>
+<p>The theoretical plots assume ideal components and a zero-impedance source. Actual observations may differ because of component tolerance, stray capacitance, oscilloscope loading, amplitude/phase noise, and limited sample duration.</p>
+<h2>How physical capture differs from theory</h2>
+<p>The native bridge obtains the last completed Scope CH1 and Scope CH2 sample arrays <strong>from one acquisition</strong>. <code>CaptureAnalysis.mjs</code> independently fits <code>offset + a·sin(2πft) + b·cos(2πft)</code> on each channel using the <strong>actual acquisition sampling rate</strong> and the commanded sine frequency. It derives gain from the ratio of fitted peaks and phase from the difference in fitted angles. This is more stable than seeking individual zero crossings in noisy, non-integer-cycle captures.</p>
+<p>It is still educational metrology. We do <strong>not</strong> independently verify the actual generator frequency or calibrate the AD3 channels. The method assumes a near-sinusoidal steady-state input with adequate input amplitude and output SNR. The script rejects insufficient amplitude, implausibly high passive gain, nonfinite captures, and many acquisition failures. If the user incorrectly connects the probes, the software cannot guarantee the connected circuit is safe or that the result is meaningful.</p>
+<h2>Measurement Notebook capacity (v0.2-dev.8.9.1 and later)</h2>
+<p>The Notebook on Page 05 now displays <strong>11 columns</strong> (Source, Topology, R, C, frequency, predicted gain, measured/model gain, gain in dB, predicted phase, observed phase, and gain error). It retains up to <strong>500 experiment records</strong> within one run; the general Experiment Data Table supports up to 32 columns and 2,000 rows. The corrected Panel requires a <strong>v0.2-dev.8.9.1 or later executable</strong> to load; v8.8 and v8.9 have an 8-column hard limit. Exports still preserve the complete measurement data and device/source provenance.</p>
+<h2>Importable JavaScript libraries</h2>
+<p>Embedded source modules (portable inside <code>.wfpanel</code>):</p>
+<ul>
+<li><code>CircuitLab.mjs</code> — project-authored ideal RC network theory and Bode/time synthesis; uses <strong>Fraction.js</strong> for exact rational sample grids.</li>
+<li><code>CaptureAnalysis.mjs</code> — project-authored measured two-channel sine fitting and error summaries.</li>
+<li><code>SignalPackage.mjs</code> — project-authored archival adapter invoking upstream <strong>Pako</strong> and <strong>base64-js</strong>, and upstream <strong>Fraction.js</strong>.</li>
+<li><code>vendor/fraction.mjs</code>, <code>vendor/pako.mjs</code>, <code>vendor/base64.mjs</code> — unchanged third-party algorithms already validated by WFScript DSP Studio. Their full required license notices are embedded in their module headers.</li>
+</ul>
+<p><code>Pako</code>/<code>base64-js</code> are used only on request, after an actual physical capture; ordinary model plots do not call hardware or write files. No network fetch or npm installation is required to open the Panel.</p>
+<h2>Make one small change</h2>
+<p>In Simulation mode, change R from 1000 Ω to 2200 Ω. The theoretical cutoff should drop from about 1591.5 Hz to about 723.4 Hz. Move the test frequency around the new corner and observe the Bode plots and phase. The <strong>physical breadboard</strong> must also use a 2.2 kΩ resistor if you later perform a comparable hardware measurement.</p>
+<h2>Safety and scope</h2>
+<p>The Panel explicitly guards W1 arming behind a physical-device check and a user-operated wiring confirmation; arming uses a bounded sine with 0 V DC offset. It stops on AD3 errors, operator STOP, sweep completion, and <code>onShutdown()</code>; the native PanelRuntime cleanup is an additional backstop. This is not a hard safety interlock. For circuits other than the supplied passive RC filters, verify voltage/current/current-source limits independently.</p>
+<h2>If something doesn't work</h2>
+<ul>
+<li><strong>No response in Simulation:</strong> Run the Panel, select the THEORY + SIMULATE Page, and inspect <code>measurementStatus</code>/Panel Console for errors. The model can run with no device.</li>
+<li><strong>W1 won't ARM:</strong> Select a Physical Device before Run Panel, verify wiring, and flip WIRING VERIFIED. The entered R must be at least 900 Ω (a measured nominal 1 kΩ part is acceptable); the software's component values must match physical parts.</li>
+<li><strong>No signal:</strong> Check W1 ↔ row 7, common GND ↔ row 20, CH1+ ↔ row 7, CH2+ ↔ row 13; use scope flywire pins, not DIO.</li>
+<li><strong>Physical gain or phase differs:</strong> Confirm measured channel peaks are plausible and output is connected to intended node. High-pass should be positive phase below cutoff, low-pass negative phase above cutoff. Check R/C tolerance and breadboard parasitics.</li>
+<li><strong>W1 stays on after a failure:</strong> Press STOP W1, then Stop/Design and disconnect the breadboard if safe. Do not assume a software stop alone is a safety-rated power disconnect.</li>
+<li><strong>Where did exports go?</strong> View the Directory shown on Page 05. The application uses its writable PanelData area; files do not become part of the <code>.wfpanel</code> project automatically.</li>
+</ul>
+<h2>Related files</h2>
+<ul>
+<li><code>examples/panels/ACNetworkLaboratory.wfpanel</code> — complete self-contained project.</li>
+<li><code>examples/source/ACNetworkLaboratory.js</code> — readable source embedded into the project.</li>
+<li><code>examples/libraries/CircuitLab.mjs</code> and <code>CaptureAnalysis.mjs</code> — numerical modules.</li>
+<li><code>tests/offline/ac_network_lab_mock.mjs</code> and <code>ac_network_modules.mjs</code> — deterministic simulated and numerical tests.</li>
+<li><code>tests/ac_network_lab_smoke.cpp</code> — Qt <code>QJSEngine</code>/Panel schema native smoke target (requires Qt6 build).</li>
+</ul>
+<h2>v0.2-dev.8.9.2 — fitting lessons and residual diagnostics</h2>
+<p>The seven original Pages are preserved and three new Pages are appended. Page 07 derives the centered least-squares method for <code>d+a sin+b cos</code>; Page 08 maps every stage to the actual embedded <code>CaptureAnalysis.mjs</code> implementation; Page 09 plots raw and fitted waveforms plus per-channel residuals from reproducible synthetic samples or actual AD3 CH1/CH2 captures. The new diagnostics include residual RMS in volts, residual percent of the fitted peak and R² (a descriptive goodness-of-fit number, <em>not</em> calibrated accuracy). The on-screen Notebook still has 11 columns; CSV appends four diagnostic columns for physical rows and JSON includes their named values. The synthetic generator never controls W1 or adds a physical row. Full theory and exercises are in <code>ACNetworkLeastSquares.md</code>.</p>
+<p class="doc-footnote">Source: <code>examples/guides/ACNetworkLaboratory.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

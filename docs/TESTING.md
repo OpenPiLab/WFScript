@@ -1,6 +1,8 @@
-# Testing WFScript v0.1
+# Testing WFScript v0.2
 
-## 1) Offline repository checks
+Separate **offline/source checks**, **native Qt tests**, **manual Windows GUI**, and **physical AD3 measurements**. A passing mock does not prove instrument behavior.
+
+## 1. Offline source checks (no Qt or AD3)
 
 From the repository root:
 
@@ -8,65 +10,52 @@ From the repository root:
 python tools/check_repo.py
 python tools/build_examples.py --check
 python tools/check_warning_cleanup.py
+python tools/check_release.py
+python tools/run_offline_tests.py   # Requires Node.js
 ```
 
-Optional JavaScript/offline example checks:
+The runner executes every Python and Node offline test in `tests/`. Run focused tests in the same directory during development, especially the AC/RC, protocol, visual bindings, communications, and Operator View contracts when changing those areas. The GitHub Actions job runs the release/source checks before compiling.
+
+## 2. Native Qt suite (requires Qt 6.9.2 kit)
+
+Set `WFSCRIPT_BUILD_TESTS=ON` in the Qt Creator CMake settings, reconfigure, and Build All. Then:
 
 ```powershell
-node tests/v5_6_70_4_table_limit_smoke.js
-node tests/v5_6_70_3_calibration_smoke.js
-node tests/v5_6_70_3_multitrace_smoke.js
-node tests/v5_6_68_operator_smoke.mjs
-node tests/v5_6_68_ad3_hardware_station_smoke.mjs
+ctest --test-dir C:\Dev\WFBuild-v02 --output-on-failure -j 2
 ```
 
-## 2) Warning-cleanup release verification
+The owner-validated RC1.5.14.10.8 build passed 116/116 native CTests in Qt 6.9.2 MinGW Release. This source-reorganization package still requires a clean-checkout build and CI before release tagging. Native tests include QJSEngine examples, widget factories, Panel runtime, test sequences, and Operator View GUI smoke checks. The CI source build is MSVC; owner's workstation is MinGW, so run both when practical.
 
-The first Windows Debug build of WFScript v0.1 succeeded but emitted 373 GCC
-warning messages, mainly repeated aggregate-initializer warnings. The warning
-cleanup candidate addresses the exact reported categories without disabling
-`-Wall`, `-Wextra`, or `-Wpedantic`.
+## 3. GUI acceptance
 
-**The revised files still require a Windows build.** In Qt Creator, run **Build
-All** with native tests enabled and inspect any remaining `warning:` messages.
-See [Warning cleanup audit](WARNING_CLEANUP_AUDIT.md) for the original counts and
-fixes.
+- Main Windows application title displays **WFScript v0.2** (no development suffix).
+- Open and run Getting Started, Panel Data Lab, AC Network Laboratory, RC Step Response Laboratory in Simulation.
+- Operator bar displays **WFScript / Panel Name / Current Page**, switching Pages without restarting the script. F11/Escape restores the development layout without terminating the active Panel.
+- Fit Page, Console/Watch right dock tabs, float/dock, word wrap, filters, per-run history, changed values, and Stop all work correctly.
+- Equation symbols render correctly on RC least-squares Page and with the Equation Symbol QA Panel.
+- Save/Load an existing v0.1 `.wfpanel` into a new path without corrupting it.
 
-## 3) Build native Qt tests
+## 4. Physical AD3 acceptance (safe wiring)
 
-Configure with:
+- Check physical device connection/disconnection, Wavegen OFF on stop/error, and Scope acquisition with a known safe signal.
+- Verify at least one AC network fit/residual capture and one RC step exponential capture; clearly label real versus synthetic output.
+- Confirm CSV/JSON export and a safe Stop/abort during a running acquisition.
+- Run relevant digital/protocol tests only with appropriate known wiring and safe levels.
 
-- `WFSCRIPT_BUILD_TESTS=ON`
+## 5. Release gate
 
-Then build all targets.
+Record the exact commit/tag, Qt version and kit, all test output, operator screenshots, AD3 steps actually performed, and any unresolved issues in the release checklist. Do **not** imply everything was Windows-tested merely because a source archive or GitHub CI workflow exists.
 
-## 4) Run the full native CTest suite
+### PowerShell note: Qt DLLs and CTest
 
-```powershell
-ctest --test-dir <your_build_directory> -j 2 --output-on-failure
-```
-
-**Previously validated source baseline (v5.7.0.12):**
-
-- 66 tests passed
-- 0 tests failed
-
-The renamed/repackaged v0.1 source needs its own clean build and re-test before tagging.
-
-## 5) Recommended manual checks before release
-
-- Open **Getting Started** and run it in **Simulation**.
-- Open each **Examples** group and load at least one Panel from each.
-- Save and reopen a `.wfpanel` project.
-- In a table example, confirm `Array.isArray(ui.get('recipeTable')) === true`.
-- Run **Table-Driven Wavegen** in Simulation and verify multiple retained traces.
-- Run a simulation Test Executive example and confirm cleanup behavior.
-- If hardware is available, safely loop back the AD3 example as intended and confirm expected measurements.
-- Check that archived JSON results appear in the Results Browser.
-
-## 6) Example PowerShell command for the release gate
+From a plain PowerShell window, `ctest` may not be on `PATH`, and tests may fail
+before entering their logic if Qt DLLs are missing (`0xc0000135`). Configure the
+**matching Qt kit's** `bin` and MinGW runtime directories, and set
+`$env:QT_QPA_PLATFORM = "offscreen"` when running GUI CTests headlessly.
+Use the CTest binary alongside your CMake installation if needed.
 
 ```powershell
-$build = 'C:\Dev\WFBuild'
-& 'C:\Qt\Tools\CMake_64in\ctest.exe' --test-dir $build -j 2 --output-on-failure
+$env:PATH = 'C:\Qt\6.9.2\mingw_64\bin;C:\Qt\Tools\mingw1310_64\bin;C:\Qt\Tools\CMake_64\bin;' + $env:PATH
+$env:QT_QPA_PLATFORM = 'offscreen'
+& 'C:\Qt\Tools\CMake_64\bin\ctest.exe' --test-dir '<build directory>' --output-on-failure
 ```

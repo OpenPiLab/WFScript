@@ -115,8 +115,8 @@ for rel in ('src/resources/icons.qrc','src/resources/examples.qrc'):
         if not target.is_file(): errors.append(f'{rel}: missing resource {e.text}')
 
 catalog=json.loads((ROOT/'examples/catalog.json').read_text(encoding='utf-8'))
-if len(catalog)!=22:errors.append(f'expected 22 examples; found {len(catalog)}')
-expected={'Getting Started','Graphics & Charts','Tables & Data','Analog Instruments','Digital Instruments','Test Sequences & Executive'}
+if len(catalog)<22:errors.append(f'public v0.1 examples were lost: found {len(catalog)} (<22)')
+expected={'Getting Started','Graphics & Charts','Tables & Data','Analog Instruments','Digital Instruments','Test Sequences & Executive','Communications'}
 found={e['category'] for e in catalog}
 if found!=expected:errors.append(f'categories differ: {found ^ expected}')
 seen=set()
@@ -131,10 +131,28 @@ for entry in catalog:
     if obj.get('format')!='WFScriptPanel':errors.append(f'{id}: wrong Panel format')
     if obj.get('script')!=source.read_text(encoding='utf-8'):errors.append(f'{id}: script differs')
     if not obj.get('pages'):errors.append(f'{id}: no Pages')
+    # v0.2-dev.3.1: the production PanelProject v2 loader requires all five
+    # fields on every Page. The prior check missed missing width/height.
+    if obj.get('version')==2:
+        for page_index, page in enumerate(obj.get('pages', [])):
+            if not isinstance(page, dict):
+                errors.append(f'{id}: Page {page_index} is not an object')
+                continue
+            missing=[key for key in ('id','name','width','height','controls') if key not in page]
+            if missing:
+                errors.append(f'{id}: Page {page_index} missing required fields: {", ".join(missing)}')
+                continue
+            if (not isinstance(page['id'],str) or not isinstance(page['name'],str)
+                or not isinstance(page['controls'],list)
+                or type(page['width']) not in (int,float)
+                or type(page['height']) not in (int,float)):
+                errors.append(f'{id}: Page {page_index} has invalid required field types')
+            elif not (320<=page['width']<=8192 and 240<=page['height']<=8192):
+                errors.append(f'{id}: Page {page_index} dimensions are out of range')
 
 # Check all production files remain present (not just referenced in CMake).
 if len(list((ROOT/'src').rglob('*.*'))) < 180:errors.append('Unexpectedly few src/ files; check release packaging')
 if errors:
     for error in errors:print('FAIL:',error,file=sys.stderr)
     sys.exit(1)
-print('PASS: CMake paths, QRC paths, 22 embedded examples, six menu groups, JS synchronization')
+print(f'PASS: CMake paths, QRC paths, {len(catalog)} embedded examples, seven menu categories, JS synchronization')

@@ -1,5 +1,6 @@
 #include "RunInformationWidget.h"
 #include "InstrumentVisuals.h"
+#include "PanelThemedCheckBox.h"
 #include "../RunInformationSchema.h"
 #include <QVBoxLayout>
 #include <QFormLayout>
@@ -89,7 +90,7 @@ void RunInformationWidget::setSchema(const QJsonObject& schema) {
         caption->setAlignment(Qt::AlignLeft|Qt::AlignVCenter);
         QWidget* input=nullptr;
         if(type=="boolean") {
-            auto* cb=new QCheckBox(m_content);
+            auto* cb=new PanelThemedCheckBox(m_content);
             cb->setChecked(f.value("default").toBool());
             cb->setToolTip(title);
             connect(cb,&QCheckBox::toggled,this,[this]{emitValues();});

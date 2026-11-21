@@ -62,5 +62,22 @@ function setup56(f1,amp1,f2,amp2){
     expect("regex not declaration",QStringLiteral("const r=/var ch=Wavegen.Channel1/; ch."),QStringLiteral("ch"),QStringLiteral("ch"));
     expect("template not declaration",QStringLiteral("const s=`var ch=Wavegen.Channel1`; ch."),QStringLiteral("ch"),QStringLiteral("ch"));
     expect("explicit compatibility",QString(),QStringLiteral("Wavegen.Channel1.Simple"),QStringLiteral("Wavegen.Channel1.Simple"));
+    expect("Serial factory connection",QStringLiteral("const port=Serial.create({port:'COM5'}); port."),QStringLiteral("port"),QStringLiteral("SerialConnection"));
+    member("Serial port.write",QStringLiteral("const port=Serial.create({port:'COM5'}); port."),QStringLiteral("port"),QStringLiteral("write"));
+    expect("TCP client factory",QStringLiteral("const client=TCP.create({host:'127.0.0.1',port:1234}); client."),QStringLiteral("client"),QStringLiteral("TCPConnection"));
+    member("TCP client.on",QStringLiteral("const client=TCP.create({host:'127.0.0.1',port:1234}); client."),QStringLiteral("client"),QStringLiteral("connect"));
+    expect("TCP server factory",QStringLiteral("const server=TCP.createServer({port:0}); server."),QStringLiteral("server"),QStringLiteral("TCPServer"));
+    member("TCP server.listen",QStringLiteral("const server=TCP.createServer({port:0}); server."),QStringLiteral("server"),QStringLiteral("listen"));
+    expect("UDP factory",QStringLiteral("const udp=UDP.create({port:0}); udp."),QStringLiteral("udp"),QStringLiteral("UDPConnection"));
+    member("UDP datagram send",QStringLiteral("const udp=UDP.create({port:0}); udp."),QStringLiteral("udp"),QStringLiteral("send"));
+    expect("BinaryBuffer from factory",QStringLiteral("const b=Binary.create(16); b."),QStringLiteral("b"),QStringLiteral("BinaryBuffer"));
+    member("Binary buffer write",QStringLiteral("const b=Binary.fromHex('0102'); b."),QStringLiteral("b"),QStringLiteral("writeU16LE"));
+    expect("BinaryStream from factory",QStringLiteral("const rx=Binary.stream(4096); rx."),QStringLiteral("rx"),QStringLiteral("BinaryStream"));
+    member("Binary stream frame",QStringLiteral("const rx=Binary.stream(4096); rx."),QStringLiteral("rx"),QStringLiteral("readIEEE"));
+    expect("BinaryBuffer from stream",QStringLiteral("const rx=Binary.stream(4096); const frame=rx.readIEEE(); frame."),QStringLiteral("frame"),QStringLiteral("BinaryBuffer"));
+    expect("BinarySamples inferred",QStringLiteral("const b=Binary.create(16); const data=b.decodeSamples('u16le',0,8,1,0); data."),QStringLiteral("data"),QStringLiteral("BinarySamples"));
+    member("BinarySamples bins",QStringLiteral("const b=Binary.create(16); const data=b.decodeSamples('u16le',0,8,1,0); data."),QStringLiteral("data"),QStringLiteral("minMaxBins"));
+    expect("FileIO readBuffer inferred",QStringLiteral("const data=FileIO.readBuffer('test.bin'); data."),QStringLiteral("data"),QStringLiteral("BinaryBuffer"));
+    expect("Binary unknown assignment rejected",QStringLiteral("const b=Binary.create(16); b=5; b."),QStringLiteral("b"),QString());
     return failures ? 1 : 0;
 }

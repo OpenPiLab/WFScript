@@ -1,0 +1,157 @@
+{
+  "canvasHeight": 765,
+  "canvasWidth": 1360,
+  "controls": [
+    {
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "onButton1Clicked"
+        }
+      },
+      "height": 40,
+      "id": "button1",
+      "max": 100,
+      "min": 0,
+      "text": "START 3 TIMERS",
+      "type": "button",
+      "value": 0,
+      "width": 180,
+      "x": 32,
+      "y": 86
+    },
+    {
+      "events": {},
+      "height": 540,
+      "id": "stationLog",
+      "max": 100,
+      "min": 0,
+      "properties": {
+        "autoScroll": true,
+        "maxEntries": 50000,
+        "showSource": true,
+        "showTimestamp": true
+      },
+      "text": "50,000-entry rolling Event Log",
+      "type": "event_log",
+      "value": 0,
+      "width": 1290,
+      "x": 32,
+      "y": 194
+    },
+    {
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "onButton2Clicked"
+        }
+      },
+      "height": 40,
+      "id": "button2",
+      "max": 100,
+      "min": 0,
+      "text": "STOP TIMERS",
+      "type": "button",
+      "value": 0,
+      "width": 180,
+      "x": 224,
+      "y": 86
+    },
+    {
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "onButton3Clicked"
+        }
+      },
+      "height": 40,
+      "id": "button3",
+      "max": 100,
+      "min": 0,
+      "text": "CLEAR LOG",
+      "type": "button",
+      "value": 0,
+      "width": 160,
+      "x": 416,
+      "y": 86
+    },
+    {
+      "id": "labTitle",
+      "type": "label",
+      "x": 32,
+      "y": 18,
+      "width": 1180,
+      "height": 48,
+      "text": "EVENT LOG CAPACITY TEST  |  RC1.5.14.4",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": false,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "labIntro",
+      "type": "label",
+      "x": 32,
+      "y": 56,
+      "width": 1260,
+      "height": 32,
+      "text": "10 ms / 20 ms / 30 ms timers produce INFO + PASS pairs. Each INFO includes callbackEpochMs and sequence number to distinguish script timing from GUI receipt timing.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "timerStatus",
+      "type": "label",
+      "x": 592,
+      "y": 90,
+      "width": 720,
+      "height": 42,
+      "text": "STOPPED — press START to begin. Keep running for >3 minutes to pass 50k.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "labInstructions",
+      "type": "label",
+      "x": 32,
+      "y": 133,
+      "width": 1270,
+      "height": 54,
+      "text": "1. START, scroll while logging, optionally try INFO/PASS filters.  2. Run 3–5 minutes (50k fills near 2m 17s).  3. STOP.  4. Export CSV; send it for analysis.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    }
+  ],
+  "description": "RC1.5.14.4 capacity/scroll regression for Event Log; 10/20/30 ms producer-timestamped timer pairs; 50,000 retained entries",
+  "format": "WFScriptPanel",
+  "libraries": [],
+  "script": "// WFScript RC1.5.14.4 — Event Log rolling-capacity and GUI-latency lab.\n// Derived from the user's LargeLogTest.wfpanel. No instruments or outputs.\n// Exactly two log entries per callback: INFO then PASS.\n// The INFO message contains callbackEpochMs (captured on the JS worker\n// thread), whereas the exported Timestamp column comes from EventLogWidget\n// on the GUI thread. Compare the two to locate backlogs without guessing.\n// JavaScript Date.now() is millisecond resolution, not a real-time clock.\n\nvar id=0, id1=0, id2=0, statusTimer=0;\nvar active=false, runNumber=0;\nvar counts={id:0,id1:0,id2:0};\nvar startMs=0;\n\nfunction logPair(name) {\n    var callbackEpochMs=Date.now();\n    counts[name]++;\n    var seq=counts[name];\n    var tag='run='+runNumber+' | seq='+seq;\n    ui.set('stationLog',{append:{level:'INFO',source:name,\n        message:name+' Starting check | '+tag+' | callbackEpochMs='+callbackEpochMs}});\n    ui.set('stationLog',{append:{level:'PASS',source:name,\n        message:name+' Voltage within tolerance | '+tag}});\n}\n\nfunction refreshStatus() {\n    if(!active)return;\n    var seconds=Math.round((Date.now()-startMs)/1000);\n    ui.set('timerStatus','RUN '+runNumber+' | '+seconds+' s | '+\n        'id(10): '+counts.id+'   id1(20): '+counts.id1+\n        '   id2(30): '+counts.id2+'   | Scroll and try filters');\n}\nfunction stopTimers() {\n    if(id)clearInterval(id);\n    if(id1)clearInterval(id1);\n    if(id2)clearInterval(id2);\n    if(statusTimer)clearInterval(statusTimer);\n    id=0;id1=0;id2=0;statusTimer=0;\n    active=false;\n    ui.set('timerStatus','STOPPED | Run '+runNumber+' | '+\n        'id: '+counts.id+'   id1: '+counts.id1+'   id2: '+counts.id2+\n        ' | Export CSV from Event Log');\n}\nfunction onButton1Clicked() {\n    if(active)return; // prevent double-registration of timers\n    runNumber++;\n    counts={id:0,id1:0,id2:0};\n    startMs=Date.now();\n    active=true;\n    id=setInterval(function(){logPair('id');},10);\n    id1=setInterval(function(){logPair('id1');},20);\n    id2=setInterval(function(){logPair('id2');},30);\n    statusTimer=setInterval(refreshStatus,1000);\n    refreshStatus();\n}\nfunction onButton2Clicked() {stopTimers();}\nfunction onButton3Clicked() {ui.set('stationLog',{clear:true});}\nfunction onShutdown() {\n    if(id)clearInterval(id);\n    if(id1)clearInterval(id1);\n    if(id2)clearInterval(id2);\n    if(statusTimer)clearInterval(statusTimer);\n    active=false;id=0;id1=0;id2=0;statusTimer=0;\n}\n",
+  "scriptName": "WFScript_EventLog_50k_Rollover_Lab.js",
+  "version": 1
+}

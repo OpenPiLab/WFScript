@@ -1,0 +1,47 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 12: Sweeps, loops and conditional execution · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="active">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 12 — Sweeps, loops and conditional execution</h2>
+<p>The most useful test sequences are declarative. Instead of copying a step for every voltage or frequency, define the parameters that change and reuse one procedure. The native engine expands the authored sequence into executable steps before the run, assigns each a unique token, evaluates limits independently and produces a separate report row.</p>
+<h3>One voltage sweep, many measurements</h3>
+<p>A supply verification might test 2, 3, 4 and 5 V. The authored sweep contains an axis named <code>voltage</code>; its child procedure reads <code>step.params.voltage</code>, configures the instrument under the test policy, waits for settling, measures the result, and returns structured values. The visual definition, not the procedure code, owns lower and upper acceptance limits.</p>
+<p>A numeric sweep may use a start/stop/increment range. A list sweep can enumerate discrete choices, such as sine/square shape. Multiple axes produce Cartesian combinations; nested groups produce ordered sub-sequences. Repetition can test repeatability at each condition without manually writing another loop in JavaScript.</p>
+<h3>Limits can follow the sweep point</h3>
+<p>A measurement intended to track the programmed voltage can use relative bounds based on the current <code>voltage</code> parameter. The editor resolves these limits per expanded step so the report records the actual acceptance range.</p>
+<table>
+<thead>
+<tr>
+  <th style="text-align:right">Setpoint</th>
+  <th style="text-align:right">Example lower limit</th>
+  <th style="text-align:right">Example upper limit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td style="text-align:right">2.0 V</td>
+  <td style="text-align:right">1.9 V</td>
+  <td style="text-align:right">2.1 V</td>
+</tr>
+<tr>
+  <td style="text-align:right">3.0 V</td>
+  <td style="text-align:right">2.9 V</td>
+  <td style="text-align:right">3.1 V</td>
+</tr>
+<tr>
+  <td style="text-align:right">4.0 V</td>
+  <td style="text-align:right">3.9 V</td>
+  <td style="text-align:right">4.1 V</td>
+</tr>
+<tr>
+  <td style="text-align:right">5.0 V</td>
+  <td style="text-align:right">4.9 V</td>
+  <td style="text-align:right">5.1 V</td>
+</tr>
+</tbody>
+</table>
+<p>These limits illustrate a tolerance; they are not a manufacturer's instrument specification. Configure acceptance to suit the UUT and measurement method.</p>
+<h3>Conditions and nested branches</h3>
+<p>Conditional groups let a sequence select THEN or ELSE work according to named values and a predicate. A nested diagnostic sweep can run only under the failure branch. The visual Execution Preview shows the expanded plan and how grouping affects execution, while actual runtime decisions depend on the values observed during the run.</p>
+<p>Branch paths not taken are marked <strong>SKIPPED</strong>, not silently removed from the authored definition. This matters for report traceability: the report should make clear what was tested and what was intentionally bypassed.</p>
+<h3>Preview before committing</h3>
+<p>Use <strong>Execution Preview</strong> to inspect the expanded step count, parameter combinations and generated IDs. This is especially important before large Cartesian sweeps: two axes of 10 points produce 100 conditions, and adding repeats or child steps multiplies the final workload. The source defines bounded expansion and maximum step counts; the editor validates before execution rather than trying to build an unlimited plan.</p>
+<h3>Keep equipment changes deliberate</h3>
+<p>A sweep across an active supply output is still a series of physical setpoint changes. Validate the safe range, configure protection, and make sure Cleanup can release the channel. A syntactically valid loop is not a substitute for a fixture safety review.</p>
+<div class="pager"><a href="guide-11.html">← Previous chapter</a><a href="guide-13.html">Next chapter →</a></div></article></main></div></body></html>

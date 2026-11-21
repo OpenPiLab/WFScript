@@ -5,11 +5,18 @@
 #include "PowerSuppliesBridge.h"
 #include "StaticIOBridge.h"
 #include "PatternsBridge.h"
+#include "ProtocolBridge.h"
 #include "ScriptHelpers.h"
 #include "ScriptLibraryBridge.h"
 #include "ScriptErrorDetails.h"
 #include "TestRunnerBridge.h"
+#include "ScriptTimerManager.h"
+#include "ScriptUtilityBridge.h"
+#include "SqliteBridge.h"
+#include "CommunicationBridge.h"
+#include "BinaryBridge.h"
 #include "RunInformationSchema.h"
+#include "PanelDataEvents.h"
 #include <QJSValue>
 #include <QJSValueList>
 #include <QJsonDocument>
@@ -32,7 +39,7 @@ void PanelRuntime::requestStop() {
 
 void PanelRuntime::registerObjects(QJSEngine* engine) {
     // Mirror ScriptWorker's ownership policy; every exposed QObject is C++-owned.
-    QObject* objects[] = {m_ui,m_console,m_scope,m_wavegen,m_supplies,m_staticIO,m_patterns,m_logic,m_device,m_utilities,m_plots,m_testRunner};
+    QObject* objects[] = {m_ui,m_console,m_scope,m_wavegen,m_supplies,m_staticIO,m_patterns,m_protocol,m_logic,m_device,m_utilities,m_plots,m_testRunner,m_timers,m_scriptUtility,m_database,m_communications,m_binary};
     for (auto* object:objects) QJSEngine::setObjectOwnership(object,QJSEngine::CppOwnership);
     auto* logicTime=static_cast<LogicTime*>(m_logic->time());
     for(QObject* object:{static_cast<QObject*>(logicTime),logicTime->rate(),logicTime->samples()})
@@ -99,9 +106,16 @@ void PanelRuntime::registerObjects(QJSEngine* engine) {
     for(QObject* item : {m_patterns->channels(),static_cast<QObject*>(&pc),pc.pin(),pc.type(),
                          pc.output(),pc.idle(),pc.frequency(),pc.duty()})
         QJSEngine::setObjectOwnership(item,QJSEngine::CppOwnership);
+    for(QObject* child : {m_protocol->uart(),m_protocol->spi(),m_protocol->i2c(),m_protocol->can(),m_protocol->swd()})
+        QJSEngine::setObjectOwnership(child,QJSEngine::CppOwnership);
     auto global=engine->globalObject();
     global.setProperty("__panelHost",engine->newQObject(m_ui));
     global.setProperty("TestRunner",engine->newQObject(m_testRunner));
+    global.setProperty("__timerHost",engine->newQObject(m_timers));
+    global.setProperty("__fileHost",engine->newQObject(m_scriptUtility));
+    global.setProperty("__databaseHost",engine->newQObject(m_database));
+    global.setProperty("__commHost",engine->newQObject(m_communications));
+    global.setProperty("Binary",engine->newQObject(m_binary));
     global.setProperty("__plotHost",engine->newQObject(m_plots));
     global.setProperty("__bridge",engine->newQObject(m_console));
     global.setProperty("__utils",engine->newQObject(m_utilities));
@@ -113,6 +127,8 @@ void PanelRuntime::registerObjects(QJSEngine* engine) {
     global.setProperty("StaticIO",engine->newQObject(m_staticIO));
     global.setProperty("Patterns1",engine->newQObject(m_patterns));
     global.setProperty("Patterns",global.property("Patterns1"));
+    global.setProperty("Protocol1",engine->newQObject(m_protocol));
+    global.setProperty("Protocol",global.property("Protocol1"));
     global.setProperty("Device",engine->newQObject(m_device));
     global.setProperty("Scope",global.property("Scope1"));
     global.setProperty("Wavegen",global.property("Wavegen1"));
@@ -130,6 +146,9 @@ void PanelRuntime::finishStop() {
                          !m_engine->isInterrupted();
     m_stopped=true;
     m_ready=false;
+    // No script callback can run once stopping begins; onShutdown may still
+    // clear old IDs, but cannot schedule new callbacks.
+    if(m_timers)m_timers->shutdown();
     m_stopRequested.store(true);
     if(orderly) runShutdownHook();
     else if(m_lifecycle.shutdownEnabled)
@@ -154,17 +173,20 @@ void PanelRuntime::start(const QString& source,const QVariantMap& initialValues,
                          const QJsonObject& testDefinition,const QString& testLibrary,
                          const QJsonObject& runInformation,
                          const QVariantMap& runInformationInput,
-                         const QJsonObject& reportStorage) {
+                         const QJsonObject& reportStorage,
+                         const QJsonArray& panelData) {
     if (m_engine || m_stopped) return;
     m_scriptName=scriptName.isEmpty() ? QStringLiteral("Panel Script.js") : scriptName;
     m_lifecycle=lifecycle;
     m_managedHandlers.clear();
     m_runInformationIds.clear();
+    m_uartTerminalIds.clear();
     for(const auto& entry:controls) {
         const QJsonObject control=entry.toObject();
         const QString id=control.value(QStringLiteral("id")).toString();
         const QString type=control.value(QStringLiteral("type")).toString();
         if(type==QStringLiteral("runInformation"))m_runInformationIds.insert(id);
+        if(type==QStringLiteral("uart_terminal"))m_uartTerminalIds.insert(id);
         const QJsonObject bindings=control.value(QStringLiteral("events")).toObject();
         for(auto it=bindings.begin();it!=bindings.end();++it) {
             const QJsonObject b=it.value().toObject();
@@ -191,7 +213,7 @@ void PanelRuntime::start(const QString& source,const QVariantMap& initialValues,
         : QStringLiteral("PANEL SIMULATION: hardware outputs disabled"));
     { QMutexLocker lock(&m_engineMutex); m_engine=new QJSEngine;
       if(m_stopRequested.load())m_engine->setInterrupted(true); }
-    m_ui=new PanelUiBridge(m_engine,initialValues,m_runInformationIds);
+    m_ui=new PanelUiBridge(m_engine,initialValues,m_runInformationIds,panelData,controls);
     // ui.get(formId) and native runner input must reflect the SAME values
     // immediately on startup (including visible edits retained after Stop).
     QVariantMap initialRunInfo=RunInformationSchema::defaults(runInformation);
@@ -227,11 +249,73 @@ void PanelRuntime::start(const QString& source,const QVariantMap& initialValues,
     m_wavegen=new WavegenBridge(physical?m_runtime.get():nullptr,physical?nullptr:&m_mock,&m_stopRequested);
     m_supplies=new PowerSuppliesBridge(physical?m_runtime.get():nullptr);
     m_staticIO=new StaticIOBridge(physical?m_runtime.get():nullptr);
+    m_staticIO->setScriptEngine(m_engine);
+    connect(m_staticIO,&StaticIOBridge::callbackStarted,this,[this]{m_executingJs.store(true);},Qt::DirectConnection);
+    connect(m_staticIO,&StaticIOBridge::callbackFinished,this,[this]{m_executingJs.store(false);},Qt::DirectConnection);
+    connect(m_staticIO,&StaticIOBridge::callbackFailed,this,[this](const QString& context,const QJSValue& result){
+        if(!m_stopRequested.load() && m_engine && !m_engine->isInterrupted()) reportError(context,result);
+    },Qt::DirectConnection);
+    connect(m_staticIO,&StaticIOBridge::monitorFailed,this,[this](const QString& reason){
+        if(!m_stopped)emit printed(QStringLiteral("StaticIO input monitor stopped: ")+reason);
+    },Qt::DirectConnection);
     m_patterns=new PatternsBridge(physical?m_runtime.get():nullptr);
+    m_protocol=new ProtocolBridge(physical?m_runtime.get():nullptr);
+    m_scriptUtility=new ScriptUtilityBridge(m_engine,projectFile);
+    connect(m_scriptUtility,&ScriptUtilityBridge::dialogRequested,this,&PanelRuntime::utilityDialogRequested,Qt::DirectConnection);
+    connect(m_scriptUtility,&ScriptUtilityBridge::callbackStarted,this,[this]{m_executingJs.store(true);},Qt::DirectConnection);
+    connect(m_scriptUtility,&ScriptUtilityBridge::callbackFinished,this,[this]{m_executingJs.store(false);},Qt::DirectConnection);
+    connect(m_scriptUtility,&ScriptUtilityBridge::callbackFailed,this,[this](const QString& context,const QJSValue& error){
+        if(!m_stopRequested.load() && m_engine && !m_engine->isInterrupted())reportError(context,error);
+    },Qt::DirectConnection);
+    m_database=new SqliteBridge(m_engine,m_scriptUtility->dataDirectory());
+    connect(m_database,&SqliteBridge::callbackStarted,this,[this]{m_executingJs.store(true);},Qt::DirectConnection);
+    connect(m_database,&SqliteBridge::callbackFinished,this,[this]{m_executingJs.store(false);},Qt::DirectConnection);
+    connect(m_database,&SqliteBridge::callbackFailed,this,[this](const QString& context,const QJSValue& error){
+        if(!m_stopRequested.load() && m_engine && !m_engine->isInterrupted())reportError(context,error);
+    },Qt::DirectConnection);
+    m_binary=new BinaryBridge(m_engine);
+    m_scriptUtility->setBinaryBridge(m_binary);
+    m_communications=new CommunicationBridge(m_engine,m_binary);
+    connect(m_communications,&CommunicationBridge::callbackStarted,this,[this]{m_executingJs.store(true);},Qt::DirectConnection);
+    connect(m_communications,&CommunicationBridge::callbackFinished,this,[this]{m_executingJs.store(false);},Qt::DirectConnection);
+    connect(m_communications,&CommunicationBridge::callbackFailed,this,[this](const QString& context,const QJSValue& error){
+        if(!m_stopRequested.load() && m_engine && !m_engine->isInterrupted())reportError(context,error);
+    },Qt::DirectConnection);
+    m_timers=new ScriptTimerManager(m_engine);
+    connect(m_timers,&ScriptTimerManager::callbackStarted,this,[this]{m_executingJs.store(true);},Qt::DirectConnection);
+    connect(m_timers,&ScriptTimerManager::callbackFinished,this,[this]{m_executingJs.store(false);},Qt::DirectConnection);
+    connect(m_timers,&ScriptTimerManager::callbackFailed,this,[this](const QString& context,const QJSValue& exception){
+        if(!m_stopRequested.load() && m_engine && !m_engine->isInterrupted())reportError(context,exception);
+    },Qt::DirectConnection);
+    // Native UART RX is broadcast directly to all terminal widgets, including
+    // those on inactive Pages. The GUI receives only Qt value objects; neither
+    // QWidget nor QJSEngine is touched across threads. Callback is optional.
+    auto* uart=static_cast<ProtocolUartPort*>(m_protocol->uart());
+    connect(uart,&ProtocolUartPort::dataReceived,this,[this,uart](const QVariantMap& chunk){
+        if(m_stopRequested.load() || m_stopped)return;
+        for(const QString& id:m_uartTerminalIds)emit controlUpdate(id,chunk);
+        if(!m_ready || !m_engine || !uart->hasOnData())return;
+        m_executingJs.store(true);
+        const QJSValue result=uart->dispatchOnData(m_engine,chunk);
+        m_executingJs.store(false);
+        if(!m_stopRequested.load() && !m_engine->isInterrupted() && result.isError())
+            reportError(QStringLiteral("Protocol1.UART.onData callback"),result);
+    },Qt::DirectConnection);
+    connect(uart,&ProtocolUartPort::receiveError,this,[this](const QString& error){
+        if(!m_stopped)emit printed(QStringLiteral("UART automatic receive stopped: ")+error);
+    },Qt::DirectConnection);
     m_logic=new LogicBridge(physical?m_runtime.get():nullptr,physical?nullptr:&m_mock,&m_stopRequested);
     m_device=new DeviceBridge(physical?m_runtime.get():nullptr,!physical);
     m_utilities=new ScriptUtilities(&m_stopRequested);
     connect(m_ui,&PanelUiBridge::updateRequested,this,&PanelRuntime::controlUpdate,Qt::DirectConnection);
+    connect(m_ui,&PanelUiBridge::dataValueChanged,this,&PanelRuntime::panelDataUpdate,Qt::DirectConnection);
+    connect(m_ui,&PanelUiBridge::dataCallbackFailed,this,[this](const QString& name,const QJSValue& error){
+        if(!m_stopRequested.load() && m_engine && !m_engine->isInterrupted())
+            reportError(name.startsWith(QStringLiteral("Data.computed after "))
+                ? QStringLiteral("%1").arg(name)
+                : QStringLiteral("Data.onChange(%1)").arg(name),error);
+    },Qt::DirectConnection);
+    m_ui->publishInitialData();
     connect(m_console,&ConsoleBridge::printed,this,&PanelRuntime::printed,Qt::DirectConnection);
     connect(m_console,&ConsoleBridge::clearRequested,this,&PanelRuntime::consoleClearRequested,Qt::DirectConnection);
     connect(m_scope,&ScopeBridge::captureReady,this,&PanelRuntime::scopeFrameReady,Qt::DirectConnection);
@@ -251,9 +335,29 @@ void PanelRuntime::start(const QString& source,const QVariantMap& initialValues,
         var console = {log:print, warn:print, error:print};
         var wait = function(seconds) { return seconds === undefined ? __utils.wait() : __utils.wait(seconds); };
         var __panelHandlers = {};
+    )JS")+PanelDataEvents::bootstrapSource()+QStringLiteral(R"JS(
         var ui = {
             get: function(id) { return __panelHost.get(id); },
-            set: function(id,value) { return __panelHost.set(id,value); },
+            // Keep the public Panel API in sync with PanelUiBridge Q_INVOKABLE methods.
+            // Use bounded reads in high-frequency acquisition scripts.
+            tableRowCount: function(id) { return __panelHost.tableRowCount(id); },
+            tableSlice: function(id,start,count) { return __panelHost.tableSlice(id,start,count); },
+            tableRow: function(id,row) {
+                var data=__panelHost.tableSlice(id,row,1);
+                return data && data.length ? data[0] : null;
+            },
+            tableSelection: function(id) { return __panelHost.tableSelection(id); },
+            tableSetTitle: function(id,text) { return ui.set(id,{title:String(text)}); },
+            tableSetStatus: function(id,text) { return ui.set(id,{status:String(text)}); },
+            tableFollow: function(id,enabled) { return ui.set(id,{autoScroll:!!enabled}); },
+            tableImportCsv: function(id,path) { return ui.set(id,{importCsv:path===undefined?true:path}); },
+            tableExportCsv: function(id,path) { return ui.set(id,{exportCsv:path===undefined?true:path}); },
+            tableCopySelection: function(id) { return ui.set(id,{copySelection:true}); },
+            set: function(id,value) {
+                var bound=__panelHost.boundDataForWidget(id);
+                if (bound) throw new Error('Widget '+id+' is bound to Panel Data '+bound+'; call Data.set() instead');
+                return __panelHost.set(id,value);
+            },
             on: function(id,name,callback) {
                 if (typeof callback !== 'function') throw new Error('Callback required');
                 var key=id+'::'+name;
@@ -283,6 +387,24 @@ void PanelRuntime::start(const QString& source,const QVariantMap& initialValues,
                     throw new Error(__plotHost.lastError);
                 return true;
             },
+            // Uniformly sampled native BinarySamples; no JS waveform array.
+            // xStep is in plot X-axis units (e.g. milliseconds/sample).
+            setNativeSamples: function(id,name,samples,xStep,xStart,options) {
+                if(typeof xStart==='object' && options===undefined){ options=xStart; xStart=0; }
+                if(!__plotHost.setNativeSamples(id,name,samples,xStep,
+                    xStart===undefined?0:xStart,options || {}))
+                    throw new Error(__plotHost.lastError);
+                return true;
+            },
+            // GUI->worker view snapshots are asynchronous; subscribe with
+            // ui.on(id,'viewChanged',fn) or plots.onViewChanged(id,fn).
+            onViewChanged: function(id,callback){ ui.on(id,'viewChanged',callback); },
+            getView: function(id){return __plotHost.getView(id);},
+            nativeSeriesInfo: function(id,name){return __plotHost.nativeSeriesInfo(id,name);},
+            setView: function(id,xMin,xMax,yMin,yMax){
+                if(!__plotHost.setView(id,xMin,xMax,yMin,yMax))throw new Error(__plotHost.lastError);
+                return true;
+            },
             fromScope: function(id,channel,name) {
                 channel=channel===undefined?1:channel;
                 name=name===undefined?('CH'+channel):name;
@@ -310,7 +432,39 @@ void PanelRuntime::start(const QString& source,const QVariantMap& initialValues,
             var callbacks=__panelHandlers[id+'::'+name] || [];
             callbacks.forEach(function(callback) { callback(value); });
         }
-    )JS")+ScriptHelpers::source()+ScriptLibraryBridge::bootstrapSource(),"<panel-bootstrap>");
+    )JS")+QStringLiteral(R"JS(
+        var FileIO = {
+            dataDirectory: function() { return __fileHost.dataDirectory(); },
+            dataPath: function(name) { var p=__fileHost.dataPath(name); if(!p)throw Error('Invalid Panel data filename'); return p; },
+            exists: function(path) { return __fileHost.exists(path); },
+            readText: function(path) { var x=__fileHost.readText(path); if(__fileHost.lastError)throw Error(__fileHost.lastError); return x; },
+            writeText: function(path,data) { if(!__fileHost.writeText(path,String(data)))throw Error(__fileHost.lastError); return true; },
+            appendText: function(path,data) { if(!__fileHost.appendText(path,String(data)))throw Error(__fileHost.lastError); return true; },
+            readJson: function(path) { var x=__fileHost.readJson(path); if(__fileHost.lastError)throw Error(__fileHost.lastError); return x; },
+            writeJson: function(path,data) { if(!__fileHost.writeJson(path,data))throw Error(__fileHost.lastError); return true; },
+            readBuffer: function(path) { var x=__fileHost.readBuffer(path); if(__fileHost.lastError)throw Error(__fileHost.lastError); return x; },
+            writeBuffer: function(path,buffer) { if(!__fileHost.writeBuffer(path,buffer))throw Error(__fileHost.lastError); return true; },
+            appendBuffer: function(path,buffer) { if(!__fileHost.appendBuffer(path,buffer))throw Error(__fileHost.lastError); return true; },
+            readBytes: function(path) { var x=__fileHost.readBytes(path); if(__fileHost.lastError)throw Error(__fileHost.lastError); return x; },
+            writeBytes: function(path,bytes) { if(!__fileHost.writeBytes(path,bytes))throw Error(__fileHost.lastError); return true; },
+            readCsv: function(path) { var x=__fileHost.readCsvArray(path); if(__fileHost.lastError)throw Error(__fileHost.lastError); return x; },
+            writeCsv: function(path,rows) { if(!__fileHost.writeCsv(path,rows))throw Error(__fileHost.lastError); return true; }
+        };
+        function __requestTool(kind,opts,callback) {
+            if(typeof callback!=='function')throw TypeError('Tool dialog requires a callback');
+            var id=__fileHost.request(kind,opts,callback);
+            if(!id)throw Error(__fileHost.lastError);
+            return id;
+        }
+        var Tool = {
+            question: function(message,cb) {return __requestTool('question',{message:String(message)},cb);},
+            getText: function(message,initial,cb) {return __requestTool('getText',{message:String(message),initial:String(initial===undefined?'':initial)},cb);},
+            getNumber: function(message,initial,min,max,cb) {return __requestTool('getNumber',{message:String(message),initial:Number(initial),min:Number(min),max:Number(max)},cb);},
+            getItem: function(message,items,cb) {return __requestTool('getItem',{message:String(message),items:items},cb);},
+            getOpenFile: function(title,filter,cb) {return __requestTool('getOpenFile',{message:String(title),filter:filter||'All files (*)'},cb);},
+            getSaveFile: function(title,filter,cb) {return __requestTool('getSaveFile',{message:String(title),filter:filter||'All files (*)'},cb);}
+        };
+    )JS")+SqliteBridge::bootstrapSource()+CommunicationBridge::bootstrapSource()+ScriptTimerManager::bootstrapSource()+ScriptHelpers::source()+ScriptLibraryBridge::bootstrapSource(),"<panel-bootstrap>");
     if (m_stopRequested.load() || m_engine->isInterrupted()) { finishStop();return; }
     if(boot.isError()) {
         reportError("Panel JavaScript bootstrap",boot);
@@ -434,15 +588,59 @@ void PanelRuntime::reportError(const QString& context,const QJSValue& result,
 }
 void PanelRuntime::eventFromPanel(const QString& id,const QString& name,const QVariant& value) {
     if (!m_engine || !m_ready || m_stopRequested.load()) return;
+    // Private GUI -> worker table-state synchronization. Never dispatch these
+    // messages to ui.on() or Designer handlers. Import streams <=1024 rows per
+    // message instead of serializing a 50k-row valueChanged event.
+    if(name==QStringLiteral("__experimentTableMirrorReset")) {
+        if(m_ui)m_ui->receiveEvent(id,QVariantMap{{QStringLiteral("clear"),true}});
+        return;
+    }
+    if(name==QStringLiteral("__experimentTableMirrorAppend")) {
+        if(m_ui)m_ui->receiveEvent(id,value);
+        return;
+    }
     // Event payloads and widget state are different concepts. A Button click
     // passes true to its callback, but ui.get(buttonId) must remain the caption.
     // Slider/Toggle events do update persistent ui.get() state.
+    if(name==QStringLiteral("viewChanged") && m_plots)
+        m_plots->receiveView(id,value.toMap());
     if(PanelEventCatalog::carriesPersistentState(name))m_ui->receiveEvent(id,value);
     // OptionSelector emits the selected string (not a numerical design-time value).
     // Update the JavaScript bridge BEFORE dispatching the callback, so ui.get(id)
     // returns the selection the user just made. Do not route this through the
     // PanelCanvas numeric value persistence: the native widget owns its text state.
-    if(name==QStringLiteral("selectionChanged"))m_ui->receiveEvent(id,value);
+    if(name==QStringLiteral("selectionChanged")) {
+        m_ui->receiveEvent(id,value);
+        m_ui->receiveTableSelection(id,value);
+    }
+    if(name==QStringLiteral("cellEdited")) {
+        const QVariantMap edit=value.toMap();
+        m_ui->receiveEvent(id,QVariantMap{{QStringLiteral("setCell"),QVariantMap{
+            {QStringLiteral("row"),edit.value(QStringLiteral("row"))},
+            {QStringLiteral("column"),edit.value(QStringLiteral("column"))},
+            {QStringLiteral("value"),edit.value(QStringLiteral("value"))}}}});
+    }
+    // Native operator edits use the SAME JS subscription path as Data.set().
+    // Do this before designer and ui.on() handlers, which can inspect the new
+    // value or subscribe to subsequent changes. Ignore non-value events and
+    // identical values; never simulate a widget click from Data.set().
+    const QString dataName=m_ui ? m_ui->boundDataForWidget(id) : QString();
+    const QVariant previousData=dataName.isEmpty() ? QVariant() : m_ui->dataValue(dataName);
+    const bool acceptedInput=m_ui && m_ui->setDataFromInput(id,name,value);
+    if(acceptedInput) {
+        const QVariant currentData=m_ui->dataValue(dataName);
+        if(currentData!=previousData) {
+            const QJSValue dispatcher=m_engine->globalObject().property(QStringLiteral("__panelDataDispatch"));
+            m_executingJs.store(true);
+            const QJSValue dispatched=dispatcher.call(QJSValueList{
+                QJSValue(dataName),
+                ScriptValueConversion::toJavaScript(m_engine,currentData),
+                ScriptValueConversion::toJavaScript(m_engine,previousData)});
+            m_executingJs.store(false);
+            if(m_stopRequested.load() || m_engine->isInterrupted())return;
+            if(dispatched.isError())reportError(QStringLiteral("Panel Data input %1").arg(dataName),dispatched);
+        }
+    }
     if(name==QStringLiteral("runInformationChanged") && m_runInformationIds.contains(id)) {
         m_testRunner->setNativeRunInformation(value.toMap());
         // ui.get() on ANY form returns the same pending values, including
@@ -476,7 +674,15 @@ void PanelRuntime::eventFromPanel(const QString& id,const QString& name,const QV
     if(outcome.isError())reportError(QStringLiteral("Panel event %1.%2 (%3)").arg(id,name,bound),outcome);
 }
 void PanelRuntime::cleanup() {
+    if(m_timers)m_timers->shutdown();
+    if(m_staticIO)m_staticIO->shutdownMonitor();
+    if(m_communications)m_communications->shutdown();
+    if(m_binary)m_binary->shutdown();
+    if(m_database)m_database->shutdown();
+    if(m_scriptUtility)m_scriptUtility->shutdown();
     if(m_testRunner)m_testRunner->shutdown(); // cancel native timers before QJSEngine deletion
+    if(m_protocol && !m_protocol->stop())
+        emit printed(QStringLiteral("WARNING: Protocol digital output shutdown unconfirmed: %1").arg(m_protocol->lastError()));
     if(m_logic)m_logic->stop();
     if(m_patterns && !m_patterns->stop())
         emit printed(QStringLiteral("WARNING: Patterns DigitalOut shutdown not confirmed: %1").arg(m_patterns->lastError()));
@@ -489,6 +695,7 @@ void PanelRuntime::cleanup() {
     delete m_utilities;m_utilities=nullptr;
     delete m_device;m_device=nullptr;
     delete m_logic;m_logic=nullptr;
+    delete m_protocol;m_protocol=nullptr;
     delete m_patterns;m_patterns=nullptr;
     delete m_staticIO;m_staticIO=nullptr;
     delete m_supplies;m_supplies=nullptr;
@@ -497,10 +704,19 @@ void PanelRuntime::cleanup() {
     delete m_scope;m_scope=nullptr;
     delete m_console;m_console=nullptr;
     delete m_testRunner;m_testRunner=nullptr;
+    delete m_timers;m_timers=nullptr;
+    delete m_communications;m_communications=nullptr;
+    delete m_binary;m_binary=nullptr;
+    delete m_database;m_database=nullptr;
+    delete m_scriptUtility;m_scriptUtility=nullptr;
     delete m_ui;m_ui=nullptr;
     {QMutexLocker lock(&m_engineMutex);delete m_engine;m_engine=nullptr;}
     if(m_runtime){m_runtime->close();m_runtime.reset();}
 }
 void PanelRuntime::stop() {
     finishStop();
+}
+
+void PanelRuntime::completeUtilityDialog(int id,const QVariantMap& result) {
+    if(!m_stopRequested.load() && m_scriptUtility)m_scriptUtility->complete(id,result);
 }

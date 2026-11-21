@@ -3,7 +3,7 @@
   "version": 2,
   "description": "Table as calibration data: operator-entered sensor points, piecewise-linear lookup, chart and CSV sample log. Hardware-safe simulation.",
   "scriptName": "CalibrationTable.js",
-  "script": "/**\n * WFScript Example: Editable Calibration Lookup Table\n * Device: Simulation ONLY (no physical instrument API calls).\n * Wiring: None.\n * Simulation: operator-defined sensor volts -> engineering units by piecewise\n *             LINEAR interpolation. Never extrapolate outside entered X range.\n * Table values from ui.get() are NATIVE JavaScript arrays in v5.6.70.2+.\n *\n * Workflow: edit the calibration table, then VALIDATE & PLOT. Move the voltage\n * slider to interpolate; SAVE SAMPLE adds an entry to the results table.\n * Table edits during Run Panel live in runtime state, not the saved .wfpanel.\n * To make permanent defaults, edit Initial Rows in Properties in Design mode.\n */\nconst FACTORY_POINTS=[\n    ['0.50','10.0'],['1.00','25.0'],['2.00','50.0'],\n    ['3.00','90.0'],['4.50','140.0']\n];\nlet calibrated=[];\nlet sampleLog=[];\nlet dirty=true;\nfunction inform(s){\n    ui.set('calStatus',s);\n    ui.set('lookupStatus',s);\n    print('[Calibration Table] '+s);\n}\nfunction parseNumber(cell,row,column,lo,hi){\n    const source=String(cell===null||cell===undefined?'':cell).trim();\n    const value=Number(source);\n    if(!source || !isFinite(value) || value<lo || value>hi)\n        throw Error('Row '+row+' '+column+' must be '+lo+' to '+hi);\n    return value;\n}\nfunction readCalibration(){\n    const rows=ui.get('calibrationTable');\n    if(!Array.isArray(rows) || rows.length>30)\n        throw Error('Expected at most 30 calibration rows from ui.get()');\n    const points=[];\n    rows.forEach(function(row,index){\n        if(!Array.isArray(row) || row.length!==2)\n            throw Error('Calibration row '+(index+1)+' must have two cells');\n        if(row.every(function(v){return String(v===null||v===undefined?'':v).trim()==='';}))return;\n        const x=parseNumber(row[0],index+1,'input (V)',0,5);\n        const y=parseNumber(row[1],index+1,'engineering value',-100,250);\n        points.push({x:x,y:y});\n    });\n    if(points.length<2)throw Error('Enter at least two complete calibration points');\n    points.sort(function(a,b){return a.x-b.x;});\n    for(let i=1;i<points.length;i++)\n        if(Math.abs(points[i].x-points[i-1].x)<1e-9)\n            throw Error('Repeated input voltage '+points[i].x+' V; each X must be unique');\n    return points;\n}\nfunction interpolate(points,x){\n    if(x<points[0].x || x>points[points.length-1].x) return null;\n    for(let i=1;i<points.length;i++){\n        const a=points[i-1],b=points[i];\n        if(x<=b.x){\n            return {value:a.y+(x-a.x)*(b.y-a.y)/(b.x-a.x),segment:i};\n        }\n    }\n    return {value:points[points.length-1].y,segment:points.length-1};\n}\nfunction renderCurve(){\n    plots.clear('calibrationPlot');\n    plots.configure('calibrationPlot',{\n        title:'Entered points and piecewise-linear calibration',\n        chartType:'XY',xLabel:'Sensor input (V)',yLabel:'Engineering value (°C)',\n        showGrid:true,showLegend:true,xAuto:true,yAuto:true\n    });\n    const xs=calibrated.map(function(p){return p.x;});\n    const ys=calibrated.map(function(p){return p.y;});\n    plots.setSeries('calibrationPlot','Interpolated calibration',xs,ys,\n                    {color:'#44c8e4',width:2.3});\n    plots.setSeries('calibrationPlot','Entered calibration points',xs,ys,\n                    {color:'#f3bf52',width:0.5,markerSize:7.0});\n}\nfunction sampleAtInput(){\n    if(dirty || calibrated.length<2){\n        inform('Calibration edited. Press VALIDATE & PLOT before sampling.');\n        return null;\n    }\n    const x=Number(ui.get('probeInput'));\n    if(!isFinite(x))throw Error('Invalid sensor input');\n    ui.set('inputReadout',x);\n    const result=interpolate(calibrated,x);\n    if(result===null){\n        inform('OUT OF RANGE: '+x.toFixed(2)+' V outside '+\n               calibrated[0].x.toFixed(2)+'–'+calibrated[calibrated.length-1].x.toFixed(2)+' V.');\n        return null;\n    }\n    ui.set('estimatedValue',result.value);\n    plots.setSeries('calibrationPlot','Selected input',[x],[result.value],\n                    {color:'#ef89ba',width:1.0,markerSize:9});\n    inform('INTERPOLATED '+x.toFixed(3)+' V -> '+result.value.toFixed(2)+\n           ' °C using segment '+result.segment+'/'+(calibrated.length-1)+'.');\n    return {x:x,temperature:result.value,segment:result.segment};\n}\nfunction validateAndPlot(){\n    calibrated=readCalibration();\n    dirty=false;\n    renderCurve();\n    const result=sampleAtInput();\n    if(result===null)inform('VALIDATED '+calibrated.length+' calibration points; select an in-range voltage.');\n}\nfunction saveSample(){\n    const sample=sampleAtInput();\n    if(!sample)return;\n    if(sampleLog.length>=100)throw Error('Maximum 100 sample-log rows');\n    sampleLog.push([String(sampleLog.length+1),sample.x.toFixed(3),\n                    sample.temperature.toFixed(2),String(sample.segment)]);\n    ui.set('sampleLog',sampleLog);\n    inform('SAVED '+sampleLog.length+' calibrated sample(s); right-click the result table for CSV.');\n}\nfunction restore(){\n    ui.set('calibrationTable',FACTORY_POINTS.map(function(r){return r.slice();}));\n    sampleLog=[];ui.set('sampleLog',[]);\n    validateAndPlot();\n    inform('Factory calibration points restored; no physical input or output.');\n}\nfunction safeClick(id,fn){\n    ui.on(id,'clicked',function(){try{fn();}catch(e){inform('ERROR: '+String(e));}});\n}\nsafeClick('validateCalibration',validateAndPlot);\nsafeClick('restoreCalibration',restore);\nsafeClick('saveSample',saveSample);\nsafeClick('clearSamples',function(){sampleLog=[];ui.set('sampleLog',[]);inform('Sample log cleared.');});\nui.on('calibrationTable','valueChanged',function(rows){\n    dirty=true;\n    calibrated=[];\n    plots.clear('calibrationPlot');\n    inform('EDITED '+rows.length+' rows. Press VALIDATE & PLOT to apply the new calibration.');\n});\nui.on('probeInput','valueChanged',function(){try{sampleAtInput();}catch(e){inform('ERROR: '+String(e));}});\nui.set('sampleLog',[]);\ntry{validateAndPlot();}catch(e){inform('ERROR: '+String(e));}\n",
+  "script": "// ┌─ WFScript LEARNING LAB: Calibration Lookup — Editable Table\n// │ Level: Intermediate\n// │\n// │ GOAL: Build an editable calibration curve and use it to convert sensor input to\n// │    engineering units.\n// │ BEFORE RUN: No hardware; the input voltage and calibration points are simulated.\n// │ TRY FIRST: Select Calibration Points and edit or restore the table.\n// │ TRACE: `calibrationTable` → `onCalibrationTableValueChanged(rows)`; `probeInput` →\n// │    lookup and plot update.\n// │ EDIT SAFELY: Change one calibration point slightly, validate, then compare the lookup\n// │    output at the same input.\n// │ REMEMBER: Calibration is a data transformation; table validation must precede\n// │    interpolation.\n// │\n// │ EVENT TIP: Select `calibrationTable` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/CalibrationTable.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * WFScript Example: Editable Calibration Lookup Table\n * Device: Simulation ONLY (no physical instrument API calls).\n * Wiring: None.\n * Simulation: operator-defined sensor volts -> engineering units by piecewise\n *             LINEAR interpolation. Never extrapolate outside entered X range.\n * Table values from ui.get() are NATIVE JavaScript arrays in v5.6.70.2+.\n *\n * Workflow: edit the calibration table, then VALIDATE & PLOT. Move the voltage\n * slider to interpolate; SAVE SAMPLE adds an entry to the results table.\n * Table edits during Run Panel live in runtime state, not the saved .wfpanel.\n * To make permanent defaults, edit Initial Rows in Properties in Design mode.\n */\nconst FACTORY_POINTS = [\n    ['0.50', '10.0'], ['1.00', '25.0'], ['2.00', '50.0'],\n    ['3.00', '90.0'], ['4.50', '140.0']\n];\nlet calibrated = [];\nlet sampleLog = [];\nlet dirty = true;\nfunction inform(s) {\n    ui.set('calStatus', s);\n    ui.set('lookupStatus', s);\n    print('[Calibration Table] ' + s);\n}\nfunction parseNumber(cell, row, column, lo, hi) {\n    const source = String(cell === null || cell === undefined ? '' : cell).trim();\n    const value = Number(source);\n    if (!source || !isFinite(value) || value < lo || value > hi)\n        throw Error('Row ' + row + ' ' + column + ' must be ' + lo + ' to ' + hi);\n    return value;\n}\nfunction readCalibration() {\n    const rows = ui.get('calibrationTable');\n    if (!Array.isArray(rows) || rows.length > 30)\n        throw Error('Expected at most 30 calibration rows from ui.get()');\n    const points = [];\n    rows.forEach(function (row, index) {\n        if (!Array.isArray(row) || row.length !== 2)\n            throw Error('Calibration row ' + (index + 1) + ' must have two cells');\n        if (row.every(function (v) {\n            return String(v === null || v === undefined ? '' : v).trim() === '';\n        })) return;\n        const x = parseNumber(row[0], index + 1, 'input (V)', 0, 5);\n        const y = parseNumber(row[1], index + 1, 'engineering value', -100, 250);\n        points.push({\n            x: x,\n            y: y\n        });\n    });\n    if (points.length < 2) throw Error('Enter at least two complete calibration points');\n    points.sort(function (a, b) {\n        return a.x - b.x;\n    });\n    for (let i = 1; i < points.length; i++)\n        if (Math.abs(points[i].x - points[i - 1].x) < 1e-9)\n            throw Error('Repeated input voltage ' + points[i].x + ' V; each X must be unique');\n    return points;\n}\nfunction interpolate(points, x) {\n    if (x < points[0].x || x > points[points.length - 1].x) return null;\n    for (let i = 1; i < points.length; i++) {\n        const a = points[i - 1],\n            b = points[i];\n        if (x <= b.x) {\n            return {\n                value: a.y + (x - a.x) * (b.y - a.y) / (b.x - a.x),\n                segment: i\n            };\n        }\n    }\n    return {\n        value: points[points.length - 1].y,\n        segment: points.length - 1\n    };\n}\nfunction renderCurve() {\n    plots.clear('calibrationPlot');\n    plots.configure('calibrationPlot', {\n        title: 'Entered points and piecewise-linear calibration',\n        chartType: 'XY',\n        xLabel: 'Sensor input (V)',\n        yLabel: 'Engineering value (°C)',\n        showGrid: true,\n        showLegend: true,\n        xAuto: true,\n        yAuto: true\n    });\n    const xs = calibrated.map(function (p) {\n        return p.x;\n    });\n    const ys = calibrated.map(function (p) {\n        return p.y;\n    });\n    plots.setSeries('calibrationPlot', 'Interpolated calibration', xs, ys,\n        {\n            color: '#44c8e4',\n            width: 2.3\n        });\n    plots.setSeries('calibrationPlot', 'Entered calibration points', xs, ys,\n        {\n            color: '#f3bf52',\n            width: 0.5,\n            markerSize: 7.0\n        });\n}\nfunction sampleAtInput() {\n    if (dirty || calibrated.length < 2) {\n        inform('Calibration edited. Press VALIDATE & PLOT before sampling.');\n        return null;\n    }\n    const x = Number(ui.get('probeInput'));\n    if (!isFinite(x)) throw Error('Invalid sensor input');\n    ui.set('inputReadout', x);\n    const result = interpolate(calibrated, x);\n    if (result === null) {\n        inform('OUT OF RANGE: ' + x.toFixed(2) + ' V outside ' +\n            calibrated[0].x.toFixed(2) + '–' + calibrated[calibrated.length - 1].x.toFixed(2) + ' V.');\n        return null;\n    }\n    ui.set('estimatedValue', result.value);\n    plots.setSeries('calibrationPlot', 'Selected input', [x], [result.value],\n        {\n            color: '#ef89ba',\n            width: 1.0,\n            markerSize: 9\n        });\n    inform('INTERPOLATED ' + x.toFixed(3) + ' V -> ' + result.value.toFixed(2) +\n        ' °C using segment ' + result.segment + '/' + (calibrated.length - 1) + '.');\n    return {\n        x: x,\n        temperature: result.value,\n        segment: result.segment\n    };\n}\nfunction validateAndPlot() {\n    calibrated = readCalibration();\n    dirty = false;\n    renderCurve();\n    const result = sampleAtInput();\n    if (result === null) inform('VALIDATED ' + calibrated.length + ' calibration points; select an in-range voltage.');\n}\nfunction saveSample() {\n    const sample = sampleAtInput();\n    if (!sample) return;\n    if (sampleLog.length >= 100) throw Error('Maximum 100 sample-log rows');\n    sampleLog.push([\n        String(sampleLog.length + 1),\n        sample.x.toFixed(3),\n        sample.temperature.toFixed(2),\n        String(sample.segment)\n    ]);\n    ui.set('sampleLog', sampleLog);\n    inform('SAVED ' + sampleLog.length + ' calibrated sample(s); right-click the result table for CSV.');\n}\nfunction restore() {\n    ui.set('calibrationTable', FACTORY_POINTS.map(function (r) {\n        return r.slice();\n    }));\n    sampleLog = [];\n    ui.set('sampleLog', []);\n    validateAndPlot();\n    inform('Factory calibration points restored; no physical input or output.');\n}\nfunction performCalibrationAction(id, fn) {\n    try {\n        fn();\n    } catch (e) {\n        inform('ERROR: ' + String(e));\n    }\n}\n// Designer event: validateCalibration / clicked\n/**\n * CORE LESSON — Validates entered calibration points before using them to construct a plot and a\n * lookup table. Invalid source rows must not silently produce a plausible curve.\n */\nfunction onValidateCalibrationClicked() {\n    performCalibrationAction('validateCalibration', validateAndPlot);\n}\n// Designer event: restoreCalibration / clicked\nfunction onRestoreCalibrationClicked() {\n    performCalibrationAction('restoreCalibration', restore);\n}\n// Designer event: saveSample / clicked\nfunction onSaveSampleClicked() {\n    performCalibrationAction('saveSample', saveSample);\n}\n// Designer event: clearSamples / clicked\nfunction onClearSamplesClicked() {\n    performCalibrationAction('clearSamples', function () {\n        sampleLog = [];\n        ui.set('sampleLog', []);\n        inform('Sample log cleared.');\n    });\n}\n// Designer event: select calibrationTable -> Properties -> Events -> valueChanged\nfunction onCalibrationTableValueChanged(rows) {\n    dirty = true;\n    calibrated = [];\n    plots.clear('calibrationPlot');\n    inform('EDITED ' + rows.length + ' rows. Press VALIDATE & PLOT to apply the new calibration.');\n}\n// Designer event: select probeInput -> Properties -> Events -> valueChanged\nfunction onProbeInputValueChanged() {\n    try {\n        sampleAtInput();\n    } catch (e) {\n        inform('ERROR: ' + String(e));\n    }\n}\nui.set('sampleLog', []);\ntry {\n    validateAndPlot();\n} catch (e) {\n    inform('ERROR: ' + String(e));\n}\n",
   "activePageId": "points",
   "appearance": {
     "themeMode": "dark",
@@ -63,12 +63,18 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "valueChanged": {
+              "handler": "onCalibrationTableValueChanged",
+              "enabled": true
+            }
+          },
           "properties": {
             "columns": "Sensor volts (V)|Engineering value (°C)",
             "initialRows": "0.50|10.0\n1.00|25.0\n2.00|50.0\n3.00|90.0\n4.50|140.0",
             "maxRows": 30,
-            "editable": true
+            "editable": true,
+            "emitFullChangeEvent": true
           }
         },
         {
@@ -82,7 +88,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "onValidateCalibrationClicked",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -96,7 +107,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "onRestoreCalibrationClicked",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -188,7 +204,12 @@
           "value": 2.5,
           "min": 0,
           "max": 5,
-          "events": {},
+          "events": {
+            "valueChanged": {
+              "handler": "onProbeInputValueChanged",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -279,7 +300,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "onSaveSampleClicked",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -293,7 +319,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "onClearSamplesClicked",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {

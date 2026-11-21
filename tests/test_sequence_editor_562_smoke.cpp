@@ -6,11 +6,27 @@
 #include <QJsonArray>
 #include <QDebug>
 #include <QTableWidget>
+#include <QTreeWidget>
+#include <functional>
+#include <QVector>
 #include <QPushButton>
 #include <QComboBox>
 
 static void insist(bool condition,const QString& message) {
     if(!condition)qFatal("TestSequenceEditor: %s",qPrintable(message));
+}
+
+static QVector<QTreeWidgetItem*> authoredRows(QTreeWidget* table){
+    QVector<QTreeWidgetItem*> result;
+    std::function<void(QTreeWidgetItem*)> descend=[&](QTreeWidgetItem* p){
+        for(int i=0;i<p->childCount();++i){
+            QTreeWidgetItem* child=p->child(i);
+            if(!child->data(0,Qt::UserRole).toString().isEmpty())result.append(child);
+            descend(child);
+        }
+    };
+    for(int i=0;i<table->topLevelItemCount();++i)descend(table->topLevelItem(i));
+    return result;
 }
 int main(int argc,char** argv) {
     QApplication app(argc,argv);
@@ -56,25 +72,25 @@ export function withSettle(ms) { return ms + 1; }
     insist(!TestSequenceEditor::extractModuleDefinition(QStringLiteral("export const definition = buildTest();"),&ignored,nullptr,nullptr,&error),
            "Expression must not be evaluated");
     TestSequenceEditor dialog(changed,QJsonObject{}, {QStringLiteral("readSupply")});
-    auto* table=dialog.findChild<QTableWidget*>(QStringLiteral("testSequenceStepTable"));
+    auto* table=dialog.findChild<QTreeWidget*>(QStringLiteral("testSequenceStepTable"));
     auto* add=dialog.findChild<QPushButton*>(QStringLiteral("addTestStepButton"));
     auto* up=dialog.findChild<QPushButton*>(QStringLiteral("moveTestStepUpButton"));
     auto* group=dialog.findChild<QComboBox*>(QStringLiteral("testSequenceGroupCombo"));
     auto* apply=dialog.findChild<QPushButton*>(QStringLiteral("applyTestStepButton"));
     insist(table && add && up && group && apply,"Missing visual editor controls");
-    insist(table->rowCount()==2,"Initial two steps not shown");
+    insist(authoredRows(table).size()==2,"Initial two steps not shown");
     // Adding from Setup must place a new Main step after existing Main steps,
     // never below Cleanup. Move Up must work within Main immediately.
     add->click();
-    insist(table->rowCount()==3,"Add step did not insert");
-    insist(table->item(2,0)->text()==QStringLiteral("main"),"Added step should belong to Main");
-    insist(table->item(2,1)->text()==QStringLiteral("New test step"),"Missing new Main step");
+    insist(authoredRows(table).size()==3,"Add step did not insert");
+    insist(authoredRows(table).at(2)->text(0)==QStringLiteral("New action"),"Added step should belong to Main");
+    insist(authoredRows(table).at(2)->text(0)==QStringLiteral("New action"),"Missing new Main step");
     up->click();
-    insist(table->item(1,1)->text()==QStringLiteral("New test step"),"Cannot reorder newly added Main step");
+    insist(authoredRows(table).at(1)->text(0)==QStringLiteral("New action"),"Cannot reorder newly added Main step");
     // Changing the group must relocate the row to the proper group boundary.
     group->setCurrentText(QStringLiteral("cleanup"));
     apply->click();
-    insist(table->item(2,0)->text()==QStringLiteral("cleanup"),"Group changes must relocate steps");
+    insist(authoredRows(table).at(2)->text(0)==QStringLiteral("New action") && authoredRows(table).at(2)->parent()->text(0)==QStringLiteral("CLEANUP"),"Group changes must relocate steps");
     qInfo() << "PASS v5.6.62.2 visual Test Sequence editor: strict JSON, safe replacement, group-aware add/move and group change";
     return 0;
 }

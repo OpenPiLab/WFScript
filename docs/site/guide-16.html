@@ -1,0 +1,57 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 16: Building complete applications · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="active">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 16 — Building complete applications</h2>
+<p>A well-structured Panel is easier to change than a powerful but entangled one. The following structure works well for a multi-page measurement application:</p>
+<table>
+<thead>
+<tr>
+  <th>Location</th>
+  <th>Owns</th>
+  <th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Pages</td>
+  <td>Layout for Controls, Results, Settings and Diagnostics</td>
+  <td>Controls Page</td>
+</tr>
+<tr>
+  <td>Panel Data</td>
+  <td>Cross-Page state and computed values</td>
+  <td><code>Acquisition.Running</code></td>
+</tr>
+<tr>
+  <td>Main script</td>
+  <td>Startup, user events and display coordination</td>
+  <td><code>onCaptureClicked()</code></td>
+</tr>
+<tr>
+  <td>Signal library</td>
+  <td>Reusable processing</td>
+  <td>spectrum, smoothing, calibration</td>
+</tr>
+<tr>
+  <td>Device/SCPI library</td>
+  <td>Connection, serialization and error handling</td>
+  <td><code>captureWaveform()</code></td>
+</tr>
+<tr>
+  <td>Test library</td>
+  <td>Named step procedures and compact return objects</td>
+  <td><code>verifyChannel()</code></td>
+</tr>
+<tr>
+  <td>Test definition</td>
+  <td>Execution order, sweeps, limits and report policy</td>
+  <td>Setup/Main/Cleanup</td>
+</tr>
+</tbody>
+</table>
+<h3>One source of truth per value</h3>
+<p>An operator setpoint should not be stored independently as a widget value, a second JavaScript global and another Panel Data variable unless each has a clearly different meaning. Declare the shared state, bind the widget, and let the communication layer consume it through a validated operation.</p>
+<h3>One owner per connection</h3>
+<p>A device driver should own its socket and queue. The UI requests measurements through the driver; it should not send raw SCPI while the driver is in the middle of a framed binary transfer. Keep scope data inside a bulk processing path rather than repeatedly converting samples through GUI updates.</p>
+<h3>Name operations for their purpose</h3>
+<p>Methods such as <code>verifySupplyChannel()</code> or <code>captureAlignedPair()</code> express the intended operation better than a UI handler containing a dozen literal SCPI strings. Keep the lower-level commands accessible in the driver module for diagnostics, but make the common workflow readable.</p>
+<h3>A helpful first screen</h3>
+<p>The Page should explain the required wiring or startup state, show connected/disconnected status, and make the primary next action obvious. If RUN is blocked, explain <em>why</em>. Don't leave the operator to infer that a network timeout means the physical output is OFF.</p>
+<div class="pager"><a href="guide-15.html">← Previous chapter</a><a href="guide-17.html">Next chapter →</a></div></article></main></div></body></html>

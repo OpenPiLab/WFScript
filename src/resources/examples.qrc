@@ -2,6 +2,11 @@
   <qresource prefix="/wfscript/examples">
     <file alias="catalog.json">../../examples/catalog.json</file>
     <file alias="GettingStarted.wfpanel">../../examples/panels/GettingStarted.wfpanel</file>
+    <file alias="JavaScriptDSPStudio.wfpanel">../../examples/panels/JavaScriptDSPStudio.wfpanel</file>
+    <file alias="PanelDataLab.wfpanel">../../examples/panels/PanelDataLab.wfpanel</file>
+    <file alias="SQLiteDataLab.wfpanel">../../examples/panels/SQLiteDataLab.wfpanel</file>
+    <file alias="ScriptUtilityLab.wfpanel">../../examples/panels/ScriptUtilityLab.wfpanel</file>
+    <file alias="PanelTimers.wfpanel">../../examples/panels/PanelTimers.wfpanel</file>
     <file alias="WidgetPlayground.wfpanel">../../examples/panels/WidgetPlayground.wfpanel</file>
     <file alias="LabelFormatting.wfpanel">../../examples/panels/LabelFormatting.wfpanel</file>
     <file alias="EquationExperimentLab.wfpanel">../../examples/panels/EquationExperimentLab.wfpanel</file>
@@ -11,6 +16,8 @@
     <file alias="AutomatedTestBench.wfpanel">../../examples/panels/AutomatedTestBench.wfpanel</file>
     <file alias="AutomatedTestStation.wfpanel">../../examples/panels/AutomatedTestStation.wfpanel</file>
     <file alias="AD3HardwareTestStation.wfpanel">../../examples/panels/AD3HardwareTestStation.wfpanel</file>
+    <file alias="ACNetworkLaboratory.wfpanel">../../examples/panels/ACNetworkLaboratory.wfpanel</file>
+    <file alias="RCStepResponseLaboratory.wfpanel">../../examples/panels/RCStepResponseLaboratory.wfpanel</file>
     <file alias="SignalLab.wfpanel">../../examples/panels/SignalLab.wfpanel</file>
     <file alias="TableDrivenWavegen.wfpanel">../../examples/panels/TableDrivenWavegen.wfpanel</file>
     <file alias="AnalogCharts.wfpanel">../../examples/panels/AnalogCharts.wfpanel</file>
@@ -19,9 +26,20 @@
     <file alias="AD3ScopeExplorer.wfpanel">../../examples/panels/AD3ScopeExplorer.wfpanel</file>
     <file alias="PowerSupplies.wfpanel">../../examples/panels/PowerSupplies.wfpanel</file>
     <file alias="StaticDigitalIO.wfpanel">../../examples/panels/StaticDigitalIO.wfpanel</file>
+    <file alias="DigitalInputMonitor.wfpanel">../../examples/panels/DigitalInputMonitor.wfpanel</file>
     <file alias="LogicAnalyzer.wfpanel">../../examples/panels/LogicAnalyzer.wfpanel</file>
     <file alias="ClockPWM.wfpanel">../../examples/panels/ClockPWM.wfpanel</file>
     <file alias="QuadratureEncoder.wfpanel">../../examples/panels/QuadratureEncoder.wfpanel</file>
     <file alias="SequenceLab.wfpanel">../../examples/panels/SequenceLab.wfpanel</file>
+    <file alias="ProtocolUartAsync.wfpanel">../../examples/panels/ProtocolUartAsync.wfpanel</file>
+    <file alias="ProtocolUART.wfpanel">../../examples/panels/ProtocolUART.wfpanel</file>
+    <file alias="ProtocolSPI.wfpanel">../../examples/panels/ProtocolSPI.wfpanel</file>
+    <file alias="ProtocolI2C.wfpanel">../../examples/panels/ProtocolI2C.wfpanel</file>
+    <file alias="ProtocolCAN.wfpanel">../../examples/panels/ProtocolCAN.wfpanel</file>
+    <file alias="ProtocolSWD.wfpanel">../../examples/panels/ProtocolSWD.wfpanel</file>
+    <file alias="SerialCommsLab.wfpanel">../../examples/panels/SerialCommsLab.wfpanel</file>
+    <file alias="TcpCommsLab.wfpanel">../../examples/panels/TcpCommsLab.wfpanel</file>
+    <file alias="UdpCommsLab.wfpanel">../../examples/panels/UdpCommsLab.wfpanel</file>
+    <file alias="CommunicationsTerminalLab.wfpanel">../../examples/panels/CommunicationsTerminalLab.wfpanel</file>
   </qresource>
 </RCC>

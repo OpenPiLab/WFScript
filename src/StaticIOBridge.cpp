@@ -1,5 +1,9 @@
 #include "StaticIOBridge.h"
 #include "DwfRuntime.h"
+#include <QJSEngine>
+#include <QTimer>
+#include <QDateTime>
+#include <QtGlobal>
 
 StaticIOInput::StaticIOInput(StaticIOBridge* bridge,int index,QObject* parent)
     :QObject(parent),m_bridge(bridge),m_index(index) {}
@@ -160,4 +164,176 @@ bool StaticIOBridge::stop() {
     m_outputLevels=0;
     for(int i=0;i<16;++i)pin(i)->setValue(2);
     return true;
+}
+
+
+// Every monitor snapshot is observational. No DigitalIO configure/reset/output
+// functions are called by startMonitor(), pollMonitor(), or stopMonitor().
+// The QTimer and QJSEngine reside on the SAME PanelRuntime worker thread.
+bool StaticIOBridge::monitoring() const {
+    return m_monitorTimer && m_monitorTimer->isActive();
+}
+
+bool StaticIOBridge::readMonitorSnapshot(quint32* mask) {
+    if (m_runtime && !m_runtime->protocolOwner().isEmpty()) {
+        m_error=QStringLiteral("Digital protocol %1 owns shared digital resources; stop Protocol1 before monitoring")
+                    .arg(m_runtime->protocolOwner());
+        return false;
+    }
+    const auto snapshot=status(); // exactly one DigitalIOStatus + InputStatus per poll
+    if(!snapshot.value(QStringLiteral("valid")).toBool())return false;
+    *mask=quint32(snapshot.value(QStringLiteral("inputMask")).toUInt());
+    return true;
+}
+
+bool StaticIOBridge::onChange(int pin,const QJSValue& callback,const QVariantMap& options) {
+    m_error.clear();
+    if(m_monitorShutdown || !m_engine) {
+        m_error=QStringLiteral("StaticIO input callbacks require a running Panel script");
+        return false;
+    }
+    if(pin<0 || pin>=16 || !callback.isCallable()) {
+        m_error=QStringLiteral("onChange(pin,callback): pin must be 0..15 and callback a function");
+        return false;
+    }
+    const QString edge=options.value(QStringLiteral("edge"),QStringLiteral("change")).toString().toLower();
+    const QVariant debounce=options.value(QStringLiteral("debounceMs"),30);
+    bool ok=false;
+    const int debounceMs=debounce.toInt(&ok);
+    if((edge!=QStringLiteral("change") && edge!=QStringLiteral("rising") && edge!=QStringLiteral("falling")) ||
+        !ok || debounceMs<0 || debounceMs>1000 || debounce.toDouble()!=double(debounceMs)) {
+        m_error=QStringLiteral("onChange: edge must be change/rising/falling; debounceMs integer 0..1000");
+        return false;
+    }
+    const int initial=int((m_lastMonitorMask>>pin)&1u);
+    Watch w;
+    w.callback=callback; w.edge=edge; w.debounceMs=debounceMs;
+    w.raw=initial; w.stable=initial;
+    w.rawSinceMs=m_monitorClock.isValid()?m_monitorClock.elapsed():0;
+    m_watches.insert(pin,w);
+    // Does not start a timer or perform an SDK read.
+    return true;
+}
+void StaticIOBridge::clearOnChange(int pin) {m_watches.remove(pin);}
+void StaticIOBridge::clearAllOnChange() {m_watches.clear();}
+
+bool StaticIOBridge::startMonitor(const QVariantMap& options) {
+    m_error.clear();
+    if(m_monitorShutdown || !m_engine) {
+        m_error=QStringLiteral("startMonitor requires a running Panel; standalone scripts have no persistent event loop");
+        return false;
+    }
+    if(monitoring()) {
+        m_error=QStringLiteral("StaticIO monitor is already running; call stopMonitor() first");
+        return false;
+    }
+    const QVariant value=options.value(QStringLiteral("pollIntervalMs"),20);
+    bool ok=false;
+    const int pollMs=value.toInt(&ok);
+    if(!ok || value.toDouble()!=double(pollMs) || pollMs<10 || pollMs>1000) {
+        m_error=QStringLiteral("pollIntervalMs must be an integer between 10 and 1000 ms");
+        return false;
+    }
+    // Baseline snapshot is required: no synthetic first-edge callbacks.
+    quint32 initial=0;
+    if(!readMonitorSnapshot(&initial))return false;
+    m_lastMonitorMask=initial;
+    m_monitorClock.start();
+    m_monitorPolls=0; m_monitorChanges=0; m_monitorCallbacks=0;
+    m_monitorFailures=0; m_lastPollUsec=0;
+    m_pollIntervalMs=pollMs;
+    for(auto it=m_watches.begin();it!=m_watches.end();++it) {
+        const int level=int((initial>>it.key())&1u);
+        it->raw=level;it->stable=level;it->rawSinceMs=0;
+    }
+    if(!m_monitorTimer) {
+        m_monitorTimer=new QTimer(this);
+        m_monitorTimer->setTimerType(Qt::CoarseTimer);
+        connect(m_monitorTimer,&QTimer::timeout,this,&StaticIOBridge::pollMonitor);
+    }
+    m_monitorTimer->start(m_pollIntervalMs);
+    emit monitoringChanged();
+    return true;
+}
+void StaticIOBridge::stopMonitor() {
+    if(!monitoring())return;
+    m_monitorTimer->stop();
+    emit monitoringChanged();
+    // Watch registrations are retained for a deliberate restart; no polls occur.
+}
+void StaticIOBridge::shutdownMonitor() {
+    stopMonitor();
+    m_monitorShutdown=true;
+    clearAllOnChange(); // release QJSValue callbacks before QJSEngine destruction
+    m_engine=nullptr;
+}
+
+void StaticIOBridge::pollMonitor() {
+    if(!monitoring() || m_monitorShutdown)return;
+    QElapsedTimer callTime;callTime.start();
+    quint32 input=0;
+    if(!readMonitorSnapshot(&input)) {
+        ++m_monitorFailures;
+        const QString reason=m_error;
+        stopMonitor(); // fail closed: don't invent LOW or false input edges
+        emit monitorFailed(reason);
+        return;
+    }
+    m_lastPollUsec=callTime.nsecsElapsed()/1000;
+    m_lastMonitorMask=input;
+    ++m_monitorPolls;
+    const qint64 now=m_monitorClock.elapsed();
+    const QList<int> keys=m_watches.keys();
+    for(const int pin:keys) {
+        auto it=m_watches.find(pin);
+        if(it==m_watches.end())continue;
+        const int sample=int((input>>pin)&1u);
+        if(sample!=it->raw) {
+            it->raw=sample;
+            it->rawSinceMs=now;
+        }
+        if(sample==it->stable || (now-it->rawSinceMs)<it->debounceMs)continue;
+        const int previous=it->stable;
+        it->stable=sample;
+        ++m_monitorChanges;
+        const bool match=it->edge==QStringLiteral("change") ||
+                 (it->edge==QStringLiteral("rising") && sample==1) ||
+                 (it->edge==QStringLiteral("falling") && sample==0);
+        if(!match)continue;
+        // The event is host-polled, not device timestamped or hardware-triggered.
+        QVariantMap event{{QStringLiteral("pin"),pin},
+                          {QStringLiteral("value"),sample},
+                          {QStringLiteral("previous"),previous},
+                          {QStringLiteral("edge"),sample?QStringLiteral("rising"):QStringLiteral("falling")},
+                          {QStringLiteral("stableMs"),int(now-it->rawSinceMs)},
+                          {QStringLiteral("inputMask"),input},
+                          {QStringLiteral("timestampUtc"),QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},
+                          {QStringLiteral("timestampSource"),QStringLiteral("HostPollAfterSDK")},
+                          {QStringLiteral("simulation"),simulation()}};
+        QJSValue callback=it->callback; // retain across callback clear/stop
+        emit inputChanged(pin,sample,previous,event);
+        if(!callback.isCallable() || !m_engine || m_monitorShutdown)continue;
+        ++m_monitorCallbacks;
+        emit callbackStarted();
+        const QJSValue result=callback.call(QJSValueList{
+            QJSValue(sample),QJSValue(pin),m_engine->toScriptValue(event)});
+        emit callbackFinished();
+        if(!m_monitorShutdown && m_engine && !m_engine->isInterrupted() && result.isError())
+            emit callbackFailed(QStringLiteral("StaticIO.onChange(DIO%1)").arg(pin),result);
+        if(!monitoring())break; // callback may stopMonitor(); never emit more events
+    }
+}
+QVariantMap StaticIOBridge::monitorStats() const {
+    return {{QStringLiteral("monitoring"),monitoring()},
+            {QStringLiteral("pollIntervalMs"),m_pollIntervalMs},
+            {QStringLiteral("watchCount"),m_watches.size()},
+            {QStringLiteral("polls"),qulonglong(m_monitorPolls)},
+            {QStringLiteral("changes"),qulonglong(m_monitorChanges)},
+            {QStringLiteral("callbacks"),qulonglong(m_monitorCallbacks)},
+            {QStringLiteral("readFailures"),qulonglong(m_monitorFailures)},
+            {QStringLiteral("lastPollDurationUs"),m_lastPollUsec},
+            {QStringLiteral("inputMask"),m_lastMonitorMask},
+            {QStringLiteral("timestampSource"),QStringLiteral("HostPollAfterSDK")},
+            {QStringLiteral("simulation"),simulation()},
+            {QStringLiteral("lastError"),m_error}};
 }

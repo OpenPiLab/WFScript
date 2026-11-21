@@ -24,6 +24,8 @@ int main(int argc,char** argv) {
     std::atomic_bool stop=false;
     QHash<QString,QVariant> output;
     QStringList events;
+    QVariantList lastCompleteSequence;
+    QVariantList accumulatedMeasurements;
     QString exceptionId;
     TestRunnerBridge runner(&engine,[&](const QString& id,const QVariant& value) {
         if(id==QStringLiteral("log")) {
@@ -31,7 +33,26 @@ int main(int argc,char** argv) {
             if(m.value(QStringLiteral("clear")).toBool())events.clear();
             if(m.contains(QStringLiteral("append")))
                 events.push_back(m.value(QStringLiteral("append")).toMap().value(QStringLiteral("level")).toString());
-        } else output[id]=value;
+        } else {
+            if(id==QStringLiteral("sequence") &&
+               value.metaType().id()==QMetaType::QVariantList)
+                lastCompleteSequence=value.toList();
+            if(id==QStringLiteral("table")) {
+                if(value.metaType().id()==QMetaType::QVariantList)
+                    accumulatedMeasurements=value.toList();
+                else {
+                    const QVariantMap update=value.toMap();
+                    if(update.value(QStringLiteral("reset")).toBool())accumulatedMeasurements.clear();
+                    if(update.contains(QStringLiteral("append"))) {
+                        const QVariant added=update.value(QStringLiteral("append"));
+                        if(added.metaType().id()==QMetaType::QVariantList)
+                            accumulatedMeasurements.append(added.toList());
+                        else accumulatedMeasurements.push_back(added);
+                    }
+                }
+            }
+            output[id]=value;
+        }
         return true;
     },&stop);
     QJSEngine::setObjectOwnership(&runner,QJSEngine::CppOwnership);
@@ -52,7 +73,8 @@ int main(int argc,char** argv) {
         }) &&
         TestRunner.add({id:'report',name:'Report'},function(){return true;});
     )JS")));
-    assert(output.value(QStringLiteral("sequence")).toList().size()==4);
+    assert(lastCompleteSequence.size()==4);
+    assert(output.value(QStringLiteral("sequence")).toMap().contains(QStringLiteral("progress")));
     assert(evalOk(engine,QStringLiteral("TestRunner.reset();")));
     assert(events.isEmpty());
     assert(evalOk(engine,QStringLiteral("TestRunner.next();")));
@@ -63,7 +85,10 @@ int main(int argc,char** argv) {
     assert(runner.summary().value(QStringLiteral("completedSteps")).toInt()==4);
     assert(runner.summary().value(QStringLiteral("passedMeasurements")).toInt()==2);
     assert(runner.resultsData().size()==2);
-    assert(output.value(QStringLiteral("table")).toList().size()==2);
+    // Table widgets receive append/reset commands, not full snapshots after each measurement.
+    assert(accumulatedMeasurements.size()==2);
+    assert(accumulatedMeasurements.at(0).toMap().value(QStringLiteral("name")).toString()==QStringLiteral("Voltage"));
+    assert(accumulatedMeasurements.at(1).toMap().value(QStringLiteral("name")).toString()==QStringLiteral("PWM"));
     assert(output.value(QStringLiteral("resultV")).toDouble()>3.3);
     assert(events.contains(QStringLiteral("PASS")));
     assert(!evalOk(engine,QStringLiteral("globalThis.duty=47.5;TestRunner.run();")));

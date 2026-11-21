@@ -8,7 +8,7 @@
 #include <QBrush>
 #include <QJSEngine>
 #include <QJSValue>
-#include <QTableWidget>
+#include <QTableView>
 #include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -27,7 +27,7 @@ int main(int argc,char** argv) {
     QWidget* base=factory.create(definition,&parent,{});
     auto* log=dynamic_cast<EventLogWidget*>(base);
     CHECK(log && log->entryCount()==0);
-    CHECK(log->findChild<QTableWidget*>(QStringLiteral("eventLogTable")));
+    CHECK(log->findChild<QTableView*>(QStringLiteral("eventLogTable")));
     auto* filter=log->findChild<QComboBox*>(QStringLiteral("eventLogFilter"));
     CHECK(filter);
     CHECK(filter->count()==7);

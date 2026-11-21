@@ -1,0 +1,238 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "SPI Protocol — Master Transactions — WFScript v0.2-dev native Digilent SDK protocols",
+  "scriptName": "ProtocolSPI.js",
+  "activePageId": "protocol_spi",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "protocol_spi",
+      "name": "SPI Protocol",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "spiTitle",
+          "type": "label",
+          "text": "SPI MASTER  /  CLK 0 · MOSI 1 · MISO 2 · CS 3",
+          "x": 24,
+          "y": 18,
+          "width": 1112,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "spiSafety",
+          "type": "label",
+          "text": "Loopback: DIO1 → 1 kΩ → DIO2. A real JEDEC flash requires compatible 3.3 V wiring and selected CS. No output on load.",
+          "x": 24,
+          "y": 80,
+          "width": 1112,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "spiRate",
+          "type": "option_selector",
+          "text": "SPI CLOCK, Hz",
+          "x": 24,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "100000|500000|1000000|2000000",
+            "defaultIndex": 2,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "spiMode",
+          "type": "option_selector",
+          "text": "MODE",
+          "x": 380,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "0|1|2|3",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "spiCfg",
+          "type": "button",
+          "text": "CONFIGURE",
+          "x": 24,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSpiCfgClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "spiXfer",
+          "type": "button",
+          "text": "TRANSFER 0x9F",
+          "x": 300,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSpiXferClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "spiReadId",
+          "type": "button",
+          "text": "FLASH READ ID",
+          "x": 576,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSpiReadIdClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "spiStop",
+          "type": "button",
+          "text": "RELEASE PINS",
+          "x": 852,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSpiStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "spiStatus",
+          "type": "label",
+          "text": "IDLE",
+          "x": 24,
+          "y": 385,
+          "width": 1112,
+          "height": 76,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "spiLog",
+          "type": "event_log",
+          "text": "SPI Transaction & Event Log",
+          "x": 24,
+          "y": 476,
+          "width": 1112,
+          "height": 239,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        },
+        {
+          "id": "spiFoot",
+          "type": "label",
+          "text": "Simulation results are labeled as simulation. This is a native SDK controller example, not a passive waveform decoder.\\nStop/Close releases protocol outputs. Configure buttons may physically drive selected DIO pins.",
+          "x": 24,
+          "y": 727,
+          "width": 1112,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: SPI Protocol — Master Transactions\n// │ Level: Intermediate  |  Mode: hardware-capable\n// │\n// │ GOAL: Configure an AD3 SPI master and inspect a command/response transfer.\n// │ BEFORE RUN: Use Simulation for structure; physical use needs a voltage-compatible SPI\n// │    target, a shared ground and valid wiring.\n// │ TRY FIRST: Press CONFIGURE.\n// │ TRACE: `spiCfg` → `onSpiCfgClicked()` →\n// │    `Protocol1.SPI.configure({clock:0,mosi:1,miso:2,select:3,...})`.\n// │ EDIT SAFELY: Change the configured SPI mode only when your connected target supports it.\n// │ REMEMBER: Clock, MOSI, MISO and chip-select are separate signals; receiving data\n// │    requires a responding target.\n// │\n// │ EVENT TIP: Select `spiCfg` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/ProtocolSPI.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n// SPI master transaction example; DIO pins remain untouched until CONFIGURE.\nfunction spiLog(t) {\n    ui.set('spiStatus', t);\n    ui.set('spiLog', {\n        append: {\n            level: t.indexOf('ERROR') >= 0 ? 'ERROR' : (t.indexOf('NACK') >= 0 || t.indexOf('UNCONFIRMED') >= 0 ? 'WARN' : 'INFO'),\n            source: 'SPI',\n            message: t\n        }\n    });\n    print('SPI: ' + t);\n}\nfunction spiTry(fn) {\n    try {\n        fn();\n    } catch (e) {\n        spiLog('ERROR: ' + String(e));\n    }\n}\n/**\n * CORE LESSON — Makes SPI pin assignments and mode/rate explicit. Read-only simulation does not\n * prove a target device or flash ID exists.\n */\nfunction spiSetup() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    const cfg = {\n        clock: 0,\n        mosi: 1,\n        miso: 2,\n        select: 3,\n        frequencyHz: Number(ui.get('spiRate')),\n        mode: Number(ui.get('spiMode')),\n        msbFirst: true\n    };\n    if (!Protocol1.SPI.configure(cfg)) throw Error(Protocol1.SPI.lastError);\n    spiLog((Protocol1.simulation ? 'SIMULATION' : 'READY') + ' / ' + cfg.frequencyHz + ' Hz / mode ' + cfg.mode);\n}\nfunction spiTransfer() {\n    const r = Protocol1.SPI.transfer([0x9F, 0, 0, 0]);\n    if (!r.ok) throw Error(r.error);\n    spiLog((r.simulated ? 'SIMULATED — NOT a real device ID' : 'TRANSFER COMPLETE') + ' / RX ' + JSON.stringify(r.rx));\n}\nfunction spiFlashId() {\n    // JEDEC ID: command byte followed by three RX bytes via native command+dummy API.\n    const r = Protocol1.SPI.command(8, 0x9F, 0, [], 3, 8, 1);\n    if (!r.ok) throw Error(r.error);\n    spiLog((r.simulated ? 'SIMULATED — no flash identified' : 'FLASH RESPONSE') + ' / ' + JSON.stringify(r.rx));\n}\nfunction spiStop() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    spiLog('STOPPED / pins released');\n}\nfunction onSpiCfgClicked() {\n    return spiTry(spiSetup);\n}\nfunction onSpiXferClicked() {\n    return spiTry(spiTransfer);\n}\nfunction onSpiReadIdClicked() {\n    return spiTry(spiFlashId);\n}\nfunction onSpiStopClicked() {\n    return spiTry(spiStop);\n}\nspiLog('IDLE — configure an SPI master before transfers');\n"
+}

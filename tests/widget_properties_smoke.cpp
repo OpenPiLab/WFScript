@@ -10,10 +10,12 @@
 #include <QDoubleSpinBox>
 #include <QLabel>
 #include <QLineEdit>
+#include <QPlainTextEdit>
 #include <QPointer>
 #include <QSpinBox>
 #include <QDebug>
 #include <QJsonArray>
+#include <QSet>
 #include <QJsonObject>
 #include <memory>
 
@@ -57,8 +59,16 @@ int main(int argc,char** argv) {
     QApplication app(argc,argv);
     CHECK(WidgetRegistry::instance().registerFactory(std::make_unique<CustomMeter>()));
     WidgetPropertyInspector inspector;
+    auto* typeLabel=inspector.findChild<QLabel*>(QStringLiteral("panelPropertyType"));
+    CHECK(typeLabel && typeLabel->text()==QStringLiteral("No widget selected"));
+    int editedCount=0;
+    QObject::connect(&inspector,&WidgetPropertyInspector::edited,&inspector,
+                     [&editedCount]{++editedCount;});
     PanelControl def=make("meter1");
     inspector.setControl(def,true);
+    CHECK(typeLabel->text()==QStringLiteral("Test Meter (test.meter)"));
+    CHECK(typeLabel->toolTip().contains(QStringLiteral("test.meter")));
+    CHECK(editedCount==0); // Selection must not change the project.
     auto* precision=inspector.findChild<QSpinBox*>("panelProperty_precision");
     auto* units=inspector.findChild<QComboBox*>("panelProperty_units");
     auto* alarm=inspector.findChild<QCheckBox*>("panelProperty_alarm");
@@ -93,10 +103,112 @@ int main(int argc,char** argv) {
     CHECK(WidgetDocumentCodec::decode(extra,&decoded,&error));
     CHECK(WidgetDocumentCodec::encode(decoded).value("properties").toObject()==forward);
     // Editor values must not leak between two widgets of the same type.
+    const int countBeforeSelection=editedCount;
     inspector.setControl(make("meter2"),true);
+    CHECK(editedCount==countBeforeSelection);
+    CHECK(typeLabel->text()==QStringLiteral("Test Meter (test.meter)"));
     CHECK(precision->value()==2 && units->currentText()=="V" && !alarm->isChecked());
+    // Selection changes must always update the visible read-only factory type.
+    const auto* buttonFactory=WidgetRegistry::instance().factory(QStringLiteral("button"));
+    CHECK(buttonFactory);
+    const PanelControl button=buttonFactory->defaultDefinition(QStringLiteral("button1"));
+    inspector.setControl(button,true);
+    CHECK(typeLabel->text().contains(buttonFactory->displayName()));
+    CHECK(typeLabel->toolTip().contains(QStringLiteral("button")));
+    CHECK(inspector.readControl(button).type==button.type);
+    CHECK(editedCount==countBeforeSelection);
+    // Legacy saved fields are shown, preserved, and never falsely editable.
+    PanelControl legacyButton=button;
+    legacyButton.properties.insert(QStringLiteral("cornerRadius"),10);
+    legacyButton.properties.insert(QStringLiteral("accent"),QStringLiteral("cyan"));
+    inspector.setControl(legacyButton,true);
+    auto* saved=inspector.findChild<QPlainTextEdit*>(QStringLiteral("panelPropertyLegacySettings"));
+    CHECK(saved && saved->isReadOnly());
+    CHECK(saved->toPlainText().contains(QStringLiteral("cornerRadius")));
+    CHECK(saved->toPlainText().contains(QStringLiteral("accent")));
+    CHECK(inspector.readControl(legacyButton).properties.value(QStringLiteral("cornerRadius")).toInt()==10);
+    CHECK(inspector.readControl(legacyButton).properties.value(QStringLiteral("accent")).toString()==QStringLiteral("cyan"));
+    inspector.setControl(PanelControl{},false);
+    CHECK(typeLabel->text()==QStringLiteral("No widget selected"));
+    CHECK(typeLabel->toolTip().isEmpty());
+    CHECK(editedCount==countBeforeSelection);
     // Old projects retain their original fields; no new object appears until needed.
     CHECK(!WidgetDocumentCodec::encode(def).contains("properties"));
+    // Universal metadata is editor-backed for EVERY factory, not just the
+    // hardcoded legacy widget types. No unsupported editor kinds are silent.
+    auto& registry=WidgetRegistry::instance();
+    const QSet<QString> kinds{QStringLiteral("string"),QStringLiteral("multiline"),
+        QStringLiteral("choice"),QStringLiteral("boolean"),
+        QStringLiteral("integer"),QStringLiteral("double")};
+    int audited=0;
+    for(const QString& type:registry.typeIds()) {
+        const auto* factory=registry.factory(type);
+        CHECK(factory);
+        PanelControl sample=factory->defaultDefinition(QStringLiteral("audit_%1").arg(audited));
+        inspector.setControl(sample,true);
+        CHECK(inspector.editor(QStringLiteral("toolTip")));
+        CHECK(inspector.editor(QStringLiteral("runEnabled")));
+        CHECK(inspector.editor(QStringLiteral("runVisible")));
+        QSet<QString> ids;
+        for(const WidgetProperty& prop:registry.properties(type)) {
+            if(prop.id==QStringLiteral("geometry") || prop.id==QStringLiteral("id") ||
+               prop.id==QStringLiteral("type"))continue;
+            if(prop.id.isEmpty() || !kinds.contains(prop.kind) || ids.contains(prop.id) ||
+               !inspector.editor(prop.id)) {
+                qCritical()<<"Factory property not editable:"<<type<<prop.id<<prop.kind;
+                return 1;
+            }
+            ids.insert(prop.id);
+        }
+        // Factories may retain internal fields that are intentionally not
+        // designer-editable (image bytes, fixed digital-chart restrictions).
+        for(auto it=sample.properties.constBegin();it!=sample.properties.constEnd();++it) {
+            const bool internal=(type==QStringLiteral("image") &&
+                                  (it.key()==QStringLiteral("imageData") ||
+                                   it.key()==QStringLiteral("imageName"))) ||
+                (type==QStringLiteral("digital_plot") &&
+                 (it.key()==QStringLiteral("chartType") ||
+                  it.key()==QStringLiteral("xLog") ||
+                  it.key()==QStringLiteral("showLegend")));
+            if(!ids.contains(it.key()) && !internal) {
+                qCritical()<<"Default setting omitted from Property Editor:"<<type<<it.key();
+                return 1;
+            }
+        }
+        CHECK(inspector.readControl(sample).type==sample.type);
+        ++audited;
+    }
+    CHECK(audited>=29);
+    // Shared properties can be edited without changing the specialized
+    // factory contract and remain valid after serialization.
+    inspector.setControl(def,true);
+    auto* hint=inspector.findChild<QLineEdit*>(QStringLiteral("panelProperty_toolTip"));
+    auto* enabled=inspector.findChild<QCheckBox*>(QStringLiteral("panelProperty_runEnabled"));
+    auto* visible=inspector.findChild<QCheckBox*>(QStringLiteral("panelProperty_runVisible"));
+    CHECK(hint && enabled && visible && enabled->isChecked() && visible->isChecked());
+    hint->setText(QStringLiteral("Voltage measurement help"));
+    enabled->setChecked(false);
+    visible->setChecked(false);
+    PanelControl common=inspector.readControl(def);
+    CHECK(common.properties.value(QStringLiteral("toolTip")).toString()==
+          QStringLiteral("Voltage measurement help"));
+    CHECK(common.properties.value(QStringLiteral("runEnabled")).toBool(true)==false);
+    CHECK(common.properties.value(QStringLiteral("runVisible")).toBool(true)==false);
+    CHECK(WidgetDocumentCodec::decode(WidgetDocumentCodec::encode(common),&decoded,&error));
+    CHECK(decoded.properties==common.properties);
+    QJsonObject invalidCommon=WidgetDocumentCodec::encode(common);
+    QJsonObject commonProps=common.properties;
+    commonProps.insert(QStringLiteral("runVisible"),QStringLiteral("false"));
+    invalidCommon.insert(QStringLiteral("properties"),commonProps);
+    CHECK(!WidgetDocumentCodec::decode(invalidCommon,&decoded,&error));
+    // Clearing shared values to defaults does not bloat old Panels.
+    enabled->setChecked(true);
+    visible->setChecked(true);
+    hint->clear();
+    const PanelControl cleared=inspector.readControl(def);
+    CHECK(!cleared.properties.contains(QStringLiteral("toolTip")) &&
+          !cleared.properties.contains(QStringLiteral("runEnabled")) &&
+          !cleared.properties.contains(QStringLiteral("runVisible")));
     PanelCanvas canvas;
     CHECK(canvas.addControl(changed));
     auto* live=canvas.findChild<QWidget*>("meter1");
@@ -108,6 +220,22 @@ int main(int argc,char** argv) {
     CHECK(live->isHidden());
     CHECK(canvas.activatePage("main",document,QSize(900,550),&error));
     CHECK(live==canvas.findChild<QWidget*>("meter1"));
-    qInfo()<<"PASS: v5.6.30 metadata inspector, type validation, round trip, persistent widgets";
+    common.id=QStringLiteral("hiddenMeter");
+    CHECK(canvas.addControl(common));
+    auto* special=canvas.findChild<QWidget*>(QStringLiteral("hiddenMeter"));
+    CHECK(special && special->toolTip()==QStringLiteral("Voltage measurement help"));
+    CHECK(special->isEnabled() && !special->isHidden());
+    canvas.setDesignMode(false);
+    CHECK(!special->isEnabled() && special->isHidden());
+    canvas.setDesignMode(true);
+    CHECK(special->isEnabled() && !special->isHidden());
+    // Ensure runtime visibility is re-applied when switching Pages, not just
+    // on the initial Run transition.
+    canvas.setDesignMode(false);
+    CHECK(canvas.activatePage(QStringLiteral("third"),QJsonArray{},QSize(900,550),&error));
+    CHECK(canvas.activatePage(QStringLiteral("main"),document,QSize(900,550),&error));
+    CHECK(special->isHidden());
+    canvas.setDesignMode(true);
+    qInfo()<<"PASS: all factory properties, shared Run fields, validation, round trip, page switching";
     return 0;
 }

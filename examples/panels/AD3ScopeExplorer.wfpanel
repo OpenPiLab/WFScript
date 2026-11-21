@@ -66,7 +66,7 @@
             "showLegend": true,
             "xAuto": true,
             "yAuto": true,
-            "lineWidth": 2.0,
+            "lineWidth": 2,
             "showCursors": true,
             "cursorA": 0,
             "cursorB": 0.001
@@ -92,7 +92,7 @@
             "showLegend": true,
             "xAuto": true,
             "yAuto": true,
-            "lineWidth": 2.0
+            "lineWidth": 2
           }
         },
         {
@@ -106,7 +106,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onAd3CaptureClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "ad3Status",
@@ -131,7 +136,13 @@
           "height": 48,
           "value": 0,
           "min": 0,
-          "max": 100
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAd3RangesClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "ad3RangeStatus",
@@ -152,5 +163,5 @@
       ]
     }
   ],
-  "script": "/**\n * WFScript Example: AD3 Scope and Range Discovery\n * Capture CH1, measure signed DC/RMS, query supported SDK input ranges.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: For supply loopback, V+ to CH1+, GND to CH1−; select a safe scope range.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\nlet captureN=0; // count successive physical acquisitions\n\n// Explicit hardware use only. No generated output, no implicit acquisition.\nui.on('ad3Capture','clicked',function(){\n try{\n   Scope1.Time.Samples.value=4096;\n   Scope1.Time.Rate.value=1000000;\n   // 10 Vpp covers the +3.5 V supply test that clipped at 5 Vpp.\n   Scope1.Channel1.Range.value=10;\n   if(!Scope1.single())throw Error(Scope1.lastError);\n   if(!Scope1.wait(3))throw Error(Scope1.lastError);\n   plots.fromScope('ad3Scope',1,'Captured CH1');\n   const st=Scope1.Channel1.statistics();\n   plots.appendPoint('ad3Trend','RMS',captureN++,st.rms);\n   ui.set('ad3Status','CH1 DC '+st.mean.toFixed(4)+' V | RMS '+st.rms.toFixed(4)+\n       ' V | range '+Scope1.Channel1.Range.value+' -> '+\n       Number(Scope1.Channel1.Range.real).toFixed(3)+' Vpp');\n }catch(e){ui.set('ad3Status','Capture error: '+e);print('AD3 capture error: '+e);}\n});\n// Does not change Scope configuration or arm an acquisition.\nui.on('ad3Ranges','clicked',function(){\n try {\n   const caps=Scope1.capabilities();\n   const steps=Scope1.Channel1.Range.steps;\n   const text=caps.rangeStepsAvailable ? steps.map(function(v){return Number(v)+' Vpp';}).join(', ') :\n        'SDK range steps unavailable (or Simulation mode)';\n   ui.set('ad3RangeStatus','SDK selectable ranges: '+text);\n   print('[AD3] '+text);\n   if(caps.rangeMinVpp!==undefined && caps.rangeMaxVpp!==undefined)\n     print('[AD3] Info: '+caps.rangeMinVpp+' .. '+caps.rangeMaxVpp+' Vpp ('+caps.rangeStepCount+' steps)');\n   if(caps.rangeStepsError)print('[AD3] '+caps.rangeStepsError);\n } catch(e) { ui.set('ad3RangeStatus','Range query error: '+String(e)); }\n});\n"
+  "script": "// ┌─ WFScript LEARNING LAB: AD3 Scope and Range Discovery\n// │ Level: Beginner–Intermediate  |  Mode: hardware-capable\n// │\n// │ GOAL: Acquire a Scope CH1 snapshot, compute statistics and query SDK hardware range\n// │    choices.\n// │ BEFORE RUN: Simulation first. For physical supply measurement, verify V+ → CH1+ and GND\n// │    → CH1− with a safe configured range.\n// │ TRY FIRST: Click QUERY SDK RANGES to inspect supported input range steps.\n// │ TRACE: `ad3Capture` → `onAd3CaptureClicked()` → `Scope1.single()` / `wait()` /\n// │    `statistics()`.\n// │ EDIT SAFELY: Reduce the sample count only after understanding acquisition duration and\n// │    its effect on statistics.\n// │ REMEMBER: A requested software range is not necessarily a separate hardware gain step;\n// │    distinguish configured and actual range.\n// │\n// │ EVENT TIP: Select `ad3Capture` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/AD3ScopeExplorer.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * WFScript Example: AD3 Scope and Range Discovery\n * Capture CH1, measure signed DC/RMS, query supported SDK input ranges.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: For supply loopback, V+ to CH1+, GND to CH1−; select a safe scope range.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\nlet captureN = 0;\n\n// count successive physical acquisitions\n\n// Explicit hardware use only. No generated output, no implicit acquisition.\n/**\n * CORE LESSON — Explicitly requests a new CH1 acquisition and reports its measured statistics. No\n * acquisition begins just because the Panel is opened.\n */\nfunction onAd3CaptureClicked() {\n    try {\n        Scope1.Time.Samples.value = 4096;\n        Scope1.Time.Rate.value = 1000000;\n        // 10 Vpp covers the +3.5 V supply test that clipped at 5 Vpp.\n        Scope1.Channel1.Range.value = 10;\n        if (!Scope1.single()) throw Error(Scope1.lastError);\n        if (!Scope1.wait(3)) throw Error(Scope1.lastError);\n        plots.fromScope('ad3Scope', 1, 'Captured CH1');\n        const st = Scope1.Channel1.statistics();\n        plots.appendPoint('ad3Trend', 'RMS', captureN++, st.rms);\n        ui.set('ad3Status', 'CH1 DC ' + st.mean.toFixed(4) + ' V | RMS ' + st.rms.toFixed(4) +\n            ' V | range ' + Scope1.Channel1.Range.value + ' -> ' +\n            Number(Scope1.Channel1.Range.real).toFixed(3) + ' Vpp');\n    } catch (e) {\n        ui.set('ad3Status', 'Capture error: ' + e);\n        print('AD3 capture error: ' + e);\n    }\n}\n// Does not change Scope configuration or arm an acquisition.\nfunction onAd3RangesClicked() {\n    try {\n        const caps = Scope1.capabilities();\n        const steps = Scope1.Channel1.Range.steps;\n        const text = caps.rangeStepsAvailable ? steps.map(function (v) {\n            return Number(v) + ' Vpp';\n        }).join(', ') :\n            'SDK range steps unavailable (or Simulation mode)';\n        ui.set('ad3RangeStatus', 'SDK selectable ranges: ' + text);\n        print('[AD3] ' + text);\n        if (caps.rangeMinVpp !== undefined && caps.rangeMaxVpp !== undefined)\n            print('[AD3] Info: ' + caps.rangeMinVpp + ' .. ' + caps.rangeMaxVpp + ' Vpp (' + caps.rangeStepCount + ' steps)');\n        if (caps.rangeStepsError) print('[AD3] ' + caps.rangeStepsError);\n    } catch (e) {\n        ui.set('ad3RangeStatus', 'Range query error: ' + String(e));\n    }\n}\n"
 }

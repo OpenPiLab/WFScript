@@ -21,7 +21,9 @@ static Result run(const QString& code,const QString& functionName,bool enabled=t
     worker->moveToThread(&thread);
     QJsonObject binding{{"handler",functionName},{"enabled",enabled}};
     const QString type=eventName==QStringLiteral("selectionChanged")
-            ? QStringLiteral("option_selector") : QStringLiteral("button");
+            ? QStringLiteral("option_selector")
+            : eventName==QStringLiteral("sendRequested")
+                ? QStringLiteral("communications_terminal") : QStringLiteral("button");
     QJsonArray controls{QJsonObject{{"id","go"},{"type",type},
         {"events",QJsonObject{{eventName,binding}}}}};
     QObject::connect(&thread,&QThread::started,worker,[worker,code,controls,initialValue]{
@@ -65,6 +67,18 @@ int main(int argc,char** argv) {
     require(PanelEventCatalog::supports(QStringLiteral("option_selector"),
                                         QStringLiteral("selectionChanged")),
             "Option Selector event registered in headless fixture");
+    PanelEventCatalog::registerType(QStringLiteral("communications_terminal"),
+        {{QStringLiteral("sendRequested"),QStringLiteral("sendRequested(payload: object)"),
+          QStringLiteral("Communications Terminal send event"),QStringLiteral("payload")}});
+    QVariantMap payload;
+    payload.insert(QStringLiteral("bytes"),QVariantList{0,127,128,255});
+    payload.insert(QStringLiteral("mode"),QStringLiteral("hex"));
+    const auto terminalPayload=run(
+        "function sendBytes(payload){print('bytes='+payload.bytes.join(','));}\n",
+        "sendBytes",true,"sendRequested",QVariantMap{},payload);
+    require(terminalPayload.ready && terminalPayload.stopped &&
+            terminalPayload.messages.contains("bytes=0,127,128,255"),
+            "Communications Terminal object payload reaches named handler");
     const auto success=run("var count=0;\nfunction onGoClicked(v){count++;print('managed='+count);}\n",
                            "onGoClicked");
     require(success.ready && success.stopped && !success.timedOut &&

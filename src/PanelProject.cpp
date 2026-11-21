@@ -1,5 +1,8 @@
 #include "PanelProject.h"
+#include "ScriptSizeLimits.h"
 #include "PanelEventCatalog.h"
+#include "PanelDataSchema.h"
+#include "widgets/TextInputValidation.h"
 #include "RunInformationSchema.h"
 #include "TestReportStorage.h"
 
@@ -48,6 +51,8 @@ bool validateControls(const QJsonArray& controls,QString* error) {
            !o.value(QStringLiteral("x")).isDouble() || !o.value(QStringLiteral("y")).isDouble() ||
            !o.value(QStringLiteral("width")).isDouble() || !o.value(QStringLiteral("height")).isDouble())
             return fail(error,QStringLiteral("Invalid control fields: %1").arg(id));
+        if(o.contains(QStringLiteral("bindings")) && !o.value(QStringLiteral("bindings")).isObject())
+            return fail(error,QStringLiteral("Invalid Panel Data binding on %1").arg(id));
         if(o.contains(QStringLiteral("events")) && !o.value(QStringLiteral("events")).isObject())
             return fail(error,QStringLiteral("Invalid event bindings for %1").arg(id));
         if(!PanelEventCatalog::validateBindings(o.value(QStringLiteral("type")).toString(),
@@ -109,7 +114,9 @@ bool PanelProject::deletePage(const QString& id,QString* error) {
 bool PanelProject::validate(QString* error) const {
     if(!validScriptName(scriptName))return fail(error,QStringLiteral("Invalid main script name"));
     if(!appearance.valid())return fail(error,QStringLiteral("Invalid Panel appearance"));
-    if(script.toUtf8().size()>2*1024*1024)return fail(error,QStringLiteral("Main script exceeds 2 MiB"));
+    if(script.toUtf8().size()>ScriptSizeLimits::MainScriptBytes)return fail(error,QStringLiteral("Main script exceeds 8 MiB"));
+    if(!PanelDataSchema::validate(panelData,error))return false;
+    const auto dataTypes=PanelDataSchema::types(panelData);
     if(pages.isEmpty() || pages.size()>64)return fail(error,QStringLiteral("Invalid page count"));
     if(!findPage(activePageId))return fail(error,QStringLiteral("Active Page does not exist: %1").arg(activePageId));
     qint64 embeddedBase64Size=0;
@@ -133,6 +140,30 @@ bool PanelProject::validate(QString* error) const {
             if(controlIds.contains(id))return fail(error,QStringLiteral("Widget ID is used on more than one page: %1").arg(id));
             controlIds.insert(id);
             const QJsonObject c=value.toObject();
+            if(!PanelDataSchema::validateBinding(c.value(QStringLiteral("type")).toString(),
+                    c.value(QStringLiteral("bindings")).toObject(),dataTypes,error))return false;
+            const QString type=c.value(QStringLiteral("type")).toString();
+            if(type==QStringLiteral("ip_address_input") || type==QStringLiteral("text_input")) {
+                const QJsonObject props=c.value(QStringLiteral("properties")).toObject();
+                const int cap=props.value(QStringLiteral("maxLength")).toInt(
+                    type==QStringLiteral("ip_address_input") ? 15 : 256);
+                const QString initial=props.value(QStringLiteral("defaultText")).toString();
+                if(!TextInputValidation::allowedValue(type==QStringLiteral("ip_address_input"),
+                                                      initial,cap))
+                    return fail(error,QStringLiteral("Invalid input default for %1").arg(id));
+                const QString bound=c.value(QStringLiteral("bindings")).toObject()
+                        .value(QStringLiteral("value")).toString();
+                if(!bound.isEmpty()) {
+                    for(const QJsonValue& def:panelData) {
+                        if(def.toObject().value(QStringLiteral("name")).toString()!=bound)continue;
+                        if(!TextInputValidation::allowedValue(
+                            type==QStringLiteral("ip_address_input"),
+                            def.toObject().value(QStringLiteral("initial")).toString(),cap))
+                            return fail(error,QStringLiteral("Invalid Panel Data initial value for %1").arg(id));
+                        break;
+                    }
+                }
+            }
             if(c.value(QStringLiteral("type")).toString()==QStringLiteral("image")) {
                 const QJsonValue raw=c.value(QStringLiteral("properties")).toObject().value(QStringLiteral("imageData"));
                 if(!raw.isUndefined() && !raw.isString())return fail(error,QStringLiteral("Invalid embedded image on %1").arg(id));
@@ -156,7 +187,7 @@ bool PanelProject::validate(QString* error) const {
             if(library.toObject().value(QStringLiteral("name")).toString()==testLibrary)exists=true;
         if(!exists)return fail(error,QStringLiteral("Test handler library is missing: %1").arg(testLibrary));
     }
-    if(libraries.size()>64)return fail(error,QStringLiteral("Too many embedded libraries"));
+    if(libraries.size()>ScriptSizeLimits::EmbeddedLibraryCount)return fail(error,QStringLiteral("Too many embedded libraries"));
     QSet<QString> names;
     qsizetype bytes=0;
     for(const auto& entry : libraries) {
@@ -166,8 +197,11 @@ bool PanelProject::validate(QString* error) const {
         if(!validLibraryName(name) || !obj.value(QStringLiteral("source")).isString() ||
            names.contains(name.toCaseFolded()))return fail(error,QStringLiteral("Invalid or duplicate library name: %1").arg(name));
         names.insert(name.toCaseFolded());
-        bytes+=obj.value(QStringLiteral("source")).toString().toUtf8().size();
-        if(bytes>2*1024*1024)return fail(error,QStringLiteral("Embedded libraries exceed 2 MiB"));
+        const qsizetype libraryBytes=obj.value(QStringLiteral("source")).toString().toUtf8().size();
+        if(libraryBytes>ScriptSizeLimits::LibraryFileBytes)
+            return fail(error,QStringLiteral("Embedded library exceeds 8 MiB: %1").arg(name));
+        bytes+=libraryBytes;
+        if(bytes>ScriptSizeLimits::EmbeddedLibraryBytes)return fail(error,QStringLiteral("Embedded libraries exceed 24 MiB"));
     }
     return true;
 }
@@ -186,6 +220,9 @@ bool PanelProject::fromJson(const QJsonObject& root,const QString& fileName,Pane
     if(root.contains(QStringLiteral("libraries")) && !root.value(QStringLiteral("libraries")).isArray())
         return fail(error,QStringLiteral("Libraries must be an array"));
     tmp.libraries=root.value(QStringLiteral("libraries")).toArray();
+    if(root.contains(QStringLiteral("panelData")) && !root.value(QStringLiteral("panelData")).isArray())
+        return fail(error,QStringLiteral("Panel Data must be an array"));
+    tmp.panelData=root.value(QStringLiteral("panelData")).toArray();
     if(root.contains(QStringLiteral("testDefinition")) && !root.value(QStringLiteral("testDefinition")).isObject())
         return fail(error,QStringLiteral("testDefinition must be an object"));
     tmp.testDefinition=root.value(QStringLiteral("testDefinition")).toObject();
@@ -271,7 +308,7 @@ bool PanelProject::fromJson(const QJsonObject& root,const QString& fileName,Pane
              QStringLiteral("libraries"),QStringLiteral("description"),QStringLiteral("lifecycle"),
              QStringLiteral("appearance"),QStringLiteral("pageBackground"),
              QStringLiteral("testDefinition"),QStringLiteral("testLibrary"),QStringLiteral("runInformation"),
-             QStringLiteral("reportStorage")})
+             QStringLiteral("reportStorage"),QStringLiteral("panelData")})
         tmp.m_extensions.remove(key);
     if(!tmp.validate(error))return false;
     *output=std::move(tmp);
@@ -280,7 +317,7 @@ bool PanelProject::fromJson(const QJsonObject& root,const QString& fileName,Pane
 bool PanelProject::loadFile(const QString& name,PanelProject* output,QString* error) {
     QFile file(name);
     if(!file.open(QIODevice::ReadOnly))return fail(error,QStringLiteral("Unable to open panel: %1").arg(file.errorString()));
-    if(file.size()>32*1024*1024)return fail(error,QStringLiteral("Panel exceeds 32 MiB"));
+    if(file.size()>ScriptSizeLimits::PanelFileBytes)return fail(error,QStringLiteral("Panel exceeds 96 MiB"));
     QJsonParseError parse;
     const QJsonDocument doc=QJsonDocument::fromJson(file.readAll(),&parse);
     if(parse.error!=QJsonParseError::NoError || !doc.isObject())
@@ -318,6 +355,7 @@ bool PanelProject::toJson(QJsonObject* output,QString* error) const {
     root.insert(QStringLiteral("script"),script);
     root.insert(QStringLiteral("scriptName"),scriptName);
     root.insert(QStringLiteral("libraries"),libraries);
+    if(!panelData.isEmpty())root.insert(QStringLiteral("panelData"),panelData);
     if(!runInformation.isEmpty())root.insert(QStringLiteral("runInformation"),runInformation);
     if(!reportStorage.isEmpty())root.insert(QStringLiteral("reportStorage"),reportStorage);
     if(!testDefinition.isEmpty()) {
@@ -341,7 +379,7 @@ bool PanelProject::saveFile(const QString& name,QString* error) const {
     QJsonObject root;
     if(!toJson(&root,error))return false;
     const QByteArray bytes=QJsonDocument(root).toJson(QJsonDocument::Indented);
-    if(bytes.size()>32*1024*1024)return fail(error,QStringLiteral("Panel exceeds 32 MiB"));
+    if(bytes.size()>ScriptSizeLimits::PanelFileBytes)return fail(error,QStringLiteral("Panel exceeds 96 MiB"));
     QSaveFile out(name);
     if(!out.open(QIODevice::WriteOnly))return fail(error,out.errorString());
     if(out.write(bytes)!=bytes.size() || !out.commit())return fail(error,out.errorString());

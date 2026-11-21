@@ -1,0 +1,454 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "One-page simulated motor workbench: six typed variables, visual bindings, and Data.onChange notifications including a READY interlock.",
+  "scriptName": "PanelDataLab.js",
+  "script": "// ┌─ WFScript LEARNING LAB: SHARED PANEL DATA\n// │ Level: Beginner — no external hardware\n// │\n// │ GOAL: Share seven named variables between controls and displays without repeatedly\n// │       calling ui.set() for every widget.\n// │ BEFORE RUN: Choose Simulation. Nothing here connects to a motor or supply.\n// │ TRY FIRST: Set READY, change Target RPM and click START while watching\n// │            speedDial, speedDisplay and speedGauge change on the same Page.\n// │ TRACE: Select speedDisplay → Properties → Value Binding (Motor.ActualRPM).\n// │        Then find Data.onChange below: native inputs and Data.set both notify.\n// │ EDIT SAFELY: Change the 0.12 response coefficient, then Run again.\n// │ REMEMBER: Designer-managed button Events call the named functions below.\n// │           Input value bindings update Panel Data BEFORE their event handler.\n// └──────────────────────────────────────────────────────────────────────\n\n/*\n * One .wfpanel holds one live workbench Page, one JavaScript runtime, and\n * typed Panel Data variable definitions saved under the top-level panelData.\n *\n * Project-owned variables (Properties → Panel Data):\n *   Motor.TargetRPM  number   1200    Set by targetInput (left side)\n *   Motor.ActualRPM  number   0       Set by simulationTick()\n *   Motor.TargetRPS  number   20      Computed from Motor.TargetRPM (read-only at runtime)\n *   Motor.LoadPct    number   40      Set by loadSlider (left side)\n *   Motor.Ready      boolean  false   Set by readySwitch (left side)\n *   Motor.Mode       text     Auto    Set by modeSelector (left side)\n *   Motor.Status     text     Stopped Set by our functions\n *\n * No physical motor commands or automatic hardware writes are involved.\n * Value bindings are optional. Existing unbound widgets still use ui.set().\n * Data.onChange subscribers react to both operator edits and Data.set calls.\n * Data.computed creates a read-only target that follows declared dependencies.\n */\n\n// Motor.TargetRPS exists in Properties → Panel Data as a Number. The formula\n// makes it read-only during Run and updates its bound targetReadout automatically.\n// This is revolutions/second, not the output frequency of real motor hardware.\nData.computed('Motor.TargetRPS', ['Motor.TargetRPM'], function (rpm) {\n    return Number((rpm / 60).toFixed(2));\n});\n\nlet modelTimer = null;\n\n// Live, observable behavior: this unbound instructional Label shows every\n// target update, whether it came from the targetInput or Data.set() on RESET.\n// immediate:true also shows the saved initial value when the Panel starts.\nconst targetWatcher = Data.onChange('Motor.TargetRPM', function (value, previousValue, name) {\n    const origin = previousValue === undefined ? 'initial' : 'changed from ' + previousValue;\n    ui.set('hintControls', 'LIVE RESULTS  |  TARGET ' + value + ' RPM = ' + Data.get('Motor.TargetRPS') + ' rev/s (' + origin + ')');\n    print('Data event: ' + name + ' = ' + value + ' [' + origin + ']');\n}, { immediate: true });\n\n// A simple, simulation-only interlock: turning READY off while running\n// stops the synthetic timer. This does NOT control any physical output.\nconst readyWatcher = Data.onChange('Motor.Ready', function (isReady) {\n    if (!isReady && modelTimer !== null) {\n        stopMotorSimulation();\n        Data.set('Motor.Status', 'READY switched off — simulated motor stopped');\n        print('Data event: READY off -> simulation stopped');\n    }\n});\n\n/** Runs only after an explicit START button click. */\nfunction startMotorSimulation() {\n    if (modelTimer !== null) return;\n    if (!Data.get('Motor.Ready')) {\n        Data.set('Motor.Status', 'Turn READY on before starting.');\n        return;\n    }\n    Data.set('Motor.Status', 'Running — simulated motor, no hardware output');\n    modelTimer = setInterval(simulationTick, 250);\n    print('Simulated motor started. Data variables: ' + Data.names().join(', '));\n}\n\n/** Apply a simple first-order response and publish ONE measured-speed value. */\nfunction simulationTick() {\n    const target = Data.get('Motor.TargetRPM');\n    const load = Data.get('Motor.LoadPct');\n    const previous = Data.get('Motor.ActualRPM');\n    const achievable = target * (1 - 0.0012 * load);\n    const actual = previous + 0.12 * (achievable - previous);\n\n    // The speedDisplay, speedDial and speedGauge are ALL bound to this value.\n    // Their appearance and units are still configured per-widget.\n    Data.set('Motor.ActualRPM', Number(actual.toFixed(1)));\n}\n\n/** Cleanup always clears the interval; no hardware is configured. */\nfunction stopMotorSimulation() {\n    if (modelTimer !== null) {\n        clearInterval(modelTimer);\n        modelTimer = null;\n    }\n    Data.set('Motor.ActualRPM', 0);\n    Data.set('Motor.Status', 'Stopped — simulation timer released');\n}\n\n/** One example of programmatically changing an *editable* binding. */\nfunction resetMotorSimulation() {\n    stopMotorSimulation();\n    Data.set('Motor.TargetRPM', 1200);\n    Data.set('Motor.LoadPct', 40);\n    Data.set('Motor.Ready', false);\n    Data.set('Motor.Mode', 'Auto');\n    // targetInput, loadSlider, readySwitch and modeSelector refresh silently.\n    // A programmatic update is NOT treated as an operator click.\n}\n\n/** Optional widget event: the mode selection changes the shared string. */\nfunction onModeChanged(text) {\n    // The two-way binding has already updated Motor.Mode at this point.\n    print('Mode selected: ' + Data.get('Motor.Mode'));\n}\n\n/** Optional widget event: the operator changed the requested RPM. */\nfunction onTargetChanged(value) {\n    // This is the target, not the simulated actual speed; START remains explicit.\n    print('Requested speed: ' + Data.get('Motor.TargetRPM') + ' RPM');\n}\n\nfunction onShutdown() {\n    // Shutdown hook is enabled in this project's lifecycle configuration.\n    // The native timer manager will also clean up timers on abrupt stop.\n    if (modelTimer !== null) clearInterval(modelTimer);\n    modelTimer = null;\n    Data.offChange(targetWatcher);\n    Data.offChange(readyWatcher);\n}\n\nprint('Panel Data Lab ready. On Live Workbench: turn READY on, adjust target RPM, then START.');\n",
+  "activePageId": "workbench",
+  "libraries": [],
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": true
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "panelData": [
+    {
+      "name": "Motor.TargetRPM",
+      "type": "number",
+      "initial": 1200
+    },
+    {
+      "name": "Motor.TargetRPS",
+      "type": "number",
+      "initial": 20
+    },
+    {
+      "name": "Motor.ActualRPM",
+      "type": "number",
+      "initial": 0
+    },
+    {
+      "name": "Motor.LoadPct",
+      "type": "number",
+      "initial": 40
+    },
+    {
+      "name": "Motor.Ready",
+      "type": "boolean",
+      "initial": false
+    },
+    {
+      "name": "Motor.Mode",
+      "type": "text",
+      "initial": "Auto"
+    },
+    {
+      "name": "Motor.Status",
+      "type": "text",
+      "initial": "Stopped"
+    }
+  ],
+  "pages": [
+    {
+      "id": "workbench",
+      "name": "Live Workbench",
+      "width": 1210,
+      "height": 770,
+      "controls": [
+        {
+          "id": "titleDash",
+          "type": "label",
+          "text": "PANEL DATA LAB  |  LIVE MOTOR WORKBENCH",
+          "x": 22,
+          "y": 14,
+          "width": 1170,
+          "height": 46,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "hintDash",
+          "type": "label",
+          "text": "One live workbench: controls, outputs and a computed speed (rev/s). Change Target RPM or Load, enable READY and press START. Simulation only.",
+          "x": 22,
+          "y": 65,
+          "width": 1170,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "titleControls",
+          "type": "label",
+          "text": "CONTROLS  |  TWO-WAY DATA",
+          "x": 24,
+          "y": 122,
+          "width": 360,
+          "height": 39,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": false,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "hintControls",
+          "type": "label",
+          "text": "LIVE RESULTS  |  DATA.SET() UPDATES THREE SPEED WIDGETS",
+          "x": 401,
+          "y": 125,
+          "width": 786,
+          "height": 41,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "targetInput",
+          "type": "numeric_stepper",
+          "text": "TARGET RPM",
+          "x": 27,
+          "y": 168,
+          "width": 338,
+          "height": 95,
+          "value": 1200,
+          "min": 0,
+          "max": 3000,
+          "events": {
+            "valueChanged": {
+              "handler": "onTargetChanged",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "unit": "RPM",
+            "step": 100,
+            "decimals": 0,
+            "accent": "cyan"
+          },
+          "bindings": {
+            "value": "Motor.TargetRPM"
+          }
+        },
+        {
+          "id": "loadSlider",
+          "type": "slider",
+          "text": "LOAD %",
+          "x": 31,
+          "y": 277,
+          "width": 334,
+          "height": 74,
+          "value": 40,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {},
+          "bindings": {
+            "value": "Motor.LoadPct"
+          }
+        },
+        {
+          "id": "readySwitch",
+          "type": "switch_button",
+          "text": "READY INTERLOCK",
+          "x": 44,
+          "y": 369,
+          "width": 290,
+          "height": 89,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "onText": "READY",
+            "offText": "NOT READY",
+            "accent": "green"
+          },
+          "bindings": {
+            "value": "Motor.Ready"
+          }
+        },
+        {
+          "id": "modeSelector",
+          "type": "option_selector",
+          "text": "OPERATING MODE",
+          "x": 27,
+          "y": 469,
+          "width": 338,
+          "height": 92,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "selectionChanged": {
+              "handler": "onModeChanged",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "options": "Auto|Manual|Service",
+            "defaultIndex": 0,
+            "accent": "blue"
+          },
+          "bindings": {
+            "value": "Motor.Mode"
+          }
+        },
+        {
+          "id": "startButton",
+          "type": "button",
+          "text": "START SIMULATION",
+          "x": 20,
+          "y": 585,
+          "width": 113,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "startMotorSimulation",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stopButton",
+          "type": "button",
+          "text": "STOP",
+          "x": 146,
+          "y": 585,
+          "width": 106,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "stopMotorSimulation",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "resetButton",
+          "type": "button",
+          "text": "RESET ALL",
+          "x": 265,
+          "y": 585,
+          "width": 111,
+          "height": 63,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "resetMotorSimulation",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "controlsNotes",
+          "type": "label",
+          "text": "DESIGN: select a widget → Properties → Value Binding. Try + Create New Variable. During Run, reopen Properties → Panel Data to view live values.",
+          "x": 23,
+          "y": 667,
+          "width": 360,
+          "height": 82,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "speedDial",
+          "type": "precision_dial",
+          "text": "MOTOR SPEED",
+          "x": 410,
+          "y": 174,
+          "width": 344,
+          "height": 304,
+          "value": 0,
+          "min": 0,
+          "max": 3000,
+          "events": {},
+          "properties": {
+            "unit": "RPM",
+            "accent": "cyan",
+            "decimals": 0,
+            "alarmEnabled": true,
+            "alarmHigh": 2600,
+            "showTicks": true
+          },
+          "bindings": {
+            "value": "Motor.ActualRPM"
+          }
+        },
+        {
+          "id": "speedDisplay",
+          "type": "digital_display",
+          "text": "MOTOR SPEED",
+          "x": 775,
+          "y": 176,
+          "width": 403,
+          "height": 141,
+          "value": 0,
+          "min": 0,
+          "max": 3000,
+          "events": {},
+          "properties": {
+            "unit": "RPM",
+            "decimals": 0,
+            "accent": "cyan"
+          },
+          "bindings": {
+            "value": "Motor.ActualRPM"
+          }
+        },
+        {
+          "id": "speedGauge",
+          "type": "gauge",
+          "text": "MOTOR SPEED  /  GAUGE",
+          "x": 777,
+          "y": 333,
+          "width": 402,
+          "height": 145,
+          "value": 0,
+          "min": 0,
+          "max": 3000,
+          "events": {},
+          "properties": {},
+          "bindings": {
+            "value": "Motor.ActualRPM"
+          }
+        },
+        {
+          "id": "targetReadout",
+          "type": "digital_display",
+          "text": "TARGET SPEED · rev/s",
+          "x": 416,
+          "y": 497,
+          "width": 332,
+          "height": 125,
+          "value": 20,
+          "min": 0,
+          "max": 50,
+          "events": {},
+          "properties": {
+            "unit": "rev/s",
+            "decimals": 2,
+            "accent": "amber"
+          },
+          "bindings": {
+            "value": "Motor.TargetRPS"
+          }
+        },
+        {
+          "id": "loadMeter",
+          "type": "segmented_bar",
+          "text": "SIMULATED LOAD",
+          "x": 773,
+          "y": 497,
+          "width": 406,
+          "height": 125,
+          "value": 40,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "%",
+            "accent": "green",
+            "decimals": 1,
+            "segments": 28,
+            "warningPct": 75,
+            "alarmPct": 90,
+            "peakHold": false
+          },
+          "bindings": {
+            "value": "Motor.LoadPct"
+          }
+        },
+        {
+          "id": "readyBeacon",
+          "type": "status_beacon",
+          "text": "READY INTERLOCK",
+          "x": 416,
+          "y": 634,
+          "width": 295,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "activeColor": "green",
+            "onText": "READY",
+            "offText": "NOT READY",
+            "showGlow": true
+          },
+          "bindings": {
+            "value": "Motor.Ready"
+          }
+        },
+        {
+          "id": "motorStatus",
+          "type": "label",
+          "text": "Stopped",
+          "x": 741,
+          "y": 641,
+          "width": 442,
+          "height": 105,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          },
+          "bindings": {
+            "value": "Motor.Status"
+          }
+        }
+      ]
+    }
+  ]
+}

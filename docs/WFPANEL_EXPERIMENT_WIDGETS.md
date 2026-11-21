@@ -6,13 +6,62 @@ Existing `.wfpanel` format remains `WFScriptPanel` version 2. No file-level migr
 
 `properties.source` is a UTF-8 JSON string (up to 2,048 characters) containing a documented **LaTeX-style subset**, not a complete LaTeX interpreter. `properties.pointSize` (12–48), `titleVisible`, `borderVisible` are ordinary properties. `text` is the optional title. Brace nesting at most 12. The Properties inspector has a multiline source editor, live preview and Fraction/Subscript/Square root/Greek π insert buttons. Rendered locally via Qt; no network, MathJax, TeX distribution or extra Qt modules.
 
-Supported: literal letters, numbers, grouping `{...}`, subscript `_`, superscript `^`, `\frac{a}{b}`, `\sqrt{x}`, `\mathrm{}`, `\text{}`, `\operatorname{}`, common Greek letters (`\alpha`, `\beta`, `\pi`, `\omega`, `\tau`), `\cdot`, `\times`, `\pm`, `\approx`, inequality signs. Invalid/unrecognized sequences are displayed in a literal fallback; unsupported full LaTeX features are not promised. Use `ui.set(equationId, "...")` to replace the displayed source during the current run; the saved source isn't overwritten. `ui.get` initially returns the saved equation source.
+Supported: literal letters and numbers; grouped expressions `{...}`; `_` and `^` scripts;
+`\frac{a}{b}`, `\sqrt{x}`, `\mathrm{}`, `\text{}`, `\operatorname{}`;
+common Greek symbols including `\alpha`, `\beta`, `\pi`, `\omega`, `\tau`,
+`\Sigma`, `\varepsilon`, `\epsilon`, `\phi`, `\Delta`, `\theta`, and more;
+mathematical operators `\cdot`, `\times`, `\pm`, `\sum`, `\int`, `\approx`,
+`\neq`, `\leq`, `\geq`; arrows such as `\rightarrow` and
+`\Longleftrightarrow`; and escaped punctuation such as `\%`. The 19 Equation
+widget sources in all 40 shipped Panels are automatically audited against the
+native symbol table. Unsupported commands still appear with a literal
+backslash diagnostic: this intentionally remains a **limited TeX-style
+renderer**, not MathJax or general LaTeX. Use `ui.set(equationId, "...")` to
+change a displayed equation at runtime without changing the saved source.
 
-## Experiment Data Table (`type: experiment_table`)
+## Experiment Data Table (`type: experiment_table`) — RC1.5.14.5
 
-`properties.columns` pipe-separated 1–8 column headers; `properties.initialRows` is one pipe-separated row per line with the same column count (blank cells are allowed). `maxRows` 1–250; `editable` Boolean. The normal 16 KiB property limit remains. No runtime rows are saved as a document mutation. `ui.set(tableId, [[column1, column2, ...],...])` replaces all rows atomically, rejecting incompatible data. Cells are bounded to 256 characters. When `editable=true`, user cell edits can emit `valueChanged(rows)` via a configured Panel event handler. Read the edited rows with `ui.get(tableId)` while running. Right-click in Run mode for CSV export or TSV copy. CSV export uses UTF-8 and quotes every cell, defusing spreadsheet formula injection.
+The Experiment DataTable now uses a native `QAbstractTableModel` and `QTableView`
+with a **100,000 retained-row** maximum. Its storage is a bounded deque, not
+one `QTableWidgetItem` per cell. Incremental append removes expired oldest
+rows and inserts new rows without resetting the whole model. The default
+limit remains 250; `maxRows` is a design-time rolling retention capacity.
+There may be 1–32 named columns; cell text max 256 characters; the existing
+initialRows and schema limits remain. Existing `.wfpanel` documents load
+without migration. Full-array `ui.set(id, rows)` still **replaces** rows.
 
-The table is general experimental data, independent of the native TestRunner Measurement Table. Initial row data and columns are design-time values; archived TestRunner records are unchanged.
+Fast JavaScript update operations (all via `ui.set`):
+
+```javascript
+ui.set('dataTable', {append: [index, timeMs, voltage]});
+ui.set('dataTable', {appendRows: [[1, 10, 3.3], [2, 20, 3.31]]});
+ui.set('dataTable', {setCell: {row: 0, column: 2, value: 3.32}});
+ui.set('dataTable', {setRow: {row: 0, values: [1, 10, 3.32]}});
+ui.set('dataTable', {clear: true});
+```
+
+`appendRows` accepts up to 2048 rows in one call. When capacity is reached,
+the oldest retained rows roll off automatically. `ui.tableRowCount(id)`
+returns the row count in O(1) without copying any rows; `ui.tableSlice(id,
+start, count)` reads up to 2048 retained rows. `ui.get(id)` still returns a
+complete native JavaScript array-of-arrays snapshot, but it is O(N) and should
+not be called on every timer or network packet. `ui.set()` validates rows and
+returns `false` without altering worker state for malformed operations.
+
+Right-click in Run mode to **Import CSV**, **Export CSV**, or **Copy TSV**.
+CSV import expects one header row with the same number of columns as the
+configured widget; all imported rows replace the current contents. The column
+labels remain those defined in the Panel; import does not rewrite `.wfpanel`
+properties. CSV import is limited to 32 MiB and the configured retention cap.
+Export uses quoted UTF-8 fields and guards against spreadsheet formula
+injection. Import and export currently use modal GUI file dialogs; they are
+not a high-rate streaming-to-disk interface. Use FileIO/SQLite for durable
+acquisition history independent of the table's rolling retention.
+
+If `editable=true`, operator cell edits still fire `valueChanged(rows)` with
+all retained rows for compatibility; CSV import does the same. Script appends
+never fire that event. This large full-snapshot event should be used sparingly
+for huge editable tables. CSV export and `ui.get` return retained rows only.
 
 ## v5.6.70.1 corrective behavior (format unchanged)
 
@@ -30,3 +79,19 @@ ui.on('recipeTable', 'valueChanged', rows => print('Edited rows:', rows.length))
 ```
 
 Returned arrays/objects are copies of native Panel state: mutating a copy does not update the widget until `ui.set()` is called. Scalars remain strings, numbers, booleans, or null/undefined as appropriate. `TestRunner.variable()` currently stores scalar values only; `TestRunner.results()` explicitly returns a list.
+
+## Fit Page / presentation geometry (v0.2-dev.8.9.5)
+
+Run mode starts with **Fit Page** enabled. The screen display shrinks or
+expands *down to* the viewport size so every saved Page is visible without
+vertical/horizontal scrolling at ordinary desktop sizes. The layout remains
+interactable. The user can turn off Fit Page for **100% resolution and scroll**
+when reading lengthy explanations or adjusting precise data. The percent
+indicator shows the current presentation scale.
+
+Fit Page is a presentation transform only: it does not change the Page's
+logical width/height or any control's `x`, `y`, `width`, `height`, ID, events,
+script or data. **Design** mode always returns to 100% logical coordinates.
+A newly created Panel starts at 1360 × 620 pixels; existing saved Pages retain
+their original size and remain fully editable. This does not reflow text and
+very dense teaching Pages may still require 100% viewing for best readability.

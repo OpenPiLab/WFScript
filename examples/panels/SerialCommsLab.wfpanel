@@ -1,0 +1,217 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "libraries": [],
+  "testDefinition": {},
+  "testLibrary": "",
+  "description": "External or virtual loopback needed: COM TX→RX with compatible electrical levels. Native PC COM port, not AD3 DIO pins.",
+  "scriptName": "SerialCommsLab.js",
+  "activePageId": "ser_main",
+  "script": "// ┌─ WFScript LEARNING LAB: PC Serial — Text & Binary\n// │ Level: Beginner–Intermediate\n// │\n// │ GOAL: Discover PC COM ports, open a port and send both text and binary data.\n// │ BEFORE RUN: A real USB serial device, suitable TX/RX loopback, or virtual COM pair is\n// │    required to receive echoes.\n// │ TRY FIRST: Click DISCOVER PORTS.\n// │ TRACE: `serOpen` → `openPort()` → `Serial.create()`/open; `Serial.on(\"data\")` handles\n// │    asynchronous RX.\n// │ EDIT SAFELY: Change the transmitted text and inspect the raw byte representation.\n// │ REMEMBER: PC Serial is separate from the AD3 `Protocol1.UART` digital pins.\n// │\n// │ EVENT TIP: Select `serDiscover` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/SerialCommsLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/** WFScript v0.2-dev.6 — Native PC Serial Laboratory.\n * Native COM port is DISTINCT from Protocol1.UART on AD3 DIO pins.\n * A PC cannot self-echo a COM port without an external loopback wire or a\n * virtual COM pair. TX and RX pins must use compatible voltage levels.\n * No serial port is opened merely by loading/running this Panel.\n */\nlet serial = null,\n    chosenPort = '';\nfunction log(msg, level) {\n    print('[Serial] ' + msg);\n    ui.set('serEvents', {\n        append: {\n            level: level || 'INFO',\n            source: 'PC Serial',\n            message: String(msg)\n        }\n    });\n}\nfunction status(text) {\n    ui.set('serStatus', text);\n}\nfunction discoverPorts() {\n    const list = Serial.ports();\n    if (!Array.isArray(list)) throw Error('Serial.ports did not return an array');\n    if (!list.length) {\n        status('No COM ports available');\n        log('No PC serial devices found', 'WARN');\n        return;\n    }\n    if (!chosenPort) chosenPort = list[0].port;\n    status('Selected ' + chosenPort + ' | ' + list.length + ' available port(s)');\n    for (const p of list) log(p.port + ' — ' + p.description + ' (' + p.manufacturer + ')');\n}\nfunction choosePort() {\n    Tool.getText('Choose a PC COM port', chosenPort || 'COM5', function (r) {\n        if (!r.accepted) return;\n        chosenPort = String(r.value).trim();\n        status('Selected ' + chosenPort + ' (not opened)');\n    });\n}\n/**\n * CORE LESSON — Opens a selected PC COM port using the Qt SerialPort bridge. Receive data arrives\n * later through native callbacks; echo requires a connected device or loopback.\n */\nfunction openPort() {\n    if (serial) {\n        log('Close the existing serial connection first', 'WARN');\n        return;\n    }\n    if (!chosenPort) {\n        discoverPorts();\n        if (!chosenPort) return;\n    }\n    try {\n        const conn = Serial.create({\n            port: chosenPort,\n            baudRate: 115200,\n            dataBits: 8,\n            parity: 'none',\n            stopBits: 1\n        });\n        serial = conn;\n        conn.on('open', function () {\n            status('OPEN ' + chosenPort + ' @ 115200');\n            log('Port opened', 'PASS');\n        });\n        conn.on('data', function (bytes) {\n            log('RX raw ' + bytes.length + ' bytes: ' + bytes.join(','));\n        });\n        conn.on('line', function (text) {\n            log('RX line: ' + JSON.stringify(text), 'PASS');\n        });\n        conn.on('error', function (err) {\n            log('Serial error: ' + err, 'ERROR');\n        });\n        conn.on('close', function () {\n            log('Port closed');\n            status('Closed');\n        });\n        conn.open();\n    } catch (e) {\n        if (serial) {\n            try {\n                serial.close();\n            } catch (ignored) { }\n        }\n        serial = null;\n        log(String(e), 'ERROR');\n        status('Open failed');\n    }\n}\nfunction sendText() {\n    if (!serial) {\n        log('Open a COM port first', 'WARN');\n        return;\n    }\n    const text = 'PING from WFScript\\n';\n    try {\n        log('TX text: ' + JSON.stringify(text) + ' / ' + serial.write(text) + ' bytes');\n    }\n    catch (e) {\n        log('Text TX failed: ' + e, 'ERROR');\n    }\n}\nfunction sendBinary() {\n    if (!serial) {\n        log('Open a COM port first', 'WARN');\n        return;\n    }\n    const bytes = [0, 1, 2, 3, 127, 128, 254, 255];\n    try {\n        log('TX binary: ' + bytes.join(',') + ' / ' + serial.write(bytes) + ' bytes');\n    }\n    catch (e) {\n        log('Binary TX failed: ' + e, 'ERROR');\n    }\n}\nfunction closePort() {\n    if (!serial) return;\n    const p = serial;\n    serial = null;\n    try {\n        p.close();\n    } catch (e) {\n        log(String(e), 'ERROR');\n    }\n}\n\n// UI actions use Property Editor > Events (select a control, then Go to Handler).\n// Serial/TCP/UDP .on() below are transport callbacks, NOT widget events.\nfunction onInitialize() {\n    status('Serial CLOSED — choose a COM port, then OPEN');\n    log('Native PC COM port lab. Requires a physical loopback or virtual COM pair for RX.');\n}\nfunction onShutdown() {\n    closePort();\n}\n",
+  "pages": [
+    {
+      "id": "ser_main",
+      "name": "01 PC Serial",
+      "width": 1170,
+      "height": 800,
+      "controls": [
+        {
+          "id": "serTitle",
+          "type": "label",
+          "text": "PC Serial — Text & Binary",
+          "x": 22,
+          "y": 18,
+          "width": 1120,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "serIntro",
+          "type": "label",
+          "text": "External or virtual loopback needed: COM TX→RX with compatible electrical levels. Native PC COM port, not AD3 DIO pins.",
+          "x": 22,
+          "y": 86,
+          "width": 1120,
+          "height": 85,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "serDiscover",
+          "type": "button",
+          "text": "DISCOVER PORTS",
+          "x": 22,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "discoverPorts",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serChoose",
+          "type": "button",
+          "text": "CHOOSE COM",
+          "x": 302,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "choosePort",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serOpen",
+          "type": "button",
+          "text": "OPEN",
+          "x": 582,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "openPort",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serText",
+          "type": "button",
+          "text": "SEND TEXT",
+          "x": 862,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "sendText",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serBinary",
+          "type": "button",
+          "text": "SEND BINARY",
+          "x": 22,
+          "y": 250,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "sendBinary",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serClose",
+          "type": "button",
+          "text": "CLOSE",
+          "x": 302,
+          "y": 250,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "closePort",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "serStatus",
+          "type": "label",
+          "text": "Not started",
+          "x": 22,
+          "y": 334,
+          "width": 1120,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "serEvents",
+          "type": "event_log",
+          "text": "",
+          "x": 22,
+          "y": 410,
+          "width": 1120,
+          "height": 258,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 150
+          }
+        }
+      ]
+    }
+  ]
+}

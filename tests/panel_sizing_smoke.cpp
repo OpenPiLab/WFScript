@@ -4,11 +4,13 @@
 #include "PanelCanvas.h"
 #include <QApplication>
 #include <QCoreApplication>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QDebug>
+#include <QPushButton>
 
 namespace {
 int fail(const char* message) { qCritical() << "FAIL:" << message; return 1; }
@@ -54,6 +56,36 @@ int main(int argc, char** argv) {
     }
     if (canvas->documentSize()!=oversized || canvas->size()!=oversized)
         return fail("Large document dimensions must match actual visible canvas dimensions");
+
+    // v0.2-dev.8.9.5: the whole Run Page fits the available viewport while
+    // persisted geometry and all widget IDs remain precisely the same.
+    PanelControl fitControl;
+    fitControl.id=QStringLiteral("fitPageControl");
+    fitControl.type=QStringLiteral("button");
+    fitControl.text=QStringLiteral("Still interactive");
+    fitControl.geometry=QRect(1500,940,170,45);
+    if(!canvas->addControl(fitControl))return fail("Add control for non-destructive Fit Page test");
+    const QJsonArray savedControls=canvas->toJson();
+    auto* fitButton=panel.findChild<QPushButton*>(QStringLiteral("panelFitPageToggle"));
+    if(!fitButton || !fitButton->isChecked())return fail("Fit Page exists and defaults on");
+    panel.setRunning(true);
+    updateUi();
+    if(canvas->size().width()>scroll->viewport()->width() ||
+       canvas->size().height()>scroll->viewport()->height())
+        return fail("Run Page should fit without either scroll bar");
+    if(canvas->documentSize()!=oversized || canvas->toJson()!=savedControls)
+        return fail("Fit Page must not modify saved Page dimensions or control coordinates");
+    fitButton->setChecked(false);
+    updateUi();
+    if(canvas->size()!=oversized || scroll->verticalScrollBar()->maximum()==0)
+        return fail("Turning Fit Page off restores 100% presentation and scrolling");
+    fitButton->setChecked(true);
+    updateUi();
+    panel.setRunning(false);
+    updateUi();
+    if(canvas->size()!=oversized || canvas->toJson()!=savedControls)
+        return fail("Stop returns to exact original Design canvas and control positions");
+    canvas->clearControls();
     // Existing schema v1 still round-trips explicit dimensions and controls.
     const QJsonObject serialized{{"format", "WFScriptPanel"}, {"version", 1},
         {"canvasWidth",panel.panelSize().width()},

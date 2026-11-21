@@ -1,7 +1,7 @@
 {
   "format": "WFScriptPanel",
   "version": 2,
-  "description": "WFScript v5.6.51 example — Quick tour, editor workflow, simulation, and hardware safety.",
+  "description": "WFScript visual events tutorial — guided UI event binding using Property Editor and named JavaScript handlers.",
   "scriptName": "GettingStarted.js",
   "activePageId": "docs",
   "lifecycle": {
@@ -40,7 +40,7 @@
         {
           "id": "docsIntro",
           "type": "label",
-          "text": "Explore focused, editable examples from the Examples menu on the Panel toolbar. Each example is a normal .wfpanel project with its own documented JavaScript.",
+          "text": "Start with Events Tutorial, then Widget Playground, Panel Timers and Communications Terminal. Every example contains a readable learning guide at the top of its JavaScript. Save As to build your own copy.",
           "x": 24,
           "y": 68,
           "width": 1110,
@@ -57,7 +57,7 @@
         {
           "id": "docsStructure",
           "type": "label",
-          "text": "GET STARTED\n\n1. Choose Examples and select Widget Playground or Signal Lab.\n2. Click Edit JavaScript to read the named event handlers.\n3. Press Run Panel to activate callbacks.\n4. Save/Export your own modified copy.",
+          "text": "YOUR FIRST WORKING PANEL\n\n1. Open Events Tutorial.\n2. Select the button in Design mode.\n3. Properties → Events → clicked → Go to Handler.\n4. Read onTourButtonClicked() in Script Editor.\n5. Run Panel and click the button.\n6. Stop/Design and edit the response message.",
           "x": 24,
           "y": 164,
           "width": 528,
@@ -68,13 +68,14 @@
           "events": {},
           "properties": {
             "borderVisible": true,
-            "cornerRadius": 14
+            "cornerRadius": 14,
+            "wordWrap": true
           }
         },
         {
           "id": "docsScript",
           "type": "label",
-          "text": "JAVASCRIPT BASICS\n\nui.get(id) reads a widget.\nui.set(id,value) updates a widget.\nui.on(id,event,callback) registers a handler.\nplots.setSeries() displays computed data.\nplots.fromScope() transfers a real capture.",
+          "text": "JAVASCRIPT BASICS\n\nui.get(id) reads a widget.\nui.set(id,value) updates a widget.\nProperties > Events binds UI events.\nui.on() is for programmatic registration.\nplots.setSeries() displays chart data.\nplots.fromScope() transfers captured data.",
           "x": 586,
           "y": 164,
           "width": 548,
@@ -85,13 +86,14 @@
           "events": {},
           "properties": {
             "borderVisible": true,
-            "cornerRadius": 14
+            "cornerRadius": 14,
+            "wordWrap": true
           }
         },
         {
           "id": "docsDesigner",
           "type": "label",
-          "text": "MULTI-PAGE PROJECTS\n\nWidget Playground, Analog Charts and Chart Techniques contain multiple Pages. Their widgets share one script runtime, so switching Pages does not restart measurements.\n\nUse Properties and Design Tools to customize the layout.",
+          "text": "LEARN BY MODIFYING\n\nFollow the example header: GOAL → TRY FIRST → TRACE → EDIT SAFELY.\n\nSelect a widget to inspect Properties and saved Events. One .wfpanel contains all Pages and one shared JavaScript runtime. Save As before changing examples.",
           "x": 24,
           "y": 438,
           "width": 528,
@@ -125,7 +127,7 @@
         {
           "id": "docsFooter",
           "type": "label",
-          "text": "TIP: Examples are bundled as read-only Qt resources. Save/Export creates a normal editable .wfpanel file.",
+          "text": "NEXT: Widget Playground → Panel Timers → TCP / UDP → SQLite. No hardware needed for those lessons. Simulation ≠ hardware validation.",
           "x": 24,
           "y": 684,
           "width": 1110,
@@ -140,7 +142,104 @@
           }
         }
       ]
+    },
+    {
+      "id": "eventstour",
+      "name": "Events Tutorial",
+      "width": 1000,
+      "height": 720,
+      "controls": [
+        {
+          "id": "tourTitle",
+          "type": "label",
+          "text": "VISUAL EVENT MANAGEMENT — BUILT INTO WFSCRIPT",
+          "x": 28,
+          "y": 24,
+          "width": 940,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "tourSub",
+          "type": "label",
+          "text": "Widget and JavaScript handler are linked by saved event metadata — no extra registration required.",
+          "x": 28,
+          "y": 96,
+          "width": 940,
+          "height": 68,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "wordWrap": true
+          }
+        },
+        {
+          "id": "tourButton",
+          "type": "button",
+          "text": "CLICK ME — DESIGNER EVENT",
+          "x": 28,
+          "y": 188,
+          "width": 360,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onTourButtonClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "tourResult",
+          "type": "label",
+          "text": "Press Run Panel, then click the button to invoke its visually assigned handler.",
+          "x": 28,
+          "y": 270,
+          "width": 940,
+          "height": 78,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "tourHelp",
+          "type": "label",
+          "text": "DESIGN MODE: Select the button → Widget Properties → Events tab → clicked. The handler is onTourButtonClicked.\n\nGo to Handler jumps to its source; Create Handler can generate new functions.\n\nRUN MODE: Click the button and watch the label change.\n\nThere is NO ui.on() in this example: the button event is stored in its .wfpanel metadata.",
+          "x": 28,
+          "y": 390,
+          "width": 940,
+          "height": 270,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "wordWrap": true
+          }
+        }
+      ]
     }
   ],
-  "script": "/**\n * WFScript Example: Getting Started\n * Quick tour, editor workflow, simulation, and hardware safety.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: No connections required.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// This introductory Panel only contains labels; it performs no I/O.\n// Use the Examples menu to explore the individually documented projects.\nprint('Getting Started: choose an example from the Panel Designer Examples menu.');\n"
+  "script": "// ┌─ WFScript LEARNING LAB: Getting Started\n// │ Level: Beginner\n// │\n// │ GOAL: Understand a Panel project, Design vs Run, and saved visual event bindings.\n// │ BEFORE RUN: No equipment is required; stay in Simulation.\n// │ TRY FIRST: Read the Guide Page, then switch to Events Tutorial.\n// │ TRACE: `tourButton` → `clicked` → `onTourButtonClicked()` → `ui.set(\"tourResult\", …)`.\n// │ EDIT SAFELY: Change the message in `onTourButtonClicked()` to use your own words; rerun\n// │    and confirm the counter still works.\n// │ REMEMBER: The Panel stores the event-to-function link; the main script provides the\n// │    named function. All Pages share the same script.\n// │\n// │ EVENT TIP: Select `tourButton` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/GettingStarted.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * WFScript Example: Getting Started\n * Quick tour, editor workflow, simulation, and hardware safety.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: No connections required.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// Page 02 teaches Property Editor event management with no manual ui.on().\n// In Design mode select tourButton > Properties > Events > clicked and choose\n// Go to Handler to jump directly to onTourButtonClicked().\nlet tutorialClicks = 0;\n/**\n * CORE LESSON — Designer-bound click handler. Maintains a counter local to this run, then writes\n * text to tourResult. This is the smallest useful event → JavaScript → widget example.\n */\nfunction onTourButtonClicked() {\n    tutorialClicks++;\n    ui.set('tourResult', 'The designer-managed handler ran ' + tutorialClicks +\n        (tutorialClicks === 1 ? ' time.' : ' times.'));\n    print('Getting Started: designer event #' + tutorialClicks);\n}\nprint('Getting Started: choose an example from the Panel Designer Examples menu.');\n"
 }

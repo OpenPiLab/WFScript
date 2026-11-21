@@ -25,7 +25,7 @@ The snippet omits the other normal widget fields. `imageData` is a **standard Ba
 - For oversized JPEG, resize and encode as JPEG. Oversized PNG is resized and encoded as PNG, with a JPEG fallback only for opaque images that cannot fit the payload limit. BMP and WebP are decoded and normalized to PNG or JPEG, subject to the Qt-supported image codecs, dimensions, and size limits.
 - The Properties inspector shows **the actual encoded format**, binary size, and Base64 size. It does not infer it from the filename.
 - If you embed the original JPEG or PNG, source EXIF metadata (including possible camera/location information) is retained in the project. Remove metadata before importing if that is undesirable.
-- Current bounds remain: input file up to 16 MiB, raster up to 2048 px on import, each embedded payload up to 2 MiB, 3 MiB Base64 property limit, 20 MiB cumulative project image data, 32 MiB maximum `.wfpanel` file. Other widget metadata still has its separate 16 KiB limit.
+- Current bounds remain: input file up to 16 MiB, raster up to 2048 px on import, each embedded payload up to 2 MiB, 3 MiB Base64 property limit, 20 MiB cumulative project image data, 96 MiB maximum `.wfpanel` file (raised in v0.2-dev.8.6). Other widget metadata still has its separate 16 KiB limit.
 
 ## Backward compatibility
 

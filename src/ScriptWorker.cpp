@@ -4,6 +4,7 @@
 #include "PowerSuppliesBridge.h"
 #include "StaticIOBridge.h"
 #include "PatternsBridge.h"
+#include "ProtocolBridge.h"
 #include "ScriptHelpers.h"
 #include "ScriptLibraryBridge.h"
 #include "ScriptErrorDetails.h"
@@ -49,6 +50,7 @@ void ScriptWorker::execute(const QString& source, const QString& fileName,
     PowerSuppliesBridge supplies(physicalDevice ? &runtime : nullptr);
     StaticIOBridge staticIO(physicalDevice ? &runtime : nullptr);
     PatternsBridge patterns(physicalDevice ? &runtime : nullptr);
+    ProtocolBridge protocol(physicalDevice ? &runtime : nullptr);
     LogicBridge logic(physicalDevice ? &runtime : nullptr,
                       physicalDevice ? nullptr : &mock, &m_stopRequested);
     DeviceBridge device(physicalDevice ? &runtime : nullptr, !physicalDevice);
@@ -59,8 +61,10 @@ void ScriptWorker::execute(const QString& source, const QString& fileName,
     connect(&console, &ConsoleBridge::clearRequested, this,
             &ScriptWorker::consoleClearRequested, Qt::DirectConnection);
 
-    QObject* objects[] = {&console,&scope,&wavegen,&supplies,&staticIO,&patterns,&logic,&device,&utilities};
+    QObject* objects[] = {&console,&scope,&wavegen,&supplies,&staticIO,&patterns,&protocol,&logic,&device,&utilities};
     for (QObject* object : objects) QJSEngine::setObjectOwnership(object, QJSEngine::CppOwnership);
+    for(QObject* port : {protocol.uart(),protocol.spi(),protocol.i2c(),protocol.can(),protocol.swd()})
+        QJSEngine::setObjectOwnership(port,QJSEngine::CppOwnership);
     // QObject pointers exposed through nested properties refer to stack-owned
     // member objects. Explicitly prevent JS garbage collection from deleting them.
     auto* logicTime=static_cast<LogicTime*>(logic.time());
@@ -154,6 +158,8 @@ void ScriptWorker::execute(const QString& source, const QString& fileName,
     global.setProperty(QStringLiteral("StaticIO"),engine.newQObject(&staticIO));
     global.setProperty(QStringLiteral("Patterns1"),engine.newQObject(&patterns));
     global.setProperty(QStringLiteral("Patterns"),global.property(QStringLiteral("Patterns1")));
+    global.setProperty(QStringLiteral("Protocol1"),engine.newQObject(&protocol));
+    global.setProperty(QStringLiteral("Protocol"),global.property(QStringLiteral("Protocol1")));
     global.setProperty(QStringLiteral("Device"),engine.newQObject(&device));
     // WaveForms allows unnumbered aliases when only the first instrument is intended.
     global.setProperty(QStringLiteral("Scope"),global.property(QStringLiteral("Scope1")));
@@ -166,6 +172,15 @@ void ScriptWorker::execute(const QString& source, const QString& fileName,
         };
         var console = { log: print, warn: print, error: print };
         var wait = function(seconds) { return seconds === undefined ? __utils.wait() : __utils.wait(seconds); };
+        // One-shot editor scripts end after evaluation: there is no persistent
+        // Panel event loop in which a browser-style timer callback could run.
+        function __standaloneTimerError() {
+            throw new Error('setTimeout/setInterval require Run Panel; standalone scripts finish immediately');
+        }
+        function setTimeout() { __standaloneTimerError(); }
+        function setInterval() { __standaloneTimerError(); }
+        function clearTimeout() { __standaloneTimerError(); }
+        function clearInterval() { __standaloneTimerError(); }
     )JS") + ScriptHelpers::source() + ScriptLibraryBridge::bootstrapSource(), QStringLiteral("<script-environment>"));
     if (boot.isError()) {
         emit finished(false, QStringLiteral("JavaScript bootstrap failed: %1").arg(boot.toString()));
@@ -182,6 +197,7 @@ void ScriptWorker::execute(const QString& source, const QString& fileName,
 
     // Hardware outputs are explicitly stopped at script completion; scripts do not
     // leave a waveform running after the device handle is closed.
+    if (!protocol.stop()) emit outputReady(QStringLiteral("WARNING: Protocol shutdown not confirmed: %1").arg(protocol.lastError()));
     logic.stop();
     if (!patterns.stop()) emit outputReady(QStringLiteral("WARNING: Patterns output shutdown not confirmed: %1").arg(patterns.lastError()));
     if (!staticIO.stop()) emit outputReady(QStringLiteral("WARNING: StaticIO high-Z shutdown not confirmed: %1").arg(staticIO.lastError()));

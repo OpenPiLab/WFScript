@@ -1,3 +1,5 @@
+// LEARNING TIP: configureLoopback() owns W1 setup; captureAcRms() owns CH1 measurement; cleanupLoopback() must still stop outputs when any test fails. Edit limits in Test Sequence, not in this module.
+
 /**
  * AD3LoopbackSteps.mjs — REAL W1 -> Scope CH1 instrument measurements.
  * This library runs inside WFScript's ONE QJSEngine. No module imports are
@@ -27,14 +29,17 @@ export function configureLoopback() {
     Wavegen1.Channel1.Mode.text = 'Simple';
     Wavegen1.Channel1.Simple.Type.text = 'Sine';
     Wavegen1.Channel1.Simple.Frequency.value = 1000;
-    Wavegen1.Channel1.Simple.Amplitude.value = 1.0; // V peak, 2 Vpp
+    Wavegen1.Channel1.Simple.Amplitude.value = 1.0;
+    // V peak, 2 Vpp
     Wavegen1.Channel1.Simple.Offset.value = 0;
     Wavegen1.Channel1.Simple.Phase.value = 0;
     if (Wavegen1.Channel1.Simple.Type.text !== 'Sine')
         throw Error('Wavegen rejected Sine function');
-    Scope1.Time.Rate.value = 1000000; // 1 MS/s
+    Scope1.Time.Rate.value = 1000000;
+    // 1 MS/s
     Scope1.Time.Samples.value = 16384;
-    Scope1.Channel1.Range.value = 5;  // supported AD3 hardware 5 Vpp range
+    Scope1.Channel1.Range.value = 5;
+    // supported AD3 hardware 5 Vpp range
     Scope1.Channel1.Offset.value = 0;
     Scope1.Channel1.Attenuation.value = 1;
     Scope1.Trigger.Trigger.text = 'None';
@@ -55,36 +60,61 @@ export function captureAcRms() {
     const st = Scope1.Channel1.statistics();
     if (!st || Number(st.count) < 2048)
         throw Error('Insufficient CH1 samples: ' + (st ? st.count : 0));
-    const mean = Number(st.mean), rms = Number(st.rms);
+    const mean = Number(st.mean),
+        rms = Number(st.rms);
     const frequency = Number(st.frequencyHz);
     const vpp = Number(st.vpp);
     if (![mean, rms, frequency, vpp].every(isFinite))
         throw Error('Non-finite scope statistics (check W1 -> CH1 wiring)');
     // Ignore DC offset when checking AC RMS, unlike total RMS.
     const acRms = Math.sqrt(Math.max(0, rms * rms - mean * mean));
-    capture = {acRms:acRms,frequency:frequency,vpp:vpp,mean:mean, count:Number(st.count)};
+    capture = {
+        acRms: acRms,
+        frequency: frequency,
+        vpp: vpp,
+        mean: mean,
+        count: Number(st.count)
+    };
     print('[AD3 test] CH1 N=' + capture.count + ', AC RMS=' + acRms.toFixed(4) +
-          ' V, f=' + frequency.toFixed(2) + ' Hz, Vpp=' + vpp.toFixed(4) +
-          ' V, DC=' + mean.toFixed(4) + ' V');
+        ' V, f=' + frequency.toFixed(2) + ' Hz, Vpp=' + vpp.toFixed(4) +
+        ' V, DC=' + mean.toFixed(4) + ' V');
     // Plot is an optional visualization: an invalid plot must not turn a
     // valid measurement into a failed test.
-    try { plots.fromScope('hwTrace', 1, 'Last captured CH1'); }
-    catch (e) { print('[AD3 test] Chart not updated: ' + String(e)); }
+    try {
+        plots.fromScope('hwTrace', 1, 'Last captured CH1');
+    }
+    catch (e) {
+        print('[AD3 test] Chart not updated: ' + String(e));
+    }
     return acRms;
 }
 
-export function measureFrequency() { return requireCaptured('frequency'); }
-export function measureVpp()       { return requireCaptured('vpp'); }
-export function measureMean()      { return requireCaptured('mean'); }
+export function measureFrequency() {
+    return requireCaptured('frequency');
+}
+export function measureVpp() {
+    return requireCaptured('vpp');
+}
+export function measureMean() {
+    return requireCaptured('mean');
+}
 
 export function cleanupLoopback() {
     // Always attempt BOTH shutdown operations. Even a Scope error must not
     // prevent W1 shutdown. Best effort hardware-off is more important than UI.
     let scopeError = null;
-    try { Scope1.stop(); } catch (e) { scopeError = String(e); }
-    try { Wavegen1.stop(); }
-    catch (e) { throw Error('W1 could not be stopped: ' + String(e)); }
+    try {
+        Scope1.stop();
+    } catch (e) {
+        scopeError = String(e);
+    }
+    try {
+        Wavegen1.stop();
+    }
+    catch (e) {
+        throw Error('W1 could not be stopped: ' + String(e));
+    }
     print('[AD3 test] Cleanup: Scope stopped; W1 disabled' +
-          (scopeError ? ' (scope warning: '+scopeError+')' : ''));
+        (scopeError ? ' (scope warning: ' + scopeError + ')' : ''));
     return true;
 }

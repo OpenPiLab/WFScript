@@ -7,7 +7,9 @@ Wavegen1.Channel1.Simple.Frequency.value = 1000;
 Wavegen1.Channel1.Simple.Amplitude.value = 0.25;
 Wavegen1.Channel1.Simple.Offset.value = 0.50;
 Scope1.Trigger.Trigger.text = "None";
-Wavegen1.run(); // Command return is intentionally ignored for portability.
+Wavegen1.run();
+
+// Command return is intentionally ignored for portability.
 if (!wait(0.15)) throw new Error("Cancelled");
 for (var i = 0; i < 5; ++i) {
     Scope1.single();

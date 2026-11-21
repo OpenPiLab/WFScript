@@ -1,0 +1,395 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "RC1.5.14.9 Theme Lifecycle Lab, data-safe full-theme changes",
+  "scriptName": "ThemeLifecycle_RC15149.js",
+  "activePageId": "main",
+  "appearance": {
+    "themeMode": "follow",
+    "background": "",
+    "showDesignGrid": true
+  },
+  "pages": [
+    {
+      "id": "main",
+      "name": "Theme Lab",
+      "width": 1300,
+      "height": 920,
+      "controls": [
+        {
+          "id": "heading",
+          "type": "label",
+          "x": 20,
+          "y": 10,
+          "width": 1240,
+          "height": 55,
+          "text": "THEME LIFECYCLE LAB  |  RC1.5.14.9  |  Toggle View > Dark Theme while running",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "instructions",
+          "type": "label",
+          "x": 20,
+          "y": 66,
+          "width": 1240,
+          "height": 52,
+          "text": "Test light/dark on first load, while running, after Stop / Run again, and in Operator View. Tables should match the Page immediately, without losing data.",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "themeCheck",
+          "type": "toggle",
+          "x": 20,
+          "y": 136,
+          "width": 250,
+          "height": 45,
+          "text": "CHECK ME (contrast test)",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "fillButton",
+          "type": "button",
+          "x": 296,
+          "y": 136,
+          "width": 180,
+          "height": 45,
+          "text": "FILL TABLES",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "enabled": true,
+              "handler": "fillTables"
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "clearButton",
+          "type": "button",
+          "x": 493,
+          "y": 136,
+          "width": 180,
+          "height": 45,
+          "text": "RESET TABLES",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "enabled": true,
+              "handler": "clearTables"
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "checkButton",
+          "type": "button",
+          "x": 693,
+          "y": 136,
+          "width": 180,
+          "height": 45,
+          "text": "VERIFY COUNTS",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "enabled": true,
+              "handler": "verifyCounts"
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "status",
+          "type": "label",
+          "x": 20,
+          "y": 185,
+          "width": 1240,
+          "height": 38,
+          "text": "Ready \u2014 choose View > Dark Theme and click Fill Tables.",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "measurementTable",
+          "type": "measurement_table",
+          "x": 20,
+          "y": 232,
+          "width": 620,
+          "height": 330,
+          "text": "Measurement history - streaming validation",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "decimals": 3,
+            "maxRows": 100,
+            "headers": "Measurement|Actual|Limits|Result",
+            "showToolbar": true,
+            "showRowCount": true,
+            "showFilter": true,
+            "showCopyButton": true,
+            "showExportButton": true,
+            "showClearButton": false,
+            "autoScroll": true,
+            "title": "Measurement Results"
+          }
+        },
+        {
+          "id": "experimentTable",
+          "type": "experiment_table",
+          "x": 654,
+          "y": 232,
+          "width": 610,
+          "height": 330,
+          "text": "Synthetic measurements",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Seq|Callback Epoch (ms)|Timer|Simulated Voltage (V)|Callback Delta (ms)",
+            "initialRows": "",
+            "maxRows": 50000,
+            "editable": true,
+            "tableTitle": "Experiment Data",
+            "statusText": "Ready for timer streaming or manual editing",
+            "showToolbar": true,
+            "showRowCount": true,
+            "showImportButton": true,
+            "showExportButton": true,
+            "showCopyButton": true,
+            "showClearButton": true,
+            "showFollowToggle": true,
+            "autoScroll": true,
+            "emitFullChangeEvent": false
+          }
+        },
+        {
+          "id": "diagnostics",
+          "type": "event_log",
+          "x": 20,
+          "y": 576,
+          "width": 1244,
+          "height": 270,
+          "text": "Stream Diagnostics",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "autoScroll": true,
+            "maxEntries": 4000,
+            "showSource": true,
+            "showTimestamp": true,
+            "title": "Event Log"
+          }
+        },
+        {
+          "id": "footer",
+          "type": "label",
+          "x": 20,
+          "y": 856,
+          "width": 1244,
+          "height": 35,
+          "text": "Use Page Appearance > Light / Dark / Follow Application; verify all headers, check marks, table rows and popup filters.",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "alternate",
+      "name": "Second Page",
+      "width": 1300,
+      "height": 920,
+      "controls": [
+        {
+          "id": "page2_heading",
+          "type": "label",
+          "x": 20,
+          "y": 10,
+          "width": 1240,
+          "height": 55,
+          "text": "THEME LIFECYCLE LAB  |  RC1.5.14.9  |  Toggle View > Dark Theme while running",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "page2_instructions",
+          "type": "label",
+          "x": 20,
+          "y": 66,
+          "width": 1240,
+          "height": 52,
+          "text": "Test light/dark on first load, while running, after Stop / Run again, and in Operator View. Tables should match the Page immediately, without losing data.",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        },
+        {
+          "id": "page2_themeCheck",
+          "type": "toggle",
+          "x": 20,
+          "y": 136,
+          "width": 250,
+          "height": 45,
+          "text": "CHECK ME (contrast test)",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "page2_measurementTable",
+          "type": "measurement_table",
+          "x": 20,
+          "y": 232,
+          "width": 620,
+          "height": 330,
+          "text": "Measurement history - streaming validation",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "decimals": 3,
+            "maxRows": 100,
+            "headers": "Measurement|Actual|Limits|Result",
+            "showToolbar": true,
+            "showRowCount": true,
+            "showFilter": true,
+            "showCopyButton": true,
+            "showExportButton": true,
+            "showClearButton": false,
+            "autoScroll": true,
+            "title": "Measurement Results"
+          }
+        },
+        {
+          "id": "page2_experimentTable",
+          "type": "experiment_table",
+          "x": 654,
+          "y": 232,
+          "width": 610,
+          "height": 330,
+          "text": "Synthetic measurements",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Seq|Callback Epoch (ms)|Timer|Simulated Voltage (V)|Callback Delta (ms)",
+            "initialRows": "",
+            "maxRows": 50000,
+            "editable": true,
+            "tableTitle": "Experiment Data",
+            "statusText": "Ready for timer streaming or manual editing",
+            "showToolbar": true,
+            "showRowCount": true,
+            "showImportButton": true,
+            "showExportButton": true,
+            "showCopyButton": true,
+            "showClearButton": true,
+            "showFollowToggle": true,
+            "autoScroll": true,
+            "emitFullChangeEvent": false
+          }
+        },
+        {
+          "id": "page2_diagnostics",
+          "type": "event_log",
+          "x": 20,
+          "y": 576,
+          "width": 1244,
+          "height": 270,
+          "text": "Stream Diagnostics",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "autoScroll": true,
+            "maxEntries": 4000,
+            "showSource": true,
+            "showTimestamp": true,
+            "title": "Event Log"
+          }
+        },
+        {
+          "id": "page2_footer",
+          "type": "label",
+          "x": 20,
+          "y": 856,
+          "width": 1244,
+          "height": 35,
+          "text": "Use Page Appearance > Light / Dark / Follow Application; verify all headers, check marks, table rows and popup filters.",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": false
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// RC1.5.14.9 theme test \u2014 simulated only. No instruments or TestRunner.\nvar batches=0;\nfunction fillTables() {\n    var measurement=[]; var experiment=[]; var now=Date.now();\n    for(var i=0;i<200;++i) {\n        var n=batches*200+i;\n        measurement.push({name:'Vout '+n,value:3.3+0.01*Math.sin(n*.02),low:3.0,high:3.6,unit:'V'});\n        experiment.push([n,now,'ADC0',(3.3+0.01*Math.sin(n*.02)).toFixed(4),10]);\n    }\n    ui.set('measurementTable',{append:measurement});\n    ui.set('experimentTable',{appendRows:experiment});\n    ui.set('diagnostics',{append:{level:'INFO',source:'ThemeLab',message:'Added batch '+batches+' at '+now}});\n    batches++;\n    verifyCounts();\n}\nfunction clearTables() {\n    ui.set('measurementTable',{reset:true});\n    ui.set('experimentTable',{clear:true});\n    ui.set('diagnostics',{append:{level:'WARN',source:'ThemeLab',message:'Cleared both result tables'}});\n    batches=0; verifyCounts();\n}\nfunction verifyCounts() {\n    var n=ui.tableRowCount('experimentTable');\n    ui.set('status','Batches '+batches+' / Experiment rows '+n+' \u2014 Change View > Dark Theme and verify rows stay visible.');\n    print('ThemeLab: batches='+batches+' experimentRows='+n);\n}\nprint('Theme lifecycle lab ready. First fill tables, then switch the View theme.');\n",
+  "libraries": []
+}

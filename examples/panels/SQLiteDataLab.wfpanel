@@ -1,0 +1,439 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Two-page SQLite database and JavaScript API example: persistent synthetic measurement logging, live data tables, bound queries and aggregate statistics. Simulation-safe.",
+  "scriptName": "SQLiteDataLab.js",
+  "activePageId": "sql_log",
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "script": "// ┌─ WFScript LEARNING LAB: SQLite Database & Data Logging\n// │ Level: Beginner–Intermediate\n// │\n// │ GOAL: Persist synthetic readings in SQLite, run queries, and display results.\n// │ BEFORE RUN: No instruments. The database is in WFScript’s shared PanelData directory.\n// │ TRY FIRST: Press OPEN DATABASE.\n// │ TRACE: `startSqlLog` → `startLogging()` → `Database.exec()`; query callbacks update\n// │    table/chart widgets.\n// │ EDIT SAFELY: Change the synthetic reading range or a query filter, then refresh the\n// │    statistics.\n// │ REMEMBER: SQL commands execute asynchronously: the result callback, not the line after\n// │    `query()`, owns the returned rows.\n// │\n// │ EVENT TIP: Select `openSqlDb` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/SQLiteDataLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/** WFScript v0.2-dev.5.1 — SQLite Data Lab.\n * Two-page Simulation-safe example: no hardware writes or acquisitions.\n * The database lives in shared PanelData, OUTSIDE .wfpanel; Panels can share it.\n * Database calls are async; ALL results are delivered through callbacks.\n * Page 01: persistent logging, query-driven Experiment Data Table.\n * Page 02: aggregate statistics and error-handling demonstration.\n */\nlet db = 0,\n    opening = false,\n    logging = 0,\n    samplesThisRun = 0,\n    sampleSequence = 0;\nconst databaseFile = 'engineering_lab.db';\nfunction log(message, level) {\n    const payload = {\n        append: {\n            level: level || 'INFO',\n            source: 'SQLite Lab',\n            message: String(message)\n        }\n    };\n    ui.set('sqlEvents', payload);\n    ui.set('statsEvents', payload);\n    print('[SQLite] ' + message);\n}\nfunction showStatus(text) {\n    ui.set('sqlStatus', text);\n    ui.set('statsStatus', text);\n}\nfunction requireOk(result, what) {\n    if (result.ok) return true;\n    const msg = what + ': ' + (result.error || 'unknown error');\n    log(msg, 'ERROR');\n    showStatus(msg);\n    return false;\n}\n/**\n * CORE LESSON — Starts the asynchronous database-open flow. Follow the callback before looking for\n * query results: opening a database is not a synchronous function return.\n */\nfunction openDatabase() {\n    if (db) {\n        log('Database is already open (handle ' + db + ')');\n        return;\n    }\n    if (opening) return;\n    opening = true;\n    showStatus('Opening SQLite database asynchronously...');\n    Database.open(databaseFile, function (result) {\n        opening = false;\n        if (!requireOk(result, 'Open database')) return;\n        db = result.db;\n        log('Database opened: ' + result.path, 'PASS');\n        Database.exec(db,\n            'CREATE TABLE IF NOT EXISTS samples (' +\n            'id INTEGER PRIMARY KEY, timestamp TEXT NOT NULL, voltage REAL NOT NULL, source TEXT NOT NULL)',\n            [], function (created) {\n                if (!requireOk(created, 'Create table')) return;\n                Database.exec(db, 'CREATE INDEX IF NOT EXISTS idx_samples_time ON samples(timestamp)', [], function (indexed) {\n                    if (!requireOk(indexed, 'Create index')) return;\n                    showStatus('Open: ' + databaseFile + ' — ready to log and query');\n                    refreshRecent();\n                    refreshStats();\n                });\n            });\n    });\n}\nfunction stopLogging() {\n    if (logging) {\n        clearInterval(logging);\n        logging = 0;\n        log('250 ms sample timer stopped');\n    }\n}\nfunction closeDatabase() {\n    stopLogging();\n    if (!db) {\n        log('Database already closed');\n        return;\n    }\n    const handle = db;\n    db = 0;\n    Database.close(handle, function (result) {\n        if (!requireOk(result, 'Close database')) return;\n        showStatus('Database closed. Saved records remain on disk.');\n        log('SQLite database closed', 'PASS');\n    });\n}\nfunction startLogging() {\n    if (!db) {\n        log('OPEN DATABASE before starting', 'WARN');\n        return;\n    }\n    if (logging) return;\n    samplesThisRun = 0;\n    log('Started 250 ms simulated voltage logging');\n    logging = setInterval(function () {\n        if (!db) {\n            stopLogging();\n            return;\n        }\n        // Synthetic signal; safe even if a physical AD3 is connected.\n        const t = Date.now() / 1000;\n        const v = 3.3 + 0.042 * Math.sin(t * 2.1 + sampleSequence * 0.2);\n        sampleSequence++;\n        const stamp = new Date().toISOString();\n        Database.exec(db, 'INSERT INTO samples(timestamp,voltage,source) VALUES(?,?,?)',\n            [stamp, Number(v.toFixed(5)), 'Synthetic'], function (result) {\n                if (!requireOk(result, 'Insert sample')) {\n                    stopLogging();\n                    return;\n                }\n                samplesThisRun++;\n                ui.set('sampleCount', samplesThisRun);\n                ui.set('sampleVoltage', v);\n                if (samplesThisRun % 8 === 0) refreshRecent();\n                if (samplesThisRun >= 200) {\n                    stopLogging();\n                    refreshRecent();\n                    refreshStats();\n                }\n            });\n    }, 250);\n}\nfunction refreshRecent() {\n    if (!db) {\n        log('Open database before querying', 'WARN');\n        return;\n    }\n    Database.query(db,\n        'SELECT timestamp,voltage,source FROM samples ORDER BY id DESC LIMIT 40', [], function (result) {\n            if (!requireOk(result, 'Query recent data')) return;\n            // The existing Experiment Data Table accepts arrays of row arrays.\n            const rows = result.rows.map(function (r) {\n                return [String(r[0]), Number(r[1]).toFixed(5), String(r[2])];\n            });\n            ui.set('recentSamplesTable', rows);\n            log('Displayed ' + rows.length + ' recent rows (persisted on disk)');\n        });\n}\nfunction filterHigh() {\n    if (!db) {\n        log('Open database before querying', 'WARN');\n        return;\n    }\n    // Bound value is a SQL parameter, not concatenated into SQL text.\n    const minV = Number(ui.get('filterMinVoltage'));\n    if (!Number.isFinite(minV)) return;\n    Database.query(db,\n        'SELECT timestamp,voltage,source FROM samples WHERE voltage>=? ORDER BY id DESC LIMIT 40',\n        [minV], function (result) {\n            if (!requireOk(result, 'Filtered query')) return;\n            ui.set('recentSamplesTable', result.rows.map(r => [String(r[0]), Number(r[1]).toFixed(5), String(r[2])]));\n            log('Filter >= ' + minV.toFixed(3) + ' V returned ' + result.rowCount + ' rows');\n        });\n}\nfunction refreshStats() {\n    if (!db) {\n        log('Open database to display statistics', 'WARN');\n        return;\n    }\n    Database.query(db,\n        'SELECT COUNT(*), MIN(voltage), AVG(voltage), MAX(voltage) FROM samples', [], function (result) {\n            if (!requireOk(result, 'Statistics query')) return;\n            const first = result.rows[0] || [0, null, null, null];\n            const count = Number(first[0]);\n            const fmt = v => (v === null ? '—' : Number(v).toFixed(5) + ' V');\n            ui.set('statsTable', [\n                ['Total persisted samples', String(count)],\n                ['Minimum measured voltage', fmt(first[1])],\n                ['Average measured voltage', fmt(first[2])],\n                ['Maximum measured voltage', fmt(first[3])],\n                ['Storage', databaseFile]\n            ]);\n            ui.set('totalRecords', count);\n            log('Statistics refreshed; ' + count + ' measurements in persistent SQLite storage');\n        });\n}\nfunction demonstrateSafety() {\n    if (!db) {\n        log('Open database first', 'WARN');\n        return;\n    }\n    // A deliberately prohibited operation, to demonstrate the safety boundary.\n    Database.exec(db, \"ATTACH DATABASE 'other.db' AS other\", [], function (result) {\n        if (!result.ok) log('Expected restriction: ' + result.error, 'PASS');\n        else log('Unexpected: ATTACH was accepted!', 'FAIL');\n    });\n}\n\n// UI actions use Property Editor > Events (select a control, then Go to Handler).\n// Asynchronous Database callbacks stay in JavaScript; these are not widget events.\nfunction onInitialize() {\n    showStatus('Database closed — press OPEN DATABASE to access shared PanelData');\n    ui.set('sampleCount', 0);\n    ui.set('sampleVoltage', 0);\n    ui.set('totalRecords', 0);\n    log('SQLite example ready. No database opened and no timer started automatically.');\n}\nfunction onShutdown() {\n    // Pending DB callbacks are cancelled by the native Panel lifecycle.\n    stopLogging();\n    print('[SQLite] Panel stopped; database worker closes its connections');\n}\n",
+  "libraries": [],
+  "testDefinition": {},
+  "testLibrary": "",
+  "pages": [
+    {
+      "id": "sql_log",
+      "name": "01 Data Logging",
+      "controls": [
+        {
+          "id": "sqlTitle",
+          "type": "label",
+          "text": "SQLite DATA LAB  |  Persistent Engineering Measurements",
+          "x": 24,
+          "y": 16,
+          "width": 1110,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "sqlIntro",
+          "type": "label",
+          "text": "All SQL executes on a dedicated Qt worker thread. Nothing starts until OPEN DATABASE. Press START LOGGING to generate synthetic voltages every 250 ms; results persist between Panel sessions.",
+          "x": 24,
+          "y": 82,
+          "width": 1110,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "openSqlDb",
+          "type": "button",
+          "text": "OPEN DATABASE",
+          "x": 24,
+          "y": 180,
+          "width": 222,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "openDatabase",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "closeSqlDb",
+          "type": "button",
+          "text": "CLOSE DATABASE",
+          "x": 254,
+          "y": 180,
+          "width": 222,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "closeDatabase",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "startSqlLog",
+          "type": "button",
+          "text": "START LOGGING",
+          "x": 484,
+          "y": 180,
+          "width": 222,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "startLogging",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stopSqlLog",
+          "type": "button",
+          "text": "STOP LOGGING",
+          "x": 714,
+          "y": 180,
+          "width": 222,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "stopLogging",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "querySql",
+          "type": "button",
+          "text": "REFRESH RECENT",
+          "x": 24,
+          "y": 244,
+          "width": 222,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "refreshRecent",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "filterSql",
+          "type": "button",
+          "text": "FILTER BY VOLTAGE",
+          "x": 254,
+          "y": 244,
+          "width": 222,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "filterHigh",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "filterMinVoltage",
+          "type": "numeric",
+          "text": "Minimum voltage",
+          "x": 485,
+          "y": 243,
+          "width": 160,
+          "height": 50,
+          "value": 3.31,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "sampleCount",
+          "type": "digital_display",
+          "text": "",
+          "x": 670,
+          "y": 244,
+          "width": 200,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "samples",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "sampleVoltage",
+          "type": "digital_display",
+          "text": "",
+          "x": 896,
+          "y": 244,
+          "width": 225,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 4
+          }
+        },
+        {
+          "id": "sqlStatus",
+          "type": "label",
+          "text": "Database closed",
+          "x": 24,
+          "y": 318,
+          "width": 1110,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "recentSamplesTable",
+          "type": "experiment_table",
+          "text": "",
+          "x": 24,
+          "y": 390,
+          "width": 1110,
+          "height": 265,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Timestamp (UTC)|Voltage (V)|Source",
+            "initialRows": "",
+            "maxRows": 100,
+            "editable": false
+          }
+        },
+        {
+          "id": "sqlEvents",
+          "type": "event_log",
+          "text": "",
+          "x": 24,
+          "y": 674,
+          "width": 1110,
+          "height": 190,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 250
+          }
+        }
+      ],
+      "width": 1160,
+      "height": 900
+    },
+    {
+      "id": "sql_stats",
+      "name": "02 Statistics",
+      "controls": [
+        {
+          "id": "statsTitle",
+          "type": "label",
+          "text": "SQLite STATISTICS  |  SQL Aggregate Queries",
+          "x": 24,
+          "y": 16,
+          "width": 1110,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "statsIntro",
+          "type": "label",
+          "text": "The database is shared by all Pages in this project. Calculate MIN / AVG / MAX from persistent measurements. This does not use the AD3. ATTACH is intentionally prohibited to keep access confined to private Panel storage.",
+          "x": 24,
+          "y": 82,
+          "width": 1110,
+          "height": 82,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "queryStats",
+          "type": "button",
+          "text": "REFRESH STATISTICS",
+          "x": 24,
+          "y": 184,
+          "width": 250,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "refreshStats",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "invalidSql",
+          "type": "button",
+          "text": "TEST BLOCKED SQL",
+          "x": 290,
+          "y": 184,
+          "width": 250,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "demonstrateSafety",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "totalRecords",
+          "type": "digital_display",
+          "text": "",
+          "x": 570,
+          "y": 181,
+          "width": 245,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "rows",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "statsStatus",
+          "type": "label",
+          "text": "Open the database on Page 01 first.",
+          "x": 24,
+          "y": 270,
+          "width": 1110,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "statsTable",
+          "type": "experiment_table",
+          "text": "",
+          "x": 24,
+          "y": 349,
+          "width": 1110,
+          "height": 230,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "columns": "Metric|Value",
+            "initialRows": "",
+            "maxRows": 100,
+            "editable": false
+          }
+        },
+        {
+          "id": "statsEvents",
+          "type": "event_log",
+          "text": "",
+          "x": 24,
+          "y": 604,
+          "width": 1110,
+          "height": 250,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 250
+          }
+        }
+      ],
+      "width": 1160,
+      "height": 900
+    }
+  ]
+}

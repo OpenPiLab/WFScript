@@ -1,0 +1,520 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Native per-Panel file I/O and asynchronous Qt operator interaction with two-page Simulation-safe logging example",
+  "scriptName": "ScriptUtilityLab.js",
+  "activePageId": "files",
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "script": "// ┌─ WFScript LEARNING LAB: File I/O & Operator Dialogs\n// │ Level: Beginner\n// │\n// │ GOAL: Write and read CSV, JSON and binary data; use asynchronous operator dialogs.\n// │ BEFORE RUN: No connected device. FileIO writes only to the application-managed data\n// │    directory unless a user explicitly grants another file.\n// │ TRY FIRST: On Data Logging, press START LOGGING and then STOP LOGGING.\n// │ TRACE: `startLog` → `onStartLogClicked()` → timer/file work; dialog buttons → `Tool`\n// │    callbacks → label updates.\n// │ EDIT SAFELY: Change one field in the saved JSON configuration and inspect the value\n// │    after reading it back.\n// │ REMEMBER: Dialog results arrive through callbacks; saving a file and asking an operator\n// │    are separate operations.\n// │\n// │ EVENT TIP: Select `startLog` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/ScriptUtilityLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/** WFScript v0.2-dev.3 — File & Operator Utilities (Simulation only). */\nlet logger = 0,\n    samples = 0,\n    rows = [['seconds', 'voltage_V']],\n    startMs = 0;\nconst csvPath = FileIO.dataPath('measurements.csv');\nconst jsonPath = FileIO.dataPath('config.json');\nconst binPath = FileIO.dataPath('packet.bin');\nfunction log(msg, level) {\n    const record = {\n        append: {\n            level: level || 'INFO',\n            source: 'Script Utilities',\n            message: String(msg)\n        }\n    };\n    ui.set('fileEventLog', record);\n    ui.set('toolEventLog', record);\n    print('[Utilities] ' + msg);\n}\nfunction status(msg) {\n    ui.set('fileStatus', msg);\n}\nfunction update() {\n    ui.set('fileSampleCount', samples);\n}\nfunction stopLogging() {\n    if (logger) {\n        clearInterval(logger);\n        logger = 0;\n        log('250 ms acquisition timer stopped');\n    }\n}\n/**\n * CORE LESSON — The button initiates the synthetic CSV logger. A timer generates readings after\n * this function returns; Stop / Panel shutdown must cancel that timer.\n */\nfunction onStartLogClicked() {\n    if (logger) return;\n    // Start fresh; use QSaveFile for initial creation and bounded append thereafter.\n    samples = 0;\n    rows = [['seconds', 'voltage_V']];\n    startMs = Date.now();\n    FileIO.writeCsv(csvPath, rows);\n    update();\n    logger = setInterval(function () {\n        let t = (Date.now() - startMs) / 1000;\n        let v = 3.3 + 0.04 * Math.sin(t * 2.3);\n        if (!Number.isFinite(v)) return;\n        FileIO.appendText(csvPath, t.toFixed(3) + ',' + v.toFixed(5) + '\\n');\n        rows.push([t.toFixed(3), v.toFixed(5)]);\n        samples++;\n        ui.set('fileVoltage', v);\n        update();\n        if (samples >= 500) {\n            stopLogging();\n            log('Stopped at 500 sample example limit', 'WARN');\n        }\n    }, 250);\n    status('Logging every 250 ms to shared PanelData directory');\n    log('Started CSV logging to ' + csvPath);\n}\n\nfunction onSaveConfigClicked() {\n    FileIO.writeJson(jsonPath, {\n        name: 'Synthetic voltage',\n        intervalMs: 250,\n        limits: {\n            low: 3.2,\n            high: 3.4\n        }\n    });\n    log('Saved JSON config: ' + jsonPath, 'PASS');\n}\nfunction onReadConfigClicked() {\n    if (!FileIO.exists(jsonPath)) {\n        log('Save JSON first', 'WARN');\n        return;\n    }\n    const c = FileIO.readJson(jsonPath);\n    log('JSON configuration: ' + JSON.stringify(c));\n}\nfunction onReadCsvClicked() {\n    if (!FileIO.exists(csvPath)) {\n        log('Start logging first', 'WARN');\n        return;\n    }\n    const data = FileIO.readCsv(csvPath);\n    log('CSV records: ' + data.length + '; last row: ' + JSON.stringify(data[data.length - 1]));\n}\nfunction onWriteBinaryClicked() {\n    const bytes = [0x00, 0x7F, 0x80, 0xFF];\n    FileIO.writeBytes(binPath, bytes);\n    const back = FileIO.readBytes(binPath);\n    log('Binary round trip: ' + JSON.stringify(back), JSON.stringify(back) === JSON.stringify(bytes) ? 'PASS' : 'FAIL');\n}\nfunction onExportCsvClicked() {\n    Tool.getSaveFile('Save measurements', 'CSV files (*.csv)', function (result) {\n        if (!result.accepted) {\n            log('CSV export cancelled');\n            return;\n        }\n        FileIO.writeCsv(result.value, rows);\n        log('Exported ' + rows.length + ' rows to ' + result.value, 'PASS');\n    });\n}\nfunction onImportCsvClicked() {\n    Tool.getOpenFile('Import CSV', 'CSV files (*.csv)', function (result) {\n        if (!result.accepted) {\n            log('CSV import cancelled');\n            return;\n        }\n        const data = FileIO.readCsv(result.value);\n        log('Imported ' + data.length + ' rows from ' + result.value, 'PASS');\n    });\n}\nfunction showPrompt(r) {\n    const text = r.accepted ? 'Accepted: ' + JSON.stringify(r.value) : 'Operator cancelled/declined';\n    ui.set('toolResponse', text);\n    log(r.kind + ': ' + text, r.accepted ? 'PASS' : 'INFO');\n}\nfunction onAskConfirmClicked() {\n    Tool.question('Continue test?', showPrompt);\n}\nfunction onAskTextClicked() {\n    Tool.getText('Enter unit serial number', 'UUT-001', showPrompt);\n}\nfunction onAskNumberClicked() {\n    Tool.getNumber('Nominal voltage', 3.3, 0, 5, showPrompt);\n}\nfunction onAskItemClicked() {\n    Tool.getItem('Select test range', ['5 V', '50 V'], showPrompt);\n}\nfunction onAskFileOpenClicked() {\n    Tool.getOpenFile('Select an input', 'All files (*)', showPrompt);\n}\nfunction onAskFileSaveClicked() {\n    Tool.getSaveFile('Select an output', 'All files (*)', showPrompt);\n}\nfunction onInitialize() {\n    update();\n    status('Ready; no file written until you press a button.');\n    log('File & Operator Lab ready (Simulation safe)');\n}\nfunction onShutdown() {\n    stopLogging();\n    print('[Utilities] Panel cleanup complete');\n}\n",
+  "libraries": [],
+  "testDefinition": {},
+  "testLibrary": "",
+  "pages": [
+    {
+      "id": "files",
+      "name": "01 Data Logging",
+      "controls": [
+        {
+          "id": "fileTitle",
+          "type": "label",
+          "text": "SCRIPT FILE I/O  |  Per-Panel storage, CSV / JSON / binary",
+          "x": 24,
+          "y": 16,
+          "width": 1100,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "fileInfo",
+          "type": "label",
+          "text": "Simulation-safe synthetic voltage measurements. Start a 250 ms timer, write bounded CSV, inspect the files or export using Save File. Data is NOT saved inside the .wfpanel project.",
+          "x": 24,
+          "y": 80,
+          "width": 1100,
+          "height": 74,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "startLog",
+          "type": "button",
+          "text": "START LOGGING",
+          "x": 24,
+          "y": 172,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onStartLogClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "stopLog",
+          "type": "button",
+          "text": "STOP LOGGING",
+          "x": 310,
+          "y": 172,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "stopLogging",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "saveConfig",
+          "type": "button",
+          "text": "SAVE JSON CONFIG",
+          "x": 596,
+          "y": 172,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onSaveConfigClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "readConfig",
+          "type": "button",
+          "text": "READ JSON CONFIG",
+          "x": 882,
+          "y": 172,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onReadConfigClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "readCsv",
+          "type": "button",
+          "text": "READ CSV",
+          "x": 24,
+          "y": 238,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onReadCsvClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "writeBinary",
+          "type": "button",
+          "text": "BINARY ROUNDTRIP",
+          "x": 310,
+          "y": 238,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onWriteBinaryClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "exportCsv",
+          "type": "button",
+          "text": "EXPORT CSV...",
+          "x": 596,
+          "y": 238,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onExportCsvClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "importCsv",
+          "type": "button",
+          "text": "IMPORT CSV...",
+          "x": 882,
+          "y": 238,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onImportCsvClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "fileSampleCount",
+          "type": "digital_display",
+          "text": "SAMPLES WRITTEN",
+          "x": 24,
+          "y": 310,
+          "width": 345,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "samples",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "fileVoltage",
+          "type": "digital_display",
+          "text": "SYNTHETIC VOLTAGE",
+          "x": 397,
+          "y": 310,
+          "width": 345,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 3
+          }
+        },
+        {
+          "id": "fileStatus",
+          "type": "label",
+          "text": "Ready. Select START LOGGING.",
+          "x": 768,
+          "y": 310,
+          "width": 356,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "fileEventLog",
+          "type": "event_log",
+          "text": "Script utility actions",
+          "x": 24,
+          "y": 400,
+          "width": 1100,
+          "height": 245,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500
+          }
+        },
+        {
+          "id": "fileFooter",
+          "type": "label",
+          "text": "Security: scripts can access their private data directory. Outside files require an operator-selected Open/Save path. Small-file API is limited to 2 MiB per operation.",
+          "x": 24,
+          "y": 657,
+          "width": 1100,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ],
+      "width": 1160,
+      "height": 800
+    },
+    {
+      "id": "operator",
+      "name": "02 Operator Dialogs",
+      "controls": [
+        {
+          "id": "toolTitle",
+          "type": "label",
+          "text": "OPERATOR DIALOGS  |  Nonblocking Qt GUI prompts",
+          "x": 24,
+          "y": 16,
+          "width": 1100,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "toolInfo",
+          "type": "label",
+          "text": "These native Qt dialogs execute on the GUI thread. Results are delivered to JavaScript callbacks on the worker thread. Cancel always returns accepted=false. Use Run Information forms for formal UUT metadata.",
+          "x": 24,
+          "y": 81,
+          "width": 1100,
+          "height": 83,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "askConfirm",
+          "type": "button",
+          "text": "CONFIRM",
+          "x": 24,
+          "y": 195,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAskConfirmClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "askText",
+          "type": "button",
+          "text": "TEXT INPUT",
+          "x": 310,
+          "y": 195,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAskTextClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "askNumber",
+          "type": "button",
+          "text": "NUMBER INPUT",
+          "x": 596,
+          "y": 195,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAskNumberClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "askItem",
+          "type": "button",
+          "text": "SELECTION",
+          "x": 882,
+          "y": 195,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAskItemClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "askFileOpen",
+          "type": "button",
+          "text": "CHOOSE FILE TO READ",
+          "x": 24,
+          "y": 262,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAskFileOpenClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "askFileSave",
+          "type": "button",
+          "text": "CHOOSE FILE TO SAVE",
+          "x": 310,
+          "y": 262,
+          "width": 265,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAskFileSaveClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "toolResponse",
+          "type": "label",
+          "text": "No prompt answered yet.",
+          "x": 24,
+          "y": 340,
+          "width": 1100,
+          "height": 97,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "toolEventLog",
+          "type": "event_log",
+          "text": "Script utility actions",
+          "x": 24,
+          "y": 457,
+          "width": 1100,
+          "height": 245,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500
+          }
+        },
+        {
+          "id": "toolFooter",
+          "type": "label",
+          "text": "Open/Save permissions last only for the current Panel runtime session. Callbacks do not run after Stop Panel.",
+          "x": 24,
+          "y": 708,
+          "width": 1100,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ],
+      "width": 1160,
+      "height": 800
+    }
+  ]
+}

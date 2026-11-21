@@ -1,0 +1,260 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "I²C Protocol — Master and Spy — WFScript v0.2-dev native Digilent SDK protocols",
+  "scriptName": "ProtocolI2C.js",
+  "activePageId": "protocol_i2c",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "protocol_i2c",
+      "name": "I2C Protocol",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "i2cTitle",
+          "type": "label",
+          "text": "I²C MASTER + NATIVE SPY  /  SCL DIO0 · SDA DIO1",
+          "x": 24,
+          "y": 18,
+          "width": 1112,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cSafety",
+          "type": "label",
+          "text": "Connect external 3.3 V pull-ups and a suitable sensor/EEPROM. Address is 7-bit (e.g. 0x48). No output on load.",
+          "x": 24,
+          "y": 80,
+          "width": 1112,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cRate",
+          "type": "option_selector",
+          "text": "I²C BIT RATE, Hz",
+          "x": 24,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "10000|100000|400000",
+            "defaultIndex": 1,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "i2cAddr",
+          "type": "option_selector",
+          "text": "7-BIT DEVICE ADDRESS",
+          "x": 380,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "0x48|0x50|0x68",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "i2cCfg",
+          "type": "button",
+          "text": "CONFIGURE",
+          "x": 24,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onI2cCfgClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cRead",
+          "type": "button",
+          "text": "READ REG 0x00",
+          "x": 300,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onI2cReadClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cSpy",
+          "type": "button",
+          "text": "START SPY",
+          "x": 576,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onI2cSpyClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cPoll",
+          "type": "button",
+          "text": "POLL SPY",
+          "x": 852,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onI2cPollClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cStop",
+          "type": "button",
+          "text": "RELEASE PINS",
+          "x": 24,
+          "y": 350,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onI2cStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cStatus",
+          "type": "label",
+          "text": "IDLE",
+          "x": 24,
+          "y": 443,
+          "width": 1112,
+          "height": 76,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "i2cLog",
+          "type": "event_log",
+          "text": "I2C Transaction & Event Log",
+          "x": 24,
+          "y": 534,
+          "width": 1112,
+          "height": 181,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        },
+        {
+          "id": "i2cFoot",
+          "type": "label",
+          "text": "Simulation results are labeled as simulation. This is a native SDK controller example, not a passive waveform decoder.\\nStop/Close releases protocol outputs. Configure buttons may physically drive selected DIO pins.",
+          "x": 24,
+          "y": 727,
+          "width": 1112,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: I²C Protocol — Master and Spy\n// │ Level: Intermediate  |  Mode: hardware-capable\n// │\n// │ GOAL: Configure a native I²C master, issue a register read and inspect Spy traffic.\n// │ BEFORE RUN: Use Simulation for API exploration. Physical I²C needs voltage-compatible\n// │    pull-ups, SDA/SCL and common ground.\n// │ TRY FIRST: Press CONFIGURE.\n// │ TRACE: `i2cCfg` → `onI2cCfgClicked()` → `Protocol1.I2C.configure({scl:0,sda:1,...})`.\n// │ EDIT SAFELY: Change the address only to one used by your own I²C target; consult its\n// │    actual register map.\n// │ REMEMBER: I²C acknowledgements depend on an external slave; a generic read cannot\n// │    predict every sensor’s data format.\n// │\n// │ EVENT TIP: Select `i2cCfg` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/ProtocolI2C.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n// Native I2C master + SDK I2C Spy. External pullups and common GND required.\nfunction i2cLog(t) {\n    ui.set('i2cStatus', t);\n    ui.set('i2cLog', {\n        append: {\n            level: t.indexOf('ERROR') >= 0 ? 'ERROR' : (t.indexOf('NACK') >= 0 || t.indexOf('UNCONFIRMED') >= 0 ? 'WARN' : 'INFO'),\n            source: 'I2C',\n            message: t\n        }\n    });\n    print('I2C: ' + t);\n}\nfunction i2cTry(fn) {\n    try {\n        fn();\n    } catch (e) {\n        i2cLog('ERROR: ' + String(e));\n    }\n}\nfunction i2cAddress() {\n    return parseInt(String(ui.get('i2cAddr')), 16);\n}\n/**\n * CORE LESSON — Configures the native I²C bus. Real responses require an externally powered,\n * correctly addressed target and appropriate pull-ups.\n */\nfunction i2cSetup() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    if (!Protocol1.I2C.configure({\n        scl: 0,\n        sda: 1,\n        rateHz: Number(ui.get('i2cRate')),\n        timeoutSeconds: 1,\n        clockStretching: true\n    }))\n        throw Error(Protocol1.I2C.lastError);\n    i2cLog((Protocol1.simulation ? 'SIMULATED' : 'READY') + ' / address 0x' + i2cAddress().toString(16));\n}\nfunction i2cReadReg() {\n    // This illustrates a common register-style sensor; the actual register\n    // layout and returned units depend on YOUR connected I2C device.\n    const r = Protocol1.I2C.writeRead(i2cAddress(), [0x00], 2);\n    if (!r.ok) throw Error(r.error);\n    if (!r.acknowledged) {\n        i2cLog((r.simulated ? 'SIMULATED — no real ACK' : 'DEVICE NACK/ERROR') + ' / index ' + r.nackIndex);\n        return;\n    }\n    i2cLog('REGISTER READ / bytes ' + JSON.stringify(r.data));\n}\nfunction i2cSpy() {\n    if (!Protocol1.I2C.Receiver()) throw Error(Protocol1.I2C.lastError);\n    i2cLog('SPY INITIALIZED — monitor an external bus');\n}\nfunction i2cPoll() {\n    const r = Protocol1.I2C.spyPoll(64);\n    if (!r.ok) throw Error(r.error);\n    i2cLog((r.simulated ? 'SIMULATION — no observed frames' : 'SPY') + ' / start ' + (r.start || 0) +\n        ' stop ' + String(!!r.stop) + ' bytes ' + JSON.stringify(r.data) + ' NAK ' + String(r.nackIndex));\n}\nfunction i2cStop() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    i2cLog('STOPPED / pins released');\n}\nfunction onI2cCfgClicked() {\n    return i2cTry(i2cSetup);\n}\nfunction onI2cReadClicked() {\n    return i2cTry(i2cReadReg);\n}\nfunction onI2cSpyClicked() {\n    return i2cTry(i2cSpy);\n}\nfunction onI2cPollClicked() {\n    return i2cTry(i2cPoll);\n}\nfunction onI2cStopClicked() {\n    return i2cTry(i2cStop);\n}\ni2cLog('IDLE — do not connect I2C without external pull-ups');\n"
+}

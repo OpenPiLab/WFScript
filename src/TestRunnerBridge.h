@@ -10,6 +10,8 @@
 #include <QSet>
 #include <QDateTime>
 #include <QJsonObject>
+#include <QJsonArray>
+#include <QHash>
 #include <functional>
 #include <atomic>
 
@@ -44,6 +46,12 @@ public:
     Q_INVOKABLE bool next();
     Q_INVOKABLE bool abort(); // emergency: skips sequence cleanup
     Q_INVOKABLE bool terminate(); // cooperative stop: runs cleanup
+    // RC1.5.9: explicit, token-bound completion of asynchronous steps.
+    // Scripts may call these from their driver callbacks. Late/canceled tokens
+    // return false without mutating the current or next test.
+    Q_INVOKABLE bool complete(const QString& token,const QJSValue& value=QJSValue());
+    Q_INVOKABLE bool fail(const QString& token,const QString& reason);
+    Q_INVOKABLE bool isActive(const QString& token) const;
     // Script-facing methods return genuine JS arrays/objects (not opaque QVariant wrappers).
     // Native C++ persistence and tests use the data accessors below.
     Q_INVOKABLE QJSValue report() const;
@@ -87,9 +95,13 @@ signals:
 
 private:
     struct Step {
-        QString id,name,description,mode=QStringLiteral("once"),
+        QString id,name,description,templateId,mode=QStringLiteral("once"),
                 group=QStringLiteral("main"),type=QStringLiteral("test");
         QJSValue start,poll,finish;
+        QVariantMap parameters,measurementRules,condition;
+        QVariantList guards;
+        QVariant result;
+        bool hasResult=false;
         int intervalMs=50,timeoutMs=0,durationMs=0;
         double limitLow=0,limitHigh=0;
         QString unit,resultWidget;
@@ -103,9 +115,12 @@ private:
     QTimer m_timer;
     QJSValue m_finishedHandler;
     QVector<Step> m_steps;
+    QSet<QString> m_stepIds; // O(1) duplicate check for large expanded definitions
     QVariantList m_measurements;
     QVariantMap m_loadedDefinition;
     QVariantMap m_runInfo,m_variables;
+    QJsonArray m_declaredVariables;
+    QHash<QString,bool> m_conditionOutcomes;
     QJsonObject m_runInformationSchema;
     QJsonObject m_archiveSettings;
     QVariantMap m_archiveInfo;
@@ -127,8 +142,11 @@ private:
          m_cleanupMode=false,m_gracefulStopRequested=false,m_hadError=false;
     int m_totalTimeoutMs=0,m_active=-1,m_cursor=0,m_completed=0,m_stepPass=0,m_stepFail=0,
         m_actionDone=0,m_skipped=0,
-        m_measurePass=0,m_measureFail=0,m_tickCount=0;
+        m_measurePass=0,m_measureFail=0,m_tickCount=0,m_sequenceWindowStart=0;
     qint64 m_elapsedMs=0,m_lastPublishMs=0;
+    QString m_stepToken;
+    bool m_stepCompletionQueued=false;
+
 
     bool setError(const QString& error);
     bool stopping() const;
@@ -143,10 +161,13 @@ private:
     void archiveFinishedRun();
     void pump();
     void startStep();
+    bool resolveCondition(const Step& step,QVariant* value,QString* error) const;
+    QJSValue stepContext(const Step& step) const;
     void onTick();
     void scheduleTick();
     QJSValue invoke(const QJSValue& fn,const QJSValueList& args={});
     void completeStep(const QString& status,const QString& message=QString());
+    void finishStructuredResult(const QVariant& result);
     void endSession(bool aborted=false);
     void goToCleanup(const QString& reason);
     int cleanupIndex() const;

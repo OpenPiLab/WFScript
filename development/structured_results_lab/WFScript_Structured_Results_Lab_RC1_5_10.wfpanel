@@ -1,0 +1,351 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Hardware-free structured-result lab: named JSON measurements, indexed and array-wide checks, scalar compatibility, and native callback completion.",
+  "scriptName": "StructuredResultLab.js",
+  "activePageId": "callbackLab",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": true
+  },
+  "pages": [
+    {
+      "id": "callbackLab",
+      "name": "Structured Results",
+      "width": 1320,
+      "height": 935,
+      "controls": [
+        {
+          "id": "heading",
+          "type": "label",
+          "text": "STRUCTURED RESULTS LAB — No instruments required",
+          "x": 22,
+          "y": 20,
+          "width": 1260,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "instructions",
+          "type": "label",
+          "text": "One result object can produce multiple PASS/FAIL checks. Open the Test Sequence Editor: edit limits on the Named Results & Limits tab, including channels[0] and temperatures[*].",
+          "x": 22,
+          "y": 80,
+          "width": 1260,
+          "height": 75,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "stationPass",
+          "type": "button",
+          "text": "RUN STRUCTURED TEST",
+          "x": 25,
+          "y": 160,
+          "width": 365,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackRun",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "stationFail",
+          "type": "button",
+          "text": "STOP + CLEANUP",
+          "x": 420,
+          "y": 160,
+          "width": 365,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackStop",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "stationReset",
+          "type": "button",
+          "text": "RESET",
+          "x": 815,
+          "y": 160,
+          "width": 365,
+          "height": 56,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackReset",
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "stationSummary",
+          "type": "label",
+          "text": "READY — 6 steps, 10 numeric measurements, no instrument needed.",
+          "x": 20,
+          "y": 830,
+          "width": 1260,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Rich Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 9
+          }
+        },
+        {
+          "id": "stationSequence",
+          "type": "test_sequence",
+          "text": "Structured Result Checks",
+          "x": 20,
+          "y": 245,
+          "width": 400,
+          "height": 555,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "defaultSteps": "Initialize test station|Verify V+ supply|Verify V− supply|Verify clock frequency|Verify PWM duty cycle|Finalize test summary|Restore station state",
+            "maxSteps": 64,
+            "showProgress": true,
+            "showElapsed": true,
+            "showNumbers": true,
+            "autoScroll": true,
+            "compactMode": false
+          }
+        },
+        {
+          "id": "stationTable",
+          "type": "measurement_table",
+          "text": "Individual Measurement Results",
+          "x": 430,
+          "y": 245,
+          "width": 475,
+          "height": 555,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "decimals": 3,
+            "maxRows": 100,
+            "headers": "Measurement|Actual|Acceptance limits|Result"
+          }
+        },
+        {
+          "id": "stationLog",
+          "type": "event_log",
+          "text": "Test Station Event Log",
+          "x": 915,
+          "y": 245,
+          "width": 365,
+          "height": 555,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// One small operator script. All test logic lives in CallbackTestSteps.mjs.\nfunction onCallbackRun(){if(!TestRunner.run())print('TEST RUN: '+TestRunner.lastError);}\nfunction onCallbackStop(){if(!TestRunner.terminate())print('TEST STOP: '+TestRunner.lastError);}\nfunction onCallbackReset(){if(!TestRunner.reset())print('TEST RESET: '+TestRunner.lastError);}\nTestRunner.onFinished(function(summary){\n    ui.set('stationSummary',String(summary.state).toUpperCase()+' — '+\n        summary.passedMeasurements+' passed measurements / '+summary.totalSteps+' steps');\n    print('Structured Results Lab finished '+JSON.stringify(summary));\n});\n",
+  "libraries": [
+    {
+      "name": "StructuredResultSteps.mjs",
+      "source": "// RC1.5.10: one operation may report many separately evaluated measurements.\n// All values here are deterministic; no instruments are used.\nfunction later(step, work) {\n    setTimeout(function () {\n        if (!TestRunner.isActive(step.token)) return;\n        try { TestRunner.complete(step.token, work()); }\n        catch (e) { TestRunner.fail(step.token, String(e)); }\n    }, 90);\n}\nexport function setup(step) { later(step, function () { return true; }); }\n\n// This single result is evaluated against THREE named measurement rules.\n// Additional metadata such as samples and rms is retained in the JSON report.\nexport function waveform(step) {\n    later(step, function () {\n        return {\n            vpp: Number(step.params.amplitude) * 1.02,\n            frequency: Number(step.params.frequency) + 0.2,\n            shape: 0.352,\n            rms: 0.719,\n            sampleCount: 1000,\n            metadata: {source: \"SIMULATED\", waveform: step.params.shape}\n        };\n    });\n}\n\n// channels[0], channels[1], and temperatures[*] are separate checks.\n// The wildcard expands to one Measurement Table entry per array element.\nexport function channels(step) {\n    later(step, function () {\n        return {\n            channels: step.params.channels.map(function (v) { return Number(v) - 0.001; }),\n            temperatures: [24.1, 25.2, 26.3],\n            note: \"Array elements are evaluated by native C++, not JavaScript\"\n        };\n    });\n}\n\n// Immediate Once handlers can also return JSON objects.\nexport function calculate(step) { return {gain:Number(step.params.gain), note:\"Once result\"}; }\n\n// Old scalar callback behavior is unchanged.\nexport function legacyVoltage(step) {\n    later(step, function () { return Number(step.params.voltage) - 0.001; });\n}\nexport function cleanup(step) { later(step, function () { return true; }); }\n"
+    }
+  ],
+  "testDefinition": {
+    "schemaVersion": 1,
+    "id": "structured-results-lab-1510",
+    "title": "Structured Results Test Lab",
+    "config": {
+      "sequenceId": "stationSequence",
+      "tableId": "stationTable",
+      "logId": "stationLog",
+      "summaryId": "stationSummary",
+      "stopOnFailure": true,
+      "totalTimeoutMs": 15000
+    },
+    "steps": [
+      {
+        "id": "prepare",
+        "name": "SETUP — Prepare",
+        "group": "setup",
+        "type": "action",
+        "mode": "callback",
+        "handler": "setup",
+        "timeoutMs": 2500
+      },
+      {
+        "id": "waveform",
+        "name": "Verify sine waveform",
+        "description": "One callback returns amplitude, frequency, shape, RMS and capture metadata. Three fields are evaluated.",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "waveform",
+        "timeoutMs": 2500,
+        "parameters": {
+          "amplitude": 2.0,
+          "frequency": 1000,
+          "shape": "sine"
+        },
+        "measurements": {
+          "vpp": {
+            "name": "Measured Vpp",
+            "low": 1.7,
+            "high": 2.3,
+            "unit": "Vpp"
+          },
+          "frequency": {
+            "name": "Measured frequency",
+            "low": 970,
+            "high": 1030,
+            "unit": "Hz"
+          },
+          "shape": {
+            "name": "Waveform shape",
+            "low": 0.32,
+            "high": 0.4,
+            "unit": "RMS/Vpp"
+          }
+        }
+      },
+      {
+        "id": "channels",
+        "name": "Verify arrays and temperatures",
+        "description": "Index two channel readings, then check every element of a temperature array.",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "channels",
+        "timeoutMs": 2500,
+        "parameters": {
+          "channels": [
+            5.0,
+            3.3
+          ]
+        },
+        "measurements": {
+          "channels[0]": {
+            "name": "Channel 1 voltage",
+            "low": 4.9,
+            "high": 5.1,
+            "unit": "V"
+          },
+          "channels[1]": {
+            "name": "Channel 2 voltage",
+            "low": 3.2,
+            "high": 3.4,
+            "unit": "V"
+          },
+          "temperatures[*]": {
+            "name": "Temperature",
+            "low": 20,
+            "high": 30,
+            "unit": "C"
+          }
+        }
+      },
+      {
+        "id": "instant",
+        "name": "Verify immediate JSON result",
+        "description": "Once handlers may also return a named JSON result directly.",
+        "group": "main",
+        "type": "numeric",
+        "mode": "once",
+        "handler": "calculate",
+        "parameters": {
+          "gain": 2
+        },
+        "measurements": {
+          "gain": {
+            "name": "Calculated gain",
+            "low": 1.95,
+            "high": 2.05,
+            "unit": "ratio"
+          }
+        }
+      },
+      {
+        "id": "legacy",
+        "name": "Verify legacy numeric return",
+        "description": "Scalar numeric callbacks are still supported unchanged.",
+        "group": "main",
+        "type": "numeric",
+        "mode": "callback",
+        "handler": "legacyVoltage",
+        "timeoutMs": 2500,
+        "parameters": {
+          "voltage": 4.75
+        },
+        "limits": {
+          "low": 4.7,
+          "high": 4.8
+        },
+        "unit": "V"
+      },
+      {
+        "id": "off",
+        "name": "CLEANUP — Verify outputs OFF",
+        "group": "cleanup",
+        "type": "action",
+        "mode": "callback",
+        "handler": "cleanup",
+        "timeoutMs": 2500
+      }
+    ]
+  },
+  "testLibrary": "StructuredResultSteps.mjs",
+  "runInformation": {},
+  "reportStorage": {
+    "autoSave": false,
+    "directory": ""
+  }
+}

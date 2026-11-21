@@ -12,7 +12,17 @@ int main(int argc,char** argv){
     PanelControl def=factory.defaultDefinition("digital1");
     CHECK(def.type==QStringLiteral("digital_plot"));
     QWidget owner;
-    auto* digital=qobject_cast<PanelChartWidget*>(factory.create(def,&owner,{}));
+    int viewEvents=0;
+    QVariantMap lastDigitalView;
+    CHECK(!factory.events().isEmpty());
+    CHECK(factory.events().first().name==QStringLiteral("viewChanged"));
+    auto* digital=qobject_cast<PanelChartWidget*>(factory.create(def,&owner,
+        [&](const QString& name,const QVariant& payload){
+            if(name==QStringLiteral("viewChanged")){
+                ++viewEvents;
+                lastDigitalView=payload.toMap();
+            }
+        }));
     CHECK(digital && digital->chartType()==QStringLiteral("Digital"));
     digital->resize(620,350);
     PlotCommand lane;lane.seriesName="SCLK";lane.x={0,1,2,3,4};lane.y={0,1,0,1,0};
@@ -20,6 +30,13 @@ int main(int argc,char** argv){
     lane.seriesName="MOSI";lane.y={1,1,0,0,1};
     factory.deliverPlotCommand(digital,lane);
     CHECK(digital->seriesCount()==2);
+    PlotCommand digitalViewport;
+    digitalViewport.action=PlotCommand::Action::SetView;
+    digitalViewport.options={{"xMin",0.5},{"xMax",2.5},{"yMin",0.0},{"yMax",1.0}};
+    factory.deliverPlotCommand(digital,digitalViewport);
+    CHECK(viewEvents==1);
+    CHECK(std::abs(lastDigitalView.value("xMin").toDouble()-0.5)<1e-9);
+    CHECK(std::abs(lastDigitalView.value("xMax").toDouble()-2.5)<1e-9);
     QImage pixels(digital->size(),QImage::Format_ARGB32_Premultiplied);
     pixels.fill(Qt::transparent);{QPainter p(&pixels);digital->render(&p);}
     CHECK(!pixels.isNull());

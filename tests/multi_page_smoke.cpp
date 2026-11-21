@@ -162,6 +162,15 @@ int main(int argc,char**argv){
     check(canvas->findChild<QPushButton*>("otherButton")==other && !other->isHidden(),
           "Repeated switching preserves original native QWidget pointers");
     canvas->activatePage("main",mainControls,QSize(900,550));
+    // A hidden Page must not keep its temporary Run-mode scale after Stop.
+    canvas->setPresentationScale(0.62);
+    canvas->activatePage("measure",QJsonArray{},QSize(1024,768));
+    canvas->activatePage("main",mainControls,QSize(900,550));
+    canvas->setDesignMode(true);
+    canvas->activatePage("measure",QJsonArray{},QSize(1024,768));
+    check(other && other->geometry()==QRect(20,30,140,36),
+          "Stop restores 100% geometry even for a Page visited while fitted");
+    canvas->activatePage("main",mainControls,QSize(900,550));
     canvas->forgetPage("measure");
     check(!canvas->findChild<QPushButton*>("otherButton"),
           "Deleting a Page destroys its widgets");

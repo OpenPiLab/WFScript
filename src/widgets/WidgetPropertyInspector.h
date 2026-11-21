@@ -5,6 +5,7 @@
 #include <QWidget>
 
 class QLineEdit;
+class QPlainTextEdit;
 class QSpinBox;
 class QFormLayout;
 class QLabel;
@@ -32,9 +33,12 @@ private:
     void connectEditor(QWidget* editor,const QString& kind);
     void assign(QWidget* editor,const QString& kind,const QVariant& value);
     QVariant valueOf(QWidget* editor,const QString& kind) const;
+    QLabel* m_typeLabel=nullptr;
     QLineEdit* m_id=nullptr;
     QSpinBox *m_x=nullptr,*m_y=nullptr,*m_width=nullptr,*m_height=nullptr;
     QWidget* m_dynamic=nullptr;
+    QWidget* m_legacySettingsBox=nullptr;
+    QPlainTextEdit* m_legacySettings=nullptr;
     QVBoxLayout* m_layout=nullptr;
     QHash<QString,QWidget*> m_fields;
     QVector<WidgetProperty> m_metadata;

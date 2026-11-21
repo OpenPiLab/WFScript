@@ -1,4 +1,5 @@
 #include "ScriptLibraryBridge.h"
+#include "ScriptSizeLimits.h"
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -37,7 +38,7 @@ ScriptLibraryBridge::ScriptLibraryBridge(QJSEngine* engine,const QString& entryF
         m_embeddedDirectory = std::make_unique<QTemporaryDir>();
         if (!m_embeddedDirectory->isValid()) { m_error=QStringLiteral("Cannot create temporary panel library directory");return; }
         for (auto it=embedded.cbegin();it!=embedded.cend();++it) {
-            if (!validLibraryName(it.key()) || it.value().toString().toUtf8().size()>1024*1024) {
+            if (!validLibraryName(it.key()) || it.value().toString().toUtf8().size()>ScriptSizeLimits::LibraryFileBytes) {
                 m_error=QStringLiteral("Invalid embedded library: %1").arg(it.key()); return;
             }
             const QString path=m_embeddedDirectory->path()+QLatin1Char('/')+it.key();
@@ -120,7 +121,7 @@ QString ScriptLibraryBridge::resolve(const QString& path,QString* error) const {
                 Qt::CaseSensitive
 #endif
             )) continue;
-        if (candidate.size()>1024*1024) { *error=QStringLiteral("Library exceeds 1 MiB: %1").arg(path); return {}; }
+        if (candidate.size()>ScriptSizeLimits::LibraryFileBytes) { *error=QStringLiteral("Library exceeds 8 MiB: %1").arg(path); return {}; }
         return actual;
     }
     *error=QStringLiteral("Library not found: %1 (search: %2)").arg(path,m_roots.join(QStringLiteral("; ")));

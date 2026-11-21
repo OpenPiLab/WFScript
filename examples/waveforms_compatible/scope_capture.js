@@ -3,7 +3,9 @@
 Scope1.Time.Rate.value = 1000000;
 Scope1.Time.Samples.value = 4096;
 Scope1.Trigger.Trigger.text = "None";
-Scope1.single(); // WaveForms returns undefined; WFScript returns bool.
+Scope1.single();
+
+// WaveForms returns undefined; WFScript returns bool.
 if (!Scope1.wait(5)) throw new Error("Scope acquisition timed out or was stopped");
 var samples = Scope1.Channel1.getData();
 print("Captured", samples.length, "samples");

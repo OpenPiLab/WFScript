@@ -1,0 +1,71 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 13 — Table-to-Plot — Limits and Observations · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 13 — Table-to-Plot — Limits and Observations</h1>
+<p><strong>Level:</strong> Intermediate<br />
+<strong>Category:</strong> Tables &amp; Data<br />
+<strong>Pages:</strong> 00 Edit Data &amp; Limits → 01 XY Plot &amp; Results</p>
+<h2>What you will build or observe</h2>
+<p>Turn operator-edited data into observed, nominal and tolerance-limit plots.</p>
+<h2>Before you run</h2>
+<p>No hardware. Values are entered in the table.</p>
+<h2>Follow along</h2>
+<ol>
+<li>Edit an observation or limit in the profile table.</li>
+<li>Press VALIDATE &amp; PLOT TABLE.</li>
+<li>On XY Plot &amp; Results inspect which rows pass the limits.</li>
+<li>Restore example data to compare the baseline.</li>
+</ol>
+<h2>Follow the JavaScript</h2>
+<p><code>limitInputTable</code> → <code>onLimitInputTableValueChanged(rows)</code>; <code>plotEnteredData</code> → <code>onPlotEnteredDataClicked()</code>.</p>
+<p>All entries below come from <strong>saved widget Properties → Events</strong> bindings in this <code>.wfpanel</code> (not from manual <code>ui.on()</code> calls). The script contains the named functions.</p>
+<table>
+<thead>
+<tr>
+  <th>Page</th>
+  <th>Control (ID)</th>
+  <th>Event</th>
+  <th>JavaScript function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>00 Edit Data &amp; Limits</td>
+  <td><code>limitInputTable</code> (experiment_table)</td>
+  <td><code>valueChanged</code></td>
+  <td><code>onLimitInputTableValueChanged()</code></td>
+</tr>
+<tr>
+  <td>00 Edit Data &amp; Limits</td>
+  <td><code>plotEnteredData</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onPlotEnteredDataClicked()</code></td>
+</tr>
+<tr>
+  <td>00 Edit Data &amp; Limits</td>
+  <td><code>restoreLimitData</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onRestoreLimitDataClicked()</code></td>
+</tr>
+<tr>
+  <td>01 XY Plot &amp; Results</td>
+  <td><code>clearLimitResults</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onClearLimitResultsClicked()</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Make one small change</h2>
+<p>Increase one observation beyond its upper bound and rerun validation to see a failure.</p>
+<p>To modify the example in the app, choose <strong>Stop / Design</strong>, open the Script Editor, find the named function or constant, make one change, and run the Panel again. When you like it, use <strong>Save As</strong> to keep your own project.</p>
+<h2>Why this works</h2>
+<p>Keep raw operator data separate from derived PASS/FAIL calculations and charts.</p>
+<h2>Safety and scope</h2>
+<p>Limits are demonstrations; real acceptance criteria require engineering justification.</p>
+<h2>If something does not work</h2>
+<p>If nothing plots, validate the numeric columns and restore the sample dataset.</p>
+<h2>Related files</h2>
+<ul>
+<li><strong>Editable project:</strong> <code>examples/panels/TableLimitPlot.wfpanel</code></li>
+<li><strong>Readable JavaScript:</strong> <code>examples/source/TableLimitPlot.js</code></li>
+<li>The <code>.wfpanel</code> embeds the script, Pages and event assignments; opening it in WFScript does not require the <code>.js</code> file alongside it.</li>
+<li>In the complete source tree run <code>python tools/build_examples.py</code> after modifying the readable <code>.js</code> version.</li>
+</ul>
+<p class="doc-footnote">Source: <code>examples/guides/TableLimitPlot.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

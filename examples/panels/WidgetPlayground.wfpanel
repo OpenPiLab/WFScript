@@ -156,7 +156,7 @@
         {
           "id": "tourBox",
           "type": "label",
-          "text": "HOW TO USE\n\n1. Click Run Panel.\n2. Switch to the Controls Page and change the inputs.\n3. Return here: values persist across Pages.\n4. Click Edit JavaScript to study wbRefresh() and ui.on().",
+          "text": "HOW TO USE\n\n1. Click Run Panel and open the Controls Page.\n2. Change voltage, load, mode or enable switch.\n3. Return here; values persist across Pages.\n4. Stop/Design, select LOAD slider → Properties → Events → valueChanged → Go to Handler; inspect wbRefresh().",
           "x": 24,
           "y": 605,
           "width": 1090,
@@ -223,7 +223,12 @@
           "value": 25,
           "min": 1,
           "max": 50,
-          "events": {},
+          "events": {
+            "valueChanged": {
+              "handler": "wbRefresh",
+              "enabled": true
+            }
+          },
           "properties": {
             "unit": "kHz",
             "step": 0.5,
@@ -242,7 +247,12 @@
           "value": 48,
           "min": 0,
           "max": 120,
-          "events": {},
+          "events": {
+            "valueChanged": {
+              "handler": "wbRefresh",
+              "enabled": true
+            }
+          },
           "properties": {
             "unit": "V",
             "step": 0.5,
@@ -261,7 +271,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "selectionChanged": {
+              "handler": "wbRefresh",
+              "enabled": true
+            }
+          },
           "properties": {
             "options": "Nominal|Warning|Alarm",
             "defaultIndex": 0,
@@ -279,7 +294,12 @@
           "value": 1,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "toggled": {
+              "handler": "wbRefresh",
+              "enabled": true
+            }
+          },
           "properties": {
             "onText": "BENCH ON",
             "offText": "BENCH OFF",
@@ -314,7 +334,12 @@
           "value": 65,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "valueChanged": {
+              "handler": "wbRefresh",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "wbPulse",
@@ -327,7 +352,16 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "pressed": {
+              "handler": "wbPressStarted",
+              "enabled": true
+            },
+            "released": {
+              "handler": "wbPressEnded",
+              "enabled": true
+            }
+          },
           "properties": {
             "onText": "PULSE ACTIVE",
             "offText": "PRESS & HOLD",
@@ -478,7 +512,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "wbResetControls",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "wbStatus",
@@ -500,5 +539,5 @@
       ]
     }
   ],
-  "script": "/**\n * WFScript Example: Widget Playground\n * A two-Page simulation of professional widgets and shared UI state.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: None. All values are simulated.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 01 CONTROLS — A SIMULATED BENCH WITH REAL WIDGET EVENT CALLBACKS\n// ============================================================================\n// This page DOES NOT connect to the AD3 or manipulate hardware. Its values are\n// synthetic and demonstrate how controls and displays remain connected through\n// one shared JavaScript runtime, even while other Pages are visible.\n//\n// Types shown: rotary_input, numeric_stepper, option_selector, switch_button,\n// slider, momentary_button, precision_dial, digital_display, segmented_bar,\n// status_banner, status_beacon, label, and push button.\n//\n// Every ui.get/ui.set address refers to a unique saved widget ID.\nlet wbPulseDown=false;\nfunction wbNumber(id) {\n  const n=Number(ui.get(id));\n  if(!isFinite(n)) throw new Error('Invalid numeric input from '+id);\n  return n;\n}\nfunction wbRefresh() {\n  const target=wbNumber('wbTarget');                 // 0 .. 120 V (simulated)\n  const loadPct=wbNumber('wbLoad');                  // 0 .. 100 %\n  const freqKhz=wbNumber('wbFrequency');             // rotary input: 1 .. 50\n  const mode=String(ui.get('wbMode'));               // option_selector returns TEXT\n  const enabled=Boolean(ui.get('wbEnable'));        // switch_button returns boolean\n\n  // A tiny educational 'power stage' model — NOT measured AD3 data.\n  // Regulation droop increases with load; an active test pulse adds a transient.\n  const droop=1-0.025*(loadPct/100);\n  const actual=enabled?target*droop-(wbPulseDown?Math.min(2.5,target*.05):0):0;\n  const current=enabled?8*(loadPct/100):0;\n  const power=Math.max(0,actual)*current;\n  const alarm=mode==='Alarm'?2:(mode==='Warning'||loadPct>=85?1:0);\n\n  ui.set('wbGauge',actual);\n  ui.set('wbVoltageReadout',actual);\n  ui.set('wbCurrentReadout',current);\n  ui.set('wbMeter',loadPct);\n  ui.set('wbHealth',alarm);\n  ui.set('wbBeacon',enabled && alarm!==2);\n  ui.set('wbStatus',\n    'SIMULATED ONLY  |  '+(enabled?'ENABLED':'DISABLED')+\n    '  •  '+actual.toFixed(2)+' V  •  '+current.toFixed(2)+' A  •  '+\n    power.toFixed(1)+' W  •  '+freqKhz.toFixed(1)+' kHz');\n\n  // Page 00 intentionally shares the same state and updates when 01 changes.\n  ui.set('dialVoltage',actual);\n  ui.set('livePower',power);\n  ui.set('voltageBar',actual);\n  ui.set('supplyStatus',enabled && alarm!==2);\n}\n// An automatic callback runs only while the Panel runtime is RUNNING.\nui.on('wbTarget','valueChanged',wbRefresh);\nui.on('wbFrequency','valueChanged',wbRefresh);\nui.on('wbLoad','valueChanged',wbRefresh);\nui.on('wbMode','selectionChanged',wbRefresh);\nui.on('wbEnable','toggled',wbRefresh);\nui.on('wbPulse','pressed',function(){wbPulseDown=true;wbRefresh();});\nui.on('wbPulse','released',function(){wbPulseDown=false;wbRefresh();});\nui.on('wbReset','clicked',function(){\n  ui.set('wbTarget',48.0);\n  ui.set('wbFrequency',25.0);\n  ui.set('wbLoad',65.0);\n  ui.set('wbMode','Nominal');\n  ui.set('wbEnable',true);\n  wbPulseDown=false;\n  wbRefresh();\n});\n\n// ============================================================================\n\n// Initialize the model without generating any hardware output.\ntry { wbRefresh(); } catch (e) { print('Widget Playground: '+String(e)); }\n"
+  "script": "// ┌─ WFScript LEARNING LAB: Widget Playground\n// │ Level: Beginner\n// │\n// │ GOAL: Understand input widgets, simulated calculations, and displays shared across\n// │    Pages.\n// │ BEFORE RUN: No equipment; all readings are synthetic.\n// │ TRY FIRST: Run the Panel and open the Controls Page.\n// │ TRACE: `wbLoad` → `wbRefresh()` → read current settings with `ui.get()` → update gauges\n// │    with `ui.set()`.\n// │ EDIT SAFELY: Change the simulated droop coefficient in `wbRefresh()` and observe how the\n// │    voltage follows load.\n// │ REMEMBER: One calculation function can serve several input events, without a separate\n// │    calculation for every widget.\n// │\n// │ EVENT TIP: Select `wbFrequency` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/WidgetPlayground.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * WFScript Example: Widget Playground\n * A two-Page simulation of professional widgets and shared UI state.\n *\n * Device: Simulation by default. Choose Physical Device before Run Panel\n *         for real AD3 operations. No output is enabled merely by opening.\n * Wiring: None. All values are simulated.\n *\n * The script belongs to ONE .wfpanel project. If it contains multiple Pages,\n * the Pages share this JavaScript runtime and globally unique widget IDs.\n * Read the SETTINGS / FUNCTIONS / EVENTS sections from top to bottom.\n * Edit this .js file in the source tree, then run:\n *      python tools/build_examples.py\n * to regenerate the packaged .wfpanel resource and keep JS in sync.\n */\n\n// 01 CONTROLS — A SIMULATED BENCH WITH REAL WIDGET EVENT CALLBACKS\n// ============================================================================\n// This page DOES NOT connect to the AD3 or manipulate hardware. Its values are\n// synthetic and demonstrate how controls and displays remain connected through\n// one shared JavaScript runtime, even while other Pages are visible.\n//\n// Types shown: rotary_input, numeric_stepper, option_selector, switch_button,\n// slider, momentary_button, precision_dial, digital_display, segmented_bar,\n// status_banner, status_beacon, label, and push button.\n//\n// Every ui.get/ui.set address refers to a unique saved widget ID.\nlet wbPulseDown = false;\nfunction wbNumber(id) {\n    const n = Number(ui.get(id));\n    if (!isFinite(n)) throw new Error('Invalid numeric input from ' + id);\n    return n;\n}\n/**\n * CORE LESSON — Recomputes ALL simulated displays from the present input values. Multiple controls\n * bind to this one function, so changing any input produces a coherent new state.\n */\nfunction wbRefresh() {\n    const target = wbNumber('wbTarget');\n    // 0 .. 120 V (simulated)\n    const loadPct = wbNumber('wbLoad');\n    // 0 .. 100 %\n    const freqKhz = wbNumber('wbFrequency');\n    // rotary input: 1 .. 50\n    const mode = String(ui.get('wbMode'));\n    // option_selector returns TEXT\n    const enabled = Boolean(ui.get('wbEnable'));\n    // switch_button returns boolean\n\n    // A tiny educational 'power stage' model — NOT measured AD3 data.\n    // Regulation droop increases with load; an active test pulse adds a transient.\n    const droop = 1 - 0.025 * (loadPct / 100);\n    const actual = enabled ? target * droop - (wbPulseDown ? Math.min(2.5, target * .05) : 0) : 0;\n    const current = enabled ? 8 * (loadPct / 100) : 0;\n    const power = Math.max(0, actual) * current;\n    const alarm = mode === 'Alarm' ? 2 : (mode === 'Warning' || loadPct >= 85 ? 1 : 0);\n\n    ui.set('wbGauge', actual);\n    ui.set('wbVoltageReadout', actual);\n    ui.set('wbCurrentReadout', current);\n    ui.set('wbMeter', loadPct);\n    ui.set('wbHealth', alarm);\n    ui.set('wbBeacon', enabled && alarm !== 2);\n    ui.set('wbStatus',\n        'SIMULATED ONLY  |  ' + (enabled ? 'ENABLED' : 'DISABLED') +\n        '  •  ' + actual.toFixed(2) + ' V  •  ' + current.toFixed(2) + ' A  •  ' +\n        power.toFixed(1) + ' W  •  ' + freqKhz.toFixed(1) + ' kHz');\n\n    // Page 00 intentionally shares the same state and updates when 01 changes.\n    ui.set('dialVoltage', actual);\n    ui.set('livePower', power);\n    ui.set('voltageBar', actual);\n    ui.set('supplyStatus', enabled && alarm !== 2);\n}\n// Every user-interface event is bound through Property Editor > Events.\n// Five controls share wbRefresh; a momentary button has two named handlers.\nfunction wbPressStarted() {\n    wbPulseDown = true;\n    wbRefresh();\n}\nfunction wbPressEnded() {\n    wbPulseDown = false;\n    wbRefresh();\n}\nfunction wbResetControls() {\n    ui.set('wbTarget', 48.0);\n    ui.set('wbFrequency', 25.0);\n    ui.set('wbLoad', 65.0);\n    ui.set('wbMode', 'Nominal');\n    ui.set('wbEnable', true);\n    wbPulseDown = false;\n    wbRefresh();\n}\n\n// ============================================================================\n\n// Initialize the model without generating any hardware output.\ntry {\n    wbRefresh();\n} catch (e) {\n    print('Widget Playground: ' + String(e));\n}\n"
 }

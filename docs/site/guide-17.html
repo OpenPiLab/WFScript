@@ -1,0 +1,70 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chapter 17: Troubleshooting without guessing · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="active">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h2>Chapter 17 — Troubleshooting without guessing</h2>
+<p>A useful troubleshooting process follows the data path: <strong>control → saved event → handler → bridge → device → result → display</strong>. Most problems can be localized to one of those links.</p>
+<table>
+<thead>
+<tr>
+  <th>Symptom</th>
+  <th>First place to look</th>
+  <th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Button click does nothing</td>
+  <td>Properties → Events and named JS function</td>
+  <td>The saved handler may be absent or misspelled</td>
+</tr>
+<tr>
+  <td>Widget won't accept <code>ui.set()</code></td>
+  <td>Value Binding / Panel Data</td>
+  <td>Bound values must be updated with <code>Data.set()</code></td>
+</tr>
+<tr>
+  <td>Display shows no waveform</td>
+  <td>Device connection, channel enable, trigger, range, timebase</td>
+  <td>Acquisition may have no valid samples</td>
+</tr>
+<tr>
+  <td>TCP data appears split</td>
+  <td>Protocol framing / BinaryStream</td>
+  <td>TCP has no message boundaries</td>
+</tr>
+<tr>
+  <td>Test run won't start</td>
+  <td>Run Information, definition validation, <code>TestRunner.lastError</code></td>
+  <td>Native preconditions are enforced before steps run</td>
+</tr>
+<tr>
+  <td>Test returns too early</td>
+  <td>Callback mode and token completion</td>
+  <td>Returning a Promise is not the same as completing a step</td>
+</tr>
+<tr>
+  <td>Timers or callbacks stall</td>
+  <td>Blocking JavaScript / long work</td>
+  <td>The worker event loop is not progressing</td>
+</tr>
+<tr>
+  <td>Output state uncertain after STOP</td>
+  <td>Hardware readback and independent measurement</td>
+  <td>Software cannot guarantee physical de-energization</td>
+</tr>
+<tr>
+  <td>SQLite query seems empty</td>
+  <td>Check <code>ok</code>, SQL parameters, column names and <code>rows</code></td>
+  <td>A queued operation is not necessarily a successful query</td>
+</tr>
+<tr>
+  <td>UI differs between machines</td>
+  <td>Qt deployment, system fonts, theme preferences</td>
+  <td>Rendering and local settings vary</td>
+</tr>
+</tbody>
+</table>
+<h3>Development diagnostics</h3>
+<p>Use Console filters and the Panel Data Watch for named variable updates. Watch shows declared data changes; it does not inspect arbitrary local QJSEngine variables or support full breakpoint/stack debugging. For complex module execution, add concise, structured diagnostics at the API boundaries.</p>
+<h3>Hardware troubleshooting</h3>
+<p>Check ground, termination, safe input ranges and actual instrument settings before altering software. Start with a slow, low-voltage signal known to be present. A scope trace clipping at its configured range often means the requested scale is inadequate, not that the source voltage is capped there.</p>
+<h3>Avoid hiding errors</h3>
+<p>If a device query fails, keep the failed state visible. A blanket <code>catch</code> that replaces a measurement with zero makes reports look plausible but invalid. Distinguish missing data, overload, <code>null</code>/unknown and a real numeric zero.</p>
+<div class="pager"><a href="guide-16.html">← Previous chapter</a><a href="guide-18.html">Next chapter →</a></div></article></main></div></body></html>

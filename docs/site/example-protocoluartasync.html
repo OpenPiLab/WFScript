@@ -1,0 +1,160 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 32 — UART Asynchronous Lab — Native Terminal, Callbacks and Test · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 32 — UART Asynchronous Lab — Native Terminal, Callbacks and Test</h1>
+<p><strong>Level:</strong> Advanced<br />
+<strong>Category:</strong> Digital Instruments<br />
+<strong>Pages:</strong> 01 Native Terminal → 02 JavaScript Callback → 03 Automated Test</p>
+<h2>What you will build or observe</h2>
+<p>Compare native UART Terminal display, JavaScript receive callbacks and automated echo testing.</p>
+<h2>Before you run</h2>
+<p>No DIO is driven on startup. Physical echo test requires DIO0→1 kΩ→DIO1; simulation must not PASS the hardware test.</p>
+<h2>Follow along</h2>
+<ol>
+<li>On Native Terminal configure auto reception, then send and read text.</li>
+<li>On JavaScript Callback register and inspect incoming data.</li>
+<li>On Automated Test inspect the project-owned sequence before running a physical loopback test.</li>
+</ol>
+<h2>Follow the JavaScript</h2>
+<p><code>uartView</code> sendRequested → <code>onUartViewSendRequested(text)</code>; <code>Protocol1.UART.onData()</code> remains a device callback.</p>
+<p>All entries below come from <strong>saved widget Properties → Events</strong> bindings in this <code>.wfpanel</code> (not from manual <code>ui.on()</code> calls). The script contains the named functions.</p>
+<table>
+<thead>
+<tr>
+  <th>Page</th>
+  <th>Control (ID)</th>
+  <th>Event</th>
+  <th>JavaScript function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>asyncConfigure</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAsyncConfigureClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>manualConfigure</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onManualConfigureClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>asyncSend</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAsyncSendClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>asyncRead</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAsyncReadClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>asyncStats</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAsyncStatsClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>asyncStopTimer</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAsyncStopTimerClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>asyncClear</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAsyncClearClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>asyncRelease</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onAsyncReleaseClicked()</code></td>
+</tr>
+<tr>
+  <td>01 Native Terminal</td>
+  <td><code>uartView</code> (uart_terminal)</td>
+  <td><code>sendRequested</code></td>
+  <td><code>onUartViewSendRequested()</code></td>
+</tr>
+<tr>
+  <td>02 JavaScript Callback</td>
+  <td><code>callbackStart</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onCallbackStartClicked()</code></td>
+</tr>
+<tr>
+  <td>02 JavaScript Callback</td>
+  <td><code>callbackSend</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onCallbackSendClicked()</code></td>
+</tr>
+<tr>
+  <td>02 JavaScript Callback</td>
+  <td><code>callbackDrain</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onCallbackDrainClicked()</code></td>
+</tr>
+<tr>
+  <td>02 JavaScript Callback</td>
+  <td><code>callbackDisable</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onCallbackDisableClicked()</code></td>
+</tr>
+<tr>
+  <td>02 JavaScript Callback</td>
+  <td><code>callbackStats</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onCallbackStatsClicked()</code></td>
+</tr>
+<tr>
+  <td>02 JavaScript Callback</td>
+  <td><code>callbackRelease</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onCallbackReleaseClicked()</code></td>
+</tr>
+<tr>
+  <td>03 Automated Test</td>
+  <td><code>testRun</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onTestRunClicked()</code></td>
+</tr>
+<tr>
+  <td>03 Automated Test</td>
+  <td><code>testStop</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onTestStopClicked()</code></td>
+</tr>
+<tr>
+  <td>03 Automated Test</td>
+  <td><code>testReset</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onTestResetClicked()</code></td>
+</tr>
+<tr>
+  <td>03 Automated Test</td>
+  <td><code>testReport</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onTestReportClicked()</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Make one small change</h2>
+<p>Change the displayed receive message without changing the native buffer management.</p>
+<p>To modify the example in the app, choose <strong>Stop / Design</strong>, open the Script Editor, find the named function or constant, make one change, and run the Panel again. When you like it, use <strong>Save As</strong> to keep your own project.</p>
+<h2>Why this works</h2>
+<p>The widget can display native receive data without manually polling from a JavaScript timer; TestRunner owns its scheduler.</p>
+<h2>Safety and scope</h2>
+<p>Hardware loopback needs resistance and safe logic voltage; test cleanup must release DIO.</p>
+<h2>If something does not work</h2>
+<p>If the automated test fails in Simulation, that is intentional: simulated echo does not establish physical correctness.</p>
+<h2>Related files</h2>
+<ul>
+<li><strong>Editable project:</strong> <code>examples/panels/ProtocolUartAsync.wfpanel</code></li>
+<li><strong>Readable JavaScript:</strong> <code>examples/source/ProtocolUartAsync.js</code></li>
+<li>The <code>.wfpanel</code> embeds the script, Pages and event assignments; opening it in WFScript does not require the <code>.js</code> file alongside it.</li>
+<li>In the complete source tree run <code>python tools/build_examples.py</code> after modifying the readable <code>.js</code> version.</li>
+</ul>
+<p class="doc-footnote">Source: <code>examples/guides/ProtocolUartAsync.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

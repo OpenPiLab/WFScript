@@ -1,0 +1,836 @@
+{
+  "schemaVersion": 1,
+  "id": "rigol-loopback-069",
+  "title": "Rigol Four-Instrument Sweep & Loop Verification",
+  "config": {
+    "sequenceId": "rigolTestSequence",
+    "tableId": "rigolTestTable",
+    "logId": "rigolTestLog",
+    "stopOnFailure": false,
+    "totalTimeoutMs": 480000
+  },
+  "steps": [
+    {
+      "id": "preflight",
+      "name": "SETUP \u00b7 verify wiring, four connections and outputs OFF",
+      "description": "No output is changed. Requires operator wiring acknowledgement and reads physical CH1 OFF states.",
+      "group": "setup",
+      "type": "action",
+      "mode": "callback",
+      "timeoutMs": 40000,
+      "handler": "testPreflight"
+    },
+    {
+      "id": "sweep_psu_readback__0001",
+      "name": "DP932A CH1 readback at 5 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 4.9,
+        "high": 5.1
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 5.0
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0002",
+      "name": "DM858 DCV at 5 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 4.925,
+        "high": 5.075
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 5.0
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0003",
+      "name": "DP932A CH1 readback at 4.75 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 4.65,
+        "high": 4.85
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 4.75
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0004",
+      "name": "DM858 DCV at 4.75 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 4.675,
+        "high": 4.825
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 4.75
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0005",
+      "name": "DP932A CH1 readback at 4.5 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 4.4,
+        "high": 4.6
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 4.5
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0006",
+      "name": "DM858 DCV at 4.5 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 4.425,
+        "high": 4.575
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 4.5
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0007",
+      "name": "DP932A CH1 readback at 4.25 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 4.15,
+        "high": 4.35
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 4.25
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0008",
+      "name": "DM858 DCV at 4.25 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 4.175,
+        "high": 4.325
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 4.25
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0009",
+      "name": "DP932A CH1 readback at 4 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 3.9,
+        "high": 4.1
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 4.0
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0010",
+      "name": "DM858 DCV at 4 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 3.925,
+        "high": 4.075
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 4.0
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0011",
+      "name": "DP932A CH1 readback at 3.75 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 3.65,
+        "high": 3.85
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 3.75
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0012",
+      "name": "DM858 DCV at 3.75 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 3.675,
+        "high": 3.825
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 3.75
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0013",
+      "name": "DP932A CH1 readback at 3.5 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 3.4,
+        "high": 3.6
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 3.5
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0014",
+      "name": "DM858 DCV at 3.5 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 3.425,
+        "high": 3.575
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 3.5
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0015",
+      "name": "DP932A CH1 readback at 3.25 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 3.15,
+        "high": 3.35
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 3.25
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0016",
+      "name": "DM858 DCV at 3.25 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 3.175,
+        "high": 3.325
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 3.25
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0017",
+      "name": "DP932A CH1 readback at 3 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 2.9,
+        "high": 3.1
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 3.0
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0018",
+      "name": "DM858 DCV at 3 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 2.925,
+        "high": 3.075
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 3.0
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0019",
+      "name": "DP932A CH1 readback at 2.75 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 2.65,
+        "high": 2.85
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 2.75
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0020",
+      "name": "DM858 DCV at 2.75 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 2.675,
+        "high": 2.825
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 2.75
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0021",
+      "name": "DP932A CH1 readback at 2.5 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 2.4,
+        "high": 2.6
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 2.5
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0022",
+      "name": "DM858 DCV at 2.5 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 2.425,
+        "high": 2.575
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 2.5
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0023",
+      "name": "DP932A CH1 readback at 2.25 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 2.15,
+        "high": 2.35
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 2.25
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0024",
+      "name": "DM858 DCV at 2.25 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 2.175,
+        "high": 2.325
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 2.25
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "sweep_psu_readback__0025",
+      "name": "DP932A CH1 readback at 2 V",
+      "description": "Actual DP932A voltage readback (not merely the programmed setpoint).",
+      "type": "numeric",
+      "limits": {
+        "low": 1.9,
+        "high": 2.1
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "setAndReadPsu",
+      "parameters": {
+        "voltage": 2.0
+      },
+      "templateId": "sweep_psu_readback",
+      "group": "main"
+    },
+    {
+      "id": "sweep_dmm_reading__0026",
+      "name": "DM858 DCV at 2 V",
+      "description": "Independent five-PLC DMM voltage read, 10 V range, after PSU settling.",
+      "type": "numeric",
+      "limits": {
+        "low": 1.925,
+        "high": 2.075
+      },
+      "unit": "V",
+      "mode": "callback",
+      "timeoutMs": 35000,
+      "handler": "readDmmAt",
+      "parameters": {
+        "voltage": 2.0
+      },
+      "templateId": "sweep_dmm_reading",
+      "group": "main"
+    },
+    {
+      "id": "psu_off",
+      "name": "DP932A CH1 OFF (readback verified)",
+      "description": "Remove PSU CH1 output before starting generator/scope tests.",
+      "group": "main",
+      "type": "action",
+      "mode": "callback",
+      "timeoutMs": 32000,
+      "handler": "switchPsuOff"
+    },
+    {
+      "id": "sweep_sine_capture__0027",
+      "name": "Sine 1 Vpp @ 1000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "sine",
+        "amplitude": 1,
+        "frequency": 1000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Sine 1 Vpp @ 1000 Hz \u00b7 peak-to-peak",
+          "low": 0.85,
+          "high": 1.15,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Sine 1 Vpp @ 1000 Hz \u00b7 frequency",
+          "low": 970.0,
+          "high": 1030.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Sine 1 Vpp @ 1000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.32,
+          "high": 0.4,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_sine_capture",
+      "group": "main"
+    },
+    {
+      "id": "sweep_sine_capture__0028",
+      "name": "Sine 1 Vpp @ 5000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "sine",
+        "amplitude": 1,
+        "frequency": 5000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Sine 1 Vpp @ 5000 Hz \u00b7 peak-to-peak",
+          "low": 0.85,
+          "high": 1.15,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Sine 1 Vpp @ 5000 Hz \u00b7 frequency",
+          "low": 4850.0,
+          "high": 5150.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Sine 1 Vpp @ 5000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.32,
+          "high": 0.4,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_sine_capture",
+      "group": "main"
+    },
+    {
+      "id": "sweep_sine_capture__0029",
+      "name": "Sine 2 Vpp @ 1000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "sine",
+        "amplitude": 2,
+        "frequency": 1000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Sine 2 Vpp @ 1000 Hz \u00b7 peak-to-peak",
+          "low": 1.7,
+          "high": 2.3,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Sine 2 Vpp @ 1000 Hz \u00b7 frequency",
+          "low": 970.0,
+          "high": 1030.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Sine 2 Vpp @ 1000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.32,
+          "high": 0.4,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_sine_capture",
+      "group": "main"
+    },
+    {
+      "id": "sweep_sine_capture__0030",
+      "name": "Sine 2 Vpp @ 5000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "sine",
+        "amplitude": 2,
+        "frequency": 5000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Sine 2 Vpp @ 5000 Hz \u00b7 peak-to-peak",
+          "low": 1.7,
+          "high": 2.3,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Sine 2 Vpp @ 5000 Hz \u00b7 frequency",
+          "low": 4850.0,
+          "high": 5150.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Sine 2 Vpp @ 5000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.32,
+          "high": 0.4,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_sine_capture",
+      "group": "main"
+    },
+    {
+      "id": "sweep_square_capture__0031",
+      "name": "Square 1 Vpp @ 1000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "square",
+        "amplitude": 1,
+        "frequency": 1000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Square 1 Vpp @ 1000 Hz \u00b7 peak-to-peak",
+          "low": 0.85,
+          "high": 1.15,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Square 1 Vpp @ 1000 Hz \u00b7 frequency",
+          "low": 970.0,
+          "high": 1030.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Square 1 Vpp @ 1000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.43,
+          "high": 0.55,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_square_capture",
+      "group": "main"
+    },
+    {
+      "id": "sweep_square_capture__0032",
+      "name": "Square 1 Vpp @ 5000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "square",
+        "amplitude": 1,
+        "frequency": 5000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Square 1 Vpp @ 5000 Hz \u00b7 peak-to-peak",
+          "low": 0.85,
+          "high": 1.15,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Square 1 Vpp @ 5000 Hz \u00b7 frequency",
+          "low": 4850.0,
+          "high": 5150.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Square 1 Vpp @ 5000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.43,
+          "high": 0.55,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_square_capture",
+      "group": "main"
+    },
+    {
+      "id": "sweep_square_capture__0033",
+      "name": "Square 2 Vpp @ 1000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "square",
+        "amplitude": 2,
+        "frequency": 1000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Square 2 Vpp @ 1000 Hz \u00b7 peak-to-peak",
+          "low": 1.7,
+          "high": 2.3,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Square 2 Vpp @ 1000 Hz \u00b7 frequency",
+          "low": 970.0,
+          "high": 1030.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Square 2 Vpp @ 1000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.43,
+          "high": 0.55,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_square_capture",
+      "group": "main"
+    },
+    {
+      "id": "sweep_square_capture__0034",
+      "name": "Square 2 Vpp @ 5000 Hz \u00b7 capture and verify 3 results",
+      "description": "One real CH1 capture returns Vpp, frequency and shape; native C++ evaluates three separately reported measurements.",
+      "type": "numeric",
+      "mode": "callback",
+      "timeoutMs": 120000,
+      "handler": "generateAndVerifyWaveform",
+      "parameters": {
+        "shape": "square",
+        "amplitude": 2,
+        "frequency": 5000
+      },
+      "measurements": {
+        "vpp": {
+          "name": "Square 2 Vpp @ 5000 Hz \u00b7 peak-to-peak",
+          "low": 1.7,
+          "high": 2.3,
+          "unit": "Vpp"
+        },
+        "hz": {
+          "name": "Square 2 Vpp @ 5000 Hz \u00b7 frequency",
+          "low": 4850.0,
+          "high": 5150.0,
+          "unit": "Hz"
+        },
+        "shape": {
+          "name": "Square 2 Vpp @ 5000 Hz \u00b7 AC RMS / Vpp",
+          "low": 0.43,
+          "high": 0.55,
+          "unit": "ratio"
+        }
+      },
+      "templateId": "sweep_square_capture",
+      "group": "main"
+    },
+    {
+      "id": "cleanup_gen",
+      "name": "CLEANUP \u00b7 DG902 CH1 OFF + verify",
+      "description": "Always attempt this on completed, failed or gracefully stopped runs.",
+      "group": "cleanup",
+      "type": "action",
+      "mode": "callback",
+      "timeoutMs": 32000,
+      "handler": "releaseGenerator"
+    },
+    {
+      "id": "cleanup_psu",
+      "name": "CLEANUP \u00b7 DP932A CH1 OFF + verify",
+      "description": "Attempted independently even if generator cleanup fails.",
+      "group": "cleanup",
+      "type": "action",
+      "mode": "callback",
+      "timeoutMs": 32000,
+      "handler": "releaseSupply"
+    }
+  ]
+}

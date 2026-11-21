@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
+#include <QJsonParseError>
 #include <QTemporaryDir>
 #include <QDebug>
 #include <QJsonArray>
@@ -105,6 +106,62 @@ int main(int argc,char** argv) {
     bad.insert(QStringLiteral("lifecycle"),QJsonObject{{"initializeEnabled","yes"}});
     check(!PanelProject::fromJson(bad,QStringLiteral("bad.wfpanel"),&invalid,&error),
           QStringLiteral("reject nonboolean lifecycle settings"));
-    if(failures==0)qInfo()<<"PASS: PanelProject legacy migration, round trip, pages and lifecycle settings";
+    // v0.2-dev.3.1: load the actual resource-backed File I/O & Operator Dialogs
+    // example with the production v2 .wfpanel parser. Previously the example
+    // lacked width/height on both Pages and failed before the UI could open.
+    PanelProject utilityExample;
+    QString utilityError;
+    QFile embeddedExample(QStringLiteral(":/wfscript/examples/ScriptUtilityLab.wfpanel"));
+    check(embeddedExample.open(QIODevice::ReadOnly),
+          QStringLiteral("resource-backed ScriptUtilityLab example is present"));
+    if(embeddedExample.isOpen()) {
+        const QByteArray jsonBytes=embeddedExample.readAll();
+        QJsonParseError parseError;
+        const QJsonDocument document=QJsonDocument::fromJson(jsonBytes,&parseError);
+        check(parseError.error==QJsonParseError::NoError && document.isObject(),
+              QStringLiteral("ScriptUtilityLab example JSON is valid"));
+        if(document.isObject()) {
+            check(PanelProject::fromJson(document.object(),
+                                       QStringLiteral("ScriptUtilityLab.wfpanel"),
+                                       &utilityExample,&utilityError),
+                  QStringLiteral("ScriptUtilityLab loads with production parser: ")+utilityError);
+            check(utilityExample.pages.size()==2 &&
+                  utilityExample.activePageId==QStringLiteral("files"),
+                  QStringLiteral("ScriptUtilityLab has the intended two Pages"));
+            for(const auto& page : utilityExample.pages) {
+                check(page.size.width()==1160 && page.size.height()==800,
+                      QStringLiteral("ScriptUtilityLab Page dimensions: ")+page.id);
+                check(!page.controls.isEmpty(),
+                      QStringLiteral("ScriptUtilityLab Page has controls: ")+page.id);
+            }
+        }
+    }
+    // v0.2-dev.4: validate the actual read-only digital monitor's three Pages
+    // through the production v2 parser (not only a JSON shape check).
+    QFile monitorExample(QStringLiteral(":/wfscript/examples/DigitalInputMonitor.wfpanel"));
+    check(monitorExample.open(QIODevice::ReadOnly),
+          QStringLiteral("resource-backed digital monitor example exists"));
+    if(monitorExample.isOpen()) {
+        QJsonParseError monitorParse;
+        const QJsonDocument doc=QJsonDocument::fromJson(monitorExample.readAll(),&monitorParse);
+        check(monitorParse.error==QJsonParseError::NoError && doc.isObject(),
+              QStringLiteral("DigitalInputMonitor JSON valid"));
+        if(doc.isObject()) {
+            PanelProject monitorProject;
+            QString monitorError;
+            check(PanelProject::fromJson(doc.object(),QStringLiteral("DigitalInputMonitor.wfpanel"),
+                                         &monitorProject,&monitorError),
+                  QStringLiteral("DigitalInputMonitor loads through production parser: ")+monitorError);
+            check(monitorProject.pages.size()==3,
+                  QStringLiteral("digital monitor example has three Pages"));
+            for(const auto& page:monitorProject.pages)
+                check(page.size.width()==1160 && page.size.height()==820 && !page.controls.isEmpty(),
+                      QStringLiteral("digital input Page dimensions and controls: ")+page.id);
+            check(!monitorProject.testDefinition.isEmpty() &&
+                  !monitorProject.testLibrary.isEmpty(),
+                  QStringLiteral("digital input example embeds its native Test Executive definition"));
+        }
+    }
+    if(failures==0)qInfo()<<"PASS: PanelProject legacy migration, round trip, pages and bundled utility example";
     return failures?1:0;
 }

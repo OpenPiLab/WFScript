@@ -5,6 +5,9 @@
 #include <QPointer>
 #include <QPair>
 #include <QVector>
+#include <QList>
+#include <QByteArray>
+#include <QVariant>
 #include "ScopeFrame.h"
 #include "PanelProject.h"
 #include <QJsonArray>
@@ -25,6 +28,10 @@ class QComboBox;
 class QSpinBox;
 class QDoubleSpinBox;
 class QLabel;
+class QTabBar;
+class QTextDocument;
+class QTimer;
+class QTreeWidgetItem;
 class WaveformPlot;
 class ScopeAcquisitionWorker;
 class ScriptEditor;
@@ -33,6 +40,7 @@ class PanelDesigner;
 class PanelRuntime;
 class DeviceWorkspace;
 class TestResultsBrowserDialog;
+class TestSequenceEditor;
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
@@ -45,6 +53,7 @@ protected:
 
 private:
     QPointer<TestResultsBrowserDialog> m_resultsBrowser;
+    QPointer<TestSequenceEditor> m_testSequenceEditor;
     QTabWidget* m_tabs = nullptr;
     QSplitter* m_scriptWorkspace = nullptr;
     QWidget* m_apiPane = nullptr;
@@ -68,6 +77,8 @@ private:
     QPointer<PanelRuntime> m_panelRuntime;
     QPointer<QThread> m_panelThread;
     bool m_panelStopPending=false;
+    // Run Panel temporarily focuses the canvas; preserve the prior layout.
+    bool m_panelAutoFocusedForRun=false;
     // True only after PanelRuntime released its resources on the worker thread.
     // A running QThread must still finish before the panel is fully stopped.
     bool m_panelWorkerCleanupComplete=false;
@@ -127,6 +138,66 @@ private:
     QSpinBox* m_deviceIndex = nullptr;
     QSpinBox* m_configIndex = nullptr;
     QPlainTextEdit* m_console = nullptr;
+    QSplitter* m_mainSplitter = nullptr;
+    QWidget* m_operatorBar = nullptr;
+    QLabel* m_operatorTitle = nullptr;
+    QLabel* m_operatorStatus = nullptr;
+    QPushButton* m_operatorConsoleButton = nullptr;
+    QPushButton* m_operatorWatchButton = nullptr;
+    // Operator tools are QDockWidgets owned by MainWindow, never by the
+    // script worker. A second QPlainTextEdit shares the Console document.
+    QDockWidget* m_operatorConsoleDock = nullptr;
+    QPlainTextEdit* m_operatorConsoleOutput = nullptr;
+    // The normal Console remains the sole log writer. A filtered view uses
+    // its own document and never changes or truncates the original history.
+    QTextDocument* m_operatorFilteredDocument = nullptr;
+    QComboBox* m_operatorLogScope = nullptr;
+    QComboBox* m_operatorLogLevel = nullptr;
+    QCheckBox* m_operatorLogWrap = nullptr;
+    bool m_operatorConsoleRefreshQueued = false;
+    QString m_operatorSessionMarker;
+    int m_operatorDockPreferredWidth = 340;
+    bool m_operatorPreferredConsoleFloating = false;
+    bool m_operatorPreferredWatchFloating = false;
+    Qt::DockWidgetArea m_operatorPreferredConsoleArea = Qt::RightDockWidgetArea;
+    Qt::DockWidgetArea m_operatorPreferredWatchArea = Qt::RightDockWidgetArea;
+    QByteArray m_operatorConsoleFloatGeometry;
+    QByteArray m_operatorWatchFloatGeometry;
+    QPushButton* m_operatorConsoleFloat = nullptr;
+    QDockWidget* m_panelDataWatchDock = nullptr;
+    QTreeWidget* m_panelDataWatchTree = nullptr;
+    QLineEdit* m_panelDataWatchFilter = nullptr;
+    QLabel* m_panelDataWatchStatus = nullptr;
+    QPushButton* m_panelDataWatchFloat = nullptr;
+    QCheckBox* m_panelDataWatchPause = nullptr;
+    QHash<QString,QTreeWidgetItem*> m_panelDataWatchRows;
+    QHash<QString,QVariant> m_panelDataWatchValues;
+    QHash<QString,QVariant> m_panelDataWatchShown;
+    QHash<QString,int> m_panelDataWatchChanges;
+    QHash<QString,qint64> m_panelDataWatchHighlightUntil;
+    QTimer* m_panelDataWatchHighlightTimer = nullptr;
+    bool m_panelDataWatchRefreshQueued = false;
+    bool m_operatorWatchOpen = false;
+    bool m_operatorRestoringDocks = false;
+    bool m_operatorConsolePlaced = false;
+    bool m_operatorWatchPlaced = false;
+    QPushButton* m_operatorFitButton = nullptr;
+    QPushButton* m_operatorStopButton = nullptr;
+    QAction* m_operatorViewAction = nullptr;
+    QAction* m_operatorAutoAction = nullptr;
+    bool m_operatorViewActive = false;
+    bool m_operatorConsoleOpen = false;
+    bool m_operatorHasError = false;
+    bool m_operatorSavedConsoleVisible = false;
+    bool m_operatorSavedMenuVisible = true;
+    bool m_operatorSavedStatusVisible = true;
+    bool m_operatorSavedFindVisible = false;
+    bool m_operatorSavedProblemsVisible = false;
+    bool m_operatorSavedWorkspaceTabsVisible = true;
+    bool m_operatorSavedMaximized = false;
+    QByteArray m_operatorSavedGeometry;
+    QList<int> m_operatorSavedSplitterSizes;
+    QWidget* m_operatorPreviousWorkspace = nullptr;
     QWidget* m_findBar = nullptr;
     QLineEdit* m_findInput = nullptr;
     QLineEdit* m_replaceInput = nullptr;
@@ -160,6 +231,7 @@ private:
     void replaceOnce();
     void replaceAll();
     void toggleTheme();
+    void applyApplicationTheme();
     void buildScopeWorkspace();
     void startCapture(bool continuous);
     void triggerControlChanged();
@@ -176,6 +248,8 @@ private:
     bool preparePageWidgetsForRun();
     bool showPanelPage(const QString& id);
     void refreshPageTabs();
+    QString operatorPanelDisplayName() const;
+    void refreshOperatorTitle();
     void addPanelPage();
     void renamePanelPage();
     void deletePanelPage();
@@ -203,6 +277,23 @@ private:
     void savePanelProject();
     void runPanel();
     void stopPanel();
+    void enterOperatorView();
+    void leaveOperatorView();
+    void toggleOperatorView();
+    void setOperatorConsoleVisible(bool visible);
+    void setOperatorWatchVisible(bool visible);
+    void buildOperatorDocks();
+    void refreshOperatorConsole();
+    void queueOperatorConsoleRefresh();
+    void restoreOperatorDock(QDockWidget* dock, bool console);
+    void toggleOperatorDockFloating(QDockWidget* dock, bool console);
+    void saveOperatorDiagnosticsSettings();
+    void resetPanelDataWatch();
+    void setPanelDataWatchValue(const QString& name,const QVariant& value);
+    void flushPanelDataWatch();
+    void filterPanelDataWatch();
+    void setOperatorError(const QString& detail);
+    void updateOperatorHeader(const QString& state);
     // Finalize a panel only after QThread::wait(0) confirms actual thread exit.
     void finalizePanelThread(QThread* thread);
 };

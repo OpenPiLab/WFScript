@@ -1,5 +1,6 @@
 #include "PanelDesigner.h"
 #include "PanelEventCatalog.h"
+#include "PanelDataSchema.h"
 #include "widgets/WidgetRegistry.h"
 #include "widgets/WidgetPropertyInspector.h"
 #include "UiIcons.h"
@@ -20,6 +21,7 @@
 #include <QMimeData>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QTimer>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QSplitter>
@@ -28,13 +30,19 @@
 #include <QFrame>
 #include <QDialog>
 #include <QPalette>
+#include <QColor>
+#include <QBrush>
 #include <QMenu>
 #include <QAction>
 #include <QUndoStack>
 #include <QSignalBlocker>
+#include <QMetaType>
 #include <QTabWidget>
 #include <QTabBar>
 #include <QCheckBox>
+#include <QComboBox>
+#include <QDialogButtonBox>
+#include <QDoubleValidator>
 #include <QRegularExpression>
 #include <QInputDialog>
 #include <QPointer>
@@ -48,13 +56,38 @@
 #include <QGuiApplication>
 #include <QFont>
 #include <algorithm>
+#include <cmath>
 
 namespace {
 // Group headings are not controls. Only leaf items may be dragged/added.
 class ToolboxTree final : public QTreeWidget {
 public:
     using QTreeWidget::QTreeWidget;
+    // Explicit foreground/background for category headers. Native Windows/Qt
+    // styles otherwise sometimes render the collapsed category label with the
+    // same colour as its background until the mouse enters the row.
+    void refreshCategoryPalette() {
+        const QColor base=palette().color(QPalette::Base);
+        const bool dark=base.lightness()<128;
+        const QColor background=dark ? QColor(QStringLiteral("#273a50"))
+                                     : QColor(QStringLiteral("#e1e8f0"));
+        const QColor foreground=dark ? QColor(QStringLiteral("#f4f7fc"))
+                                     : QColor(QStringLiteral("#203247"));
+        for(int i=0;i<topLevelItemCount();++i) {
+            auto* header=topLevelItem(i);
+            header->setForeground(0,QBrush(foreground));
+            header->setBackground(0,QBrush(background));
+        }
+    }
 protected:
+    bool event(QEvent* event) override {
+        const bool processed=QTreeWidget::event(event);
+        if(event->type()==QEvent::PaletteChange ||
+           event->type()==QEvent::ApplicationPaletteChange ||
+           event->type()==QEvent::StyleChange)
+            refreshCategoryPalette();
+        return processed;
+    }
     void startDrag(Qt::DropActions) override {
         auto* selected=currentItem();
         if(!selected || selected->childCount()>0 ||
@@ -73,10 +106,12 @@ protected:
 // central registry stay unchanged. Unrecognized third-party types go into Other.
 QString toolboxCategory(const QString& type) {
     if(QStringList{"button","momentary_button","switch_button","toggle"}.contains(type))return QStringLiteral("Buttons & Switches");
-    if(QStringList{"slider","rotary_input","numeric_stepper","option_selector","precision_dial"}.contains(type))return QStringLiteral("Input Controls");
+    if(QStringList{"slider","rotary_input","numeric_stepper","option_selector","precision_dial","text_input","ip_address_input"}.contains(type))return QStringLiteral("Input Controls");
     if(QStringList{"image","instruction_card","equation","experiment_table"}.contains(type))return QStringLiteral("Images & Education");
     if(QStringList{"label","numeric","digital_display","gauge","status_beacon","segmented_bar","status_banner"}.contains(type))return QStringLiteral("Display & Indicators");
     if(QStringList{"plot","digital_plot"}.contains(type))return QStringLiteral("Charts & Plots");
+    if(type==QStringLiteral("uart_terminal"))return QStringLiteral("Digital Instruments");
+    if(type==QStringLiteral("communications_terminal"))return QStringLiteral("Communications");
     if(QStringList{"runInformation","test_sequence","measurement_result","measurement_table","event_log"}.contains(type))return QStringLiteral("Test Executive");
     return QStringLiteral("Other Widgets");
 }
@@ -87,7 +122,11 @@ QString toolboxCategory(const QString& type) {
 PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     auto* page=new QVBoxLayout(this);
     page->setContentsMargins(6,6,6,6);
-    auto* tools=new QHBoxLayout;
+    m_editorToolbar=new QWidget(this);
+    m_editorToolbar->setObjectName(QStringLiteral("panelEditorToolbar"));
+    auto* tools=new QHBoxLayout(m_editorToolbar);
+    tools->setContentsMargins(0,0,0,0);
+    tools->setSpacing(5);
     auto button=[this,tools](const QString& text){auto* b=new QPushButton(text,this);tools->addWidget(b);return b;};
     auto* fresh=button("New Panel");auto* load=button("Open Panel…");auto* save=button("Save/Export…");
     m_new=fresh;m_open=load;m_save=save;
@@ -144,6 +183,18 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     tools->addStretch(1);
     m_toolboxToggle=button("Toolbox");
     m_propertiesToggle=button("Properties");
+    // Fit Page defaults ON in Run mode; Design remains at exact document pixels.
+    m_fitPageToggle=button("Fit Page");
+    m_fitPageToggle->setObjectName(QStringLiteral("panelFitPageToggle"));
+    m_fitPageToggle->setCheckable(true);
+    m_fitPageToggle->setChecked(true);
+    m_fitPageToggle->setEnabled(false);
+    m_fitPageToggle->setToolTip(QStringLiteral("Run: display the complete Page without scrolling. Turn off for 100% size and scroll bars. Never changes the saved Page."));
+    m_fitPagePercent=new QLabel(QStringLiteral("100%"),this);
+    m_fitPagePercent->setObjectName(QStringLiteral("panelFitPagePercent"));
+    m_fitPagePercent->setToolTip(QStringLiteral("Temporary display scale; saved Panel coordinates are unchanged."));
+    m_fitPagePercent->hide();
+    tools->addWidget(m_fitPagePercent);
     m_focusToggle=button("Focus Canvas");
     m_designToolsToggle=button("Design Tools");
     m_designToolsToggle->setObjectName(QStringLiteral("panelDesignToolsToggle"));
@@ -159,7 +210,7 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     m_toolboxToggle->setToolTip("Show or hide the Toolbox without affecting the panel document");
     m_propertiesToggle->setToolTip("Show or hide the Properties editor");
     m_focusToggle->setToolTip("Temporarily hide side panels; click again to restore");
-    page->addLayout(tools);
+    page->addWidget(m_editorToolbar);
     // Canvas instructions are available in the Design Tools palette and tooltips;
     // do not reserve a permanent header row for a tutorial paragraph.
     m_focusToggle->setToolTip(QStringLiteral("Focus Canvas: temporarily hide side panes. Design Tools and canvas keyboard shortcuts remain available."));
@@ -182,11 +233,19 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     m_toolbox->setRootIsDecorated(true);
     m_toolbox->setUniformRowHeights(true);
     m_toolbox->setSelectionMode(QAbstractItemView::SingleSelection);
-    const QStringList categories={QStringLiteral("Buttons & Switches"),
+    // Keep familiar groups in a stable order, but NEVER use a fixed group list
+    // as a filter for the registered factories: future categories must appear
+    // automatically when a widget factory is added to the registry.
+    QStringList categories={QStringLiteral("Buttons & Switches"),
         QStringLiteral("Input Controls"),QStringLiteral("Display & Indicators"),
-        QStringLiteral("Charts & Plots"),QStringLiteral("Images & Education"),QStringLiteral("Test Executive"),
-        QStringLiteral("Other Widgets")};
+        QStringLiteral("Charts & Plots"),QStringLiteral("Images & Education"),
+        QStringLiteral("Digital Instruments"),QStringLiteral("Communications"),
+        QStringLiteral("Test Executive"),QStringLiteral("Other Widgets")};
     const QStringList types=PanelCanvas::supportedTypes();
+    for(const QString& type:types) {
+        const QString category=toolboxCategory(type);
+        if(!categories.contains(category))categories.append(category);
+    }
     for(const QString& category:categories) {
         QList<QPair<QString,QString>> members;
         for(const QString& type:types)if(toolboxCategory(type)==category) {
@@ -212,6 +271,7 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
         header->setExpanded(category==QStringLiteral("Buttons & Switches") ||
                             category==QStringLiteral("Test Executive"));
     }
+    static_cast<ToolboxTree*>(m_toolbox)->refreshCategoryPalette();
     // Search never modifies the registry, document or serialized widget IDs.
     connect(m_toolboxSearch,&QLineEdit::textChanged,m_toolbox,
             [this](const QString& text){
@@ -259,7 +319,8 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     scroll->setObjectName(QStringLiteral("panelCanvasScrollArea"));
     // IMPORTANT: setWidgetResizable(true) stretches PanelCanvas beyond its
     // documentSize(), making the Page dimension fields disagree with the grid.
-    // Keep the canvas at its exact logical pixel size; the rest is workspace.
+    // Design shows exact logical pixels; Run may explicitly apply Fit Page.
+    // The rest is workspace, never part of the saved project.
     scroll->setWidgetResizable(false);
     scroll->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     scroll->viewport()->setAutoFillBackground(true);
@@ -270,6 +331,7 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_canvas=new PanelCanvas(scroll);
     scroll->setWidget(m_canvas);
+    scroll->viewport()->installEventFilter(this);
     centerLayout->addWidget(scroll,1);
     auto* props=new QWidget(split);
     m_propertiesPane=props;
@@ -299,6 +361,37 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     propertyLayout->setSizeConstraint(QLayout::SetMinimumSize);
     m_propertyEditor=new WidgetPropertyInspector(propertiesContent);
     propertyLayout->addWidget(m_propertyEditor);
+    // Optional project-wide Value binding; normal unbound ui.set() remains the
+    // default. The binding is independent of a widget factory's appearance.
+    m_bindingPanel=new QWidget(propertiesContent);
+    auto* bindingLayout=new QVBoxLayout(m_bindingPanel);
+    bindingLayout->setContentsMargins(0,2,0,4);
+    bindingLayout->addWidget(new QLabel(QStringLiteral("Value Binding (optional)"),m_bindingPanel));
+    m_valueBinding=new QComboBox(m_bindingPanel);
+    m_valueBinding->setObjectName(QStringLiteral("panelValueBinding"));
+    bindingLayout->addWidget(m_valueBinding);
+    m_bindingHint=new QLabel(QStringLiteral("None: control this widget using ui.set()."),m_bindingPanel);
+    m_bindingHint->setWordWrap(true);
+    bindingLayout->addWidget(m_bindingHint);
+    propertyLayout->addWidget(m_bindingPanel);
+    connect(m_valueBinding,QOverload<int>::of(&QComboBox::currentIndexChanged),this,[this](int index){
+        if(m_refreshingBinding || m_loadingProperties || m_running || index<0 ||
+           m_canvas->selectionCount()!=1)return;
+        const QString chosen=m_valueBinding->itemData(index).toString();
+        if(chosen==QStringLiteral("__create__")) {
+            const auto type=PanelDataSchema::bindingType(m_canvas->selectedControl().type);
+            editDataVariable(true,type);
+            refreshValueBinding();
+            return;
+        }
+        PanelControl d=m_canvas->selectedControl();
+        if(d.id.isEmpty())return;
+        if(chosen.isEmpty())d.bindings.remove(QStringLiteral("value"));
+        else d.bindings.insert(QStringLiteral("value"),chosen);
+        if(!m_canvas->updateSelected(d))
+            QMessageBox::warning(this,QStringLiteral("Value binding"),QStringLiteral("Cannot apply this binding"));
+        refreshValueBinding();
+    });
     m_pageAppearanceEditor=new PageAppearanceEditor(propertiesContent);
     propertyLayout->addWidget(m_pageAppearanceEditor);
     connect(m_pageAppearanceEditor,&PageAppearanceEditor::edited,this,
@@ -368,6 +461,42 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     eventLayout->addWidget(m_eventNotice);
     eventLayout->addStretch();
     m_inspectorTabs->addTab(eventPage,QStringLiteral("Events"));
+    // Third inspector tab is project-scoped, not specific to selected widget.
+    auto* dataPage=new QWidget(m_inspectorTabs);
+    auto* dataLayout=new QVBoxLayout(dataPage);
+    dataLayout->setContentsMargins(6,6,6,6);
+    auto* intro=new QLabel(QStringLiteral("Variables shared across all Pages. Design edits change initial values; Run values are live and read-only."),dataPage);
+    intro->setWordWrap(true);dataLayout->addWidget(intro);
+    m_dataTree=new QTreeWidget(dataPage);
+    m_dataTree->setObjectName(QStringLiteral("panelDataVariables"));
+    m_dataTree->setColumnCount(3);
+    m_dataTree->setHeaderLabels({QStringLiteral("Name"),QStringLiteral("Type"),QStringLiteral("Value")});
+    m_dataTree->setRootIsDecorated(false);
+    m_dataTree->setAlternatingRowColors(true);
+    m_dataTree->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_dataTree->header()->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+    m_dataTree->header()->setSectionResizeMode(1,QHeaderView::ResizeToContents);
+    m_dataTree->header()->setStretchLastSection(true);
+    dataLayout->addWidget(m_dataTree,1);
+    auto* actions=new QHBoxLayout;
+    m_dataAdd=new QPushButton(QStringLiteral("+ New"),dataPage);
+    m_dataEdit=new QPushButton(QStringLiteral("Edit Default"),dataPage);
+    m_dataRemove=new QPushButton(QStringLiteral("Delete"),dataPage);
+    for(auto* b:{m_dataAdd,m_dataEdit,m_dataRemove})actions->addWidget(b);
+    dataLayout->addLayout(actions);
+    auto* dataTip=new QLabel(QStringLiteral("Data.set(name,value) writes a value. Data.computed(target,deps,formula) creates a read-only calculation; bind its target to a display."),dataPage);
+    dataTip->setWordWrap(true);
+    dataLayout->addWidget(dataTip);
+    m_inspectorTabs->addTab(dataPage,QStringLiteral("Panel Data"));
+    connect(m_dataAdd,&QPushButton::clicked,this,[this]{editDataVariable(true);});
+    connect(m_dataEdit,&QPushButton::clicked,this,[this]{editDataVariable(false);});
+    connect(m_dataRemove,&QPushButton::clicked,this,&PanelDesigner::removeDataVariable);
+    connect(m_dataTree,&QTreeWidget::itemDoubleClicked,this,[this]{editDataVariable(false);});
+    connect(m_dataTree,&QTreeWidget::itemSelectionChanged,this,[this]{
+        const bool selected=m_dataTree->currentItem()!=nullptr;
+        m_dataEdit->setEnabled(!m_running && selected);
+        m_dataRemove->setEnabled(!m_running && selected);
+    });
     connect(m_eventList,&QListWidget::currentRowChanged,this,&PanelDesigner::selectedEventChanged);
     connect(m_eventEnabled,&QCheckBox::toggled,this,[this](bool){
         if(!m_refreshingEvents)assignEvent();
@@ -405,6 +534,7 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     m_align=editorButton(QStringLiteral("Align ▾"),2,0);
     m_arrange=editorButton(QStringLiteral("Arrange ▾"),2,1);
     m_snap=editorButton(QStringLiteral("Snap 20px"),2,2);
+    m_guides=editorButton(QStringLiteral("Smart Guides"),3,0);
     UiIcons::decorate(m_undo, "undo", QStringLiteral("Undo the last panel design action (Ctrl+Z)"));
     UiIcons::decorate(m_redo, "redo", QStringLiteral("Redo the last undone action (Ctrl+Y)"));
     UiIcons::decorate(m_copy, "copy", QStringLiteral("Copy selected widgets (Ctrl+C)"));
@@ -414,9 +544,14 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     UiIcons::decorate(m_arrange, "arrange", QStringLiteral("Bring controls forward or send backward"));
     UiIcons::decorate(m_snap, "grid", QStringLiteral("Snap widget edits to a 20-pixel grid"));
     m_snap->setCheckable(true);
+    UiIcons::decorate(m_guides, "align", QStringLiteral("Auto-align edges and centres while moving, resizing or dropping controls (Alt temporarily bypasses)"));
+    m_guides->setObjectName(QStringLiteral("panelSmartGuidesToggle"));
+    m_guides->setCheckable(true);
+    m_guides->setChecked(m_canvas->alignmentGuidesEnabled());
     paletteLayout->addLayout(editing);
     auto* help=new QLabel(QStringLiteral("Drag: move  ·  Blue handle: resize  ·  Ctrl/Shift: multi-select\n"
-        "Ctrl+Z/Y: undo/redo  ·  Ctrl+C/V/D: copy/paste/duplicate"),m_designToolsPalette);
+        "Alt during drag: bypass Smart Guides  ·  Ctrl+Z/Y: undo/redo\n"
+        "Ctrl+C/V/D: copy/paste/duplicate"),m_designToolsPalette);
     help->setWordWrap(true);
     paletteLayout->addWidget(help);
     connect(m_designToolsToggle,&QPushButton::toggled,this,[this](bool visible){
@@ -493,6 +628,7 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     connect(m_paste,&QPushButton::clicked,m_canvas,&PanelCanvas::pasteControls);
     connect(m_duplicate,&QPushButton::clicked,m_canvas,&PanelCanvas::duplicateSelected);
     connect(m_snap,&QPushButton::toggled,m_canvas,&PanelCanvas::setSnapToGrid);
+    connect(m_guides,&QPushButton::toggled,m_canvas,&PanelCanvas::setAlignmentGuidesEnabled);
     connect(m_canvas->undoStack(),&QUndoStack::canUndoChanged,m_undo,&QPushButton::setEnabled);
     connect(m_canvas->undoStack(),&QUndoStack::canRedoChanged,m_redo,&QPushButton::setEnabled);
     connect(m_canvas,&PanelCanvas::selectedChanged,this,&PanelDesigner::updateSelectionActions);
@@ -524,6 +660,10 @@ PanelDesigner::PanelDesigner(QWidget* parent):QWidget(parent) {
     connect(m_canvas,&PanelCanvas::selectedChanged,this,&PanelDesigner::loadProperties);
     connect(m_canvas,&PanelCanvas::selectedChanged,this,&PanelDesigner::refreshEvents);
     connect(m_canvas,&PanelCanvas::documentChanged,this,&PanelDesigner::refreshEvents);
+    connect(m_canvas,&PanelCanvas::documentChanged,this,[this]{
+        if(m_running)scheduleFitPage(); // Refit after switching to a differently sized Page.
+    });
+    connect(m_fitPageToggle,&QPushButton::toggled,this,[this]{scheduleFitPage();});
     connect(m_canvas,&PanelCanvas::documentChanged,this,[this]{ if(m_canvas->selectedControl().id.size())loadProperties(); });
     qApp->installEventFilter(this);
     setRunning(false);
@@ -558,6 +698,8 @@ void PanelDesigner::applyPageAppearance() {
     viewport->update();
 }
 bool PanelDesigner::eventFilter(QObject* watched,QEvent* event) {
+    if(m_scrollArea && watched==m_scrollArea->viewport() &&
+       event->type()==QEvent::Resize && m_running)scheduleFitPage();
     if(watched==qApp && event->type()==QEvent::ApplicationPaletteChange &&
        m_appearance.themeMode==QLatin1String("follow"))applyPageAppearance();
     return QWidget::eventFilter(watched,event);
@@ -680,6 +822,7 @@ void PanelDesigner::setFocusMode(bool focused) {
     m_toolboxToggle->setChecked(toolboxShown());
     m_propertiesToggle->setChecked(propertiesShown());
     m_focusToggle->setChecked(focused);
+    scheduleFitPage();
     // The palette is independent of the canvas layout; no geometry change.
 }
 void PanelDesigner::resetUiLayout() {
@@ -688,9 +831,60 @@ void PanelDesigner::resetUiLayout() {
     setPropertiesShown(true);
     m_splitter->setSizes({185,900,265});
 }
+// Schedule after split-pane, tabs and main-window focus changes have settled.
+// Never store the scale in PanelProject or modify a control definition.
+void PanelDesigner::scheduleFitPage() {
+    if(m_fitPageScheduled)return;
+    m_fitPageScheduled=true;
+    QTimer::singleShot(0,this,[this]{
+        m_fitPageScheduled=false;
+        updateFitPage();
+    });
+}
+
+void PanelDesigner::updateFitPage() {
+    if(!m_canvas || !m_scrollArea)return;
+    qreal scale=1.0;
+    if(m_running && m_fitPageToggle && m_fitPageToggle->isChecked()) {
+        const QSize viewport=m_scrollArea->viewport()->size();
+        const QSize document=m_canvas->documentSize();
+        if(viewport.width()>32 && viewport.height()>32 &&
+           document.width()>0 && document.height()>0) {
+            const qreal horizontal=qreal(viewport.width()-4)/document.width();
+            const qreal vertical=qreal(viewport.height()-4)/document.height();
+            scale=qBound(0.15,qMin(horizontal,vertical),1.0);
+        }
+    }
+    m_canvas->setPresentationScale(scale);
+    if(m_fitPagePercent)m_fitPagePercent->setText(QStringLiteral("%1%").arg(qRound(100*scale)));
+}
+
+void PanelDesigner::setOperatorView(bool enabled) {
+    if(m_operatorView == enabled) return;
+    m_operatorView=enabled;
+    // Do not reparent or recreate any Page widget: only the development toolbar
+    // is hidden. Existing Page tabs stay available while the experiment runs.
+    m_editorToolbar->setVisible(!enabled);
+    if(auto* layout=qobject_cast<QVBoxLayout*>(this->layout()))
+        layout->setContentsMargins(enabled ? 2 : 6,enabled ? 2 : 6,
+                                   enabled ? 2 : 6,enabled ? 2 : 6);
+    scheduleFitPage();
+}
+
+void PanelDesigner::setFitPageEnabled(bool enabled) {
+    if(m_fitPageToggle) m_fitPageToggle->setChecked(enabled);
+}
+
+bool PanelDesigner::fitPageEnabled() const {
+    return m_fitPageToggle && m_fitPageToggle->isChecked();
+}
+
 void PanelDesigner::setRunning(bool running) {
     m_running=running;
     m_canvas->setDesignMode(!running);
+    m_fitPageToggle->setEnabled(running);
+    m_fitPagePercent->setVisible(running);
+    scheduleFitPage();
     m_run->setEnabled(!running);
     m_stop->setEnabled(running);
     m_add->setEnabled(!running && m_toolbox->currentItem() &&
@@ -701,6 +895,7 @@ void PanelDesigner::setRunning(bool running) {
     m_undo->setEnabled(!running && m_canvas->undoStack()->canUndo());
     m_redo->setEnabled(!running && m_canvas->undoStack()->canRedo());
     m_snap->setEnabled(!running);
+    m_guides->setEnabled(!running);
     updateSelectionActions();
     m_new->setEnabled(!running);m_open->setEnabled(!running);m_save->setEnabled(!running);
     m_examples->setEnabled(!running);
@@ -715,6 +910,8 @@ void PanelDesigner::setRunning(bool running) {
     }
     m_propertyEditor->setEditable(!running && m_canvas->selectionCount()==1);
     m_pageAppearanceEditor->setEditable(!running);
+    refreshDataTab();
+    refreshValueBinding();
     refreshEvents();
     // Run/Design guidance is available on buttons and the palette; no fixed hint row.
     m_designToolsToggle->setEnabled(!running);
@@ -743,6 +940,7 @@ void PanelDesigner::loadProperties() {
     if(showPage)refreshPageDimensions();
     m_propertyEditor->setVisible(!showPage);
     m_widgetInfo->setVisible(!showPage);
+    refreshValueBinding();
     m_pageAppearanceEditor->setEditable(!m_running);
     m_propertyEditor->setControl(d,editable);
     m_loadingProperties=false;
@@ -782,6 +980,198 @@ void PanelDesigner::updateSelectionActions() {
     if(m_paste)m_paste->setEnabled(editing);
     if(m_delete)m_delete->setEnabled(editing && count>0);
     // Property fields are managed by loadProperties(), not an Apply button.
+}
+
+void PanelDesigner::setPanelData(const QJsonArray& variables) {
+    m_panelData=variables;
+    m_runtimeData.clear();
+    for(const auto& entry:variables) {
+        const auto d=entry.toObject();
+        m_runtimeData.insert(d.value(QStringLiteral("name")).toString(),PanelDataSchema::initialValue(d));
+    }
+    refreshDataTab();
+    refreshValueBinding();
+}
+void PanelDesigner::setPanelDataRuntimeValue(const QString& name,const QVariant& value) {
+    // Only project-defined names are allowed. Recover safely if an edit was
+    // accepted before the runtime cache was seeded (e.g. a newly created
+    // variable). Ignore unknown worker messages rather than adding ghost rows.
+    if(!m_runtimeData.contains(name)) {
+        bool defined=false;
+        for(const auto& entry:m_panelData) {
+            if(entry.toObject().value(QStringLiteral("name")).toString()==name) {
+                defined=true;break;
+            }
+        }
+        if(!defined)return;
+    }
+    m_runtimeData.insert(name,value);
+    if(!m_running || !m_dataTree)return;
+    // A running simulation may publish several variables every 250 ms.
+    // Update only the affected row: clearing/rebuilding the QTreeWidget on
+    // each tick loses selection, scroll position and can visibly flicker.
+    const QString display=value.metaType().id()==QMetaType::Bool
+        ?(value.toBool()?QStringLiteral("true"):QStringLiteral("false"))
+        :value.toString();
+    for(int i=0;i<m_dataTree->topLevelItemCount();++i) {
+        QTreeWidgetItem* row=m_dataTree->topLevelItem(i);
+        if(row->data(0,Qt::UserRole).toString()==name) {
+            if(row->text(2)!=display)row->setText(2,display);
+            break;
+        }
+    }
+}
+void PanelDesigner::refreshDataTab() {
+    if(!m_dataTree)return;
+    m_dataTree->headerItem()->setText(2,m_running
+        ?QStringLiteral("Live Value"):QStringLiteral("Initial Value"));
+    const QString prior=m_dataTree->currentItem()?m_dataTree->currentItem()->data(0,Qt::UserRole).toString():QString();
+    QSignalBlocker block(m_dataTree);
+    m_dataTree->clear();
+    for(const auto& entry:m_panelData) {
+        const auto d=entry.toObject();
+        const QString name=d.value(QStringLiteral("name")).toString();
+        const QString type=d.value(QStringLiteral("type")).toString();
+        const QVariant value=m_running?m_runtimeData.value(name):PanelDataSchema::initialValue(d);
+        auto* row=new QTreeWidgetItem(m_dataTree,{name,type,
+            type==QStringLiteral("boolean")?(value.toBool()?QStringLiteral("true"):QStringLiteral("false")):
+            value.toString()});
+        row->setData(0,Qt::UserRole,name);
+        if(name==prior)m_dataTree->setCurrentItem(row);
+    }
+    m_dataAdd->setEnabled(!m_running && m_panelData.size()<128);
+    const bool hasSelection=m_dataTree->currentItem()!=nullptr;
+    m_dataEdit->setEnabled(!m_running && hasSelection);
+    m_dataRemove->setEnabled(!m_running && hasSelection);
+}
+void PanelDesigner::refreshValueBinding() {
+    if(!m_valueBinding || !m_canvas)return;
+    const PanelControl d=m_canvas->selectedControl();
+    const QString type=(m_canvas->selectionCount()==1)?PanelDataSchema::bindingType(d.type):QString();
+    m_bindingPanel->setVisible(!type.isEmpty());
+    if(type.isEmpty())return;
+    m_refreshingBinding=true;
+    QSignalBlocker block(m_valueBinding);
+    m_valueBinding->clear();
+    m_valueBinding->addItem(QStringLiteral("None — use ui.set()"),QString());
+    for(const auto& v:m_panelData) {
+        const auto entry=v.toObject();
+        if(entry.value(QStringLiteral("type")).toString()==type)
+            m_valueBinding->addItem(entry.value(QStringLiteral("name")).toString(),entry.value(QStringLiteral("name")).toString());
+    }
+    m_valueBinding->addItem(QStringLiteral("+ Create New Variable..."),QStringLiteral("__create__"));
+    const QString current=d.bindings.value(QStringLiteral("value")).toString();
+    const int selection=m_valueBinding->findData(current);
+    m_valueBinding->setCurrentIndex(selection<0?0:selection);
+    m_valueBinding->setEnabled(!m_running);
+    m_bindingHint->setText(current.isEmpty()?QStringLiteral("Unbound: this widget uses ui.set()."):
+        QStringLiteral("Bound to %1. Update it with Data.set(). Direct ui.set() is disabled for this Value.").arg(current));
+    m_refreshingBinding=false;
+}
+void PanelDesigner::editDataVariable(bool create,const QString& forcedType) {
+    if(m_running || (create && m_panelData.size()>=128))return;
+    QString oldName;
+    QJsonObject original;
+    if(!create) {
+        if(!m_dataTree->currentItem())return;
+        oldName=m_dataTree->currentItem()->data(0,Qt::UserRole).toString();
+        for(const auto& item:m_panelData)if(item.toObject().value(QStringLiteral("name")).toString()==oldName)
+            original=item.toObject();
+        if(original.isEmpty())return;
+    }
+    QDialog dialog(this);
+    dialog.setWindowTitle(create?QStringLiteral("Create Panel Data Variable"):QStringLiteral("Edit Panel Data Default"));
+    auto* layout=new QFormLayout(&dialog);
+    auto* nameEdit=new QLineEdit(create?QString():oldName,&dialog);
+    nameEdit->setPlaceholderText(QStringLiteral("Motor.Speed"));
+    nameEdit->setEnabled(create); // rename could silently break references in JS; explicit deletion instead
+    layout->addRow(QStringLiteral("Name"),nameEdit);
+    auto* typeSelect=new QComboBox(&dialog);
+    typeSelect->addItem(QStringLiteral("Number"),QStringLiteral("number"));
+    typeSelect->addItem(QStringLiteral("Boolean"),QStringLiteral("boolean"));
+    typeSelect->addItem(QStringLiteral("Text"),QStringLiteral("text"));
+    const QString type=create?(forcedType.isEmpty()?QStringLiteral("number"):forcedType):original.value(QStringLiteral("type")).toString();
+    typeSelect->setCurrentIndex(qMax(0,typeSelect->findData(type)));
+    typeSelect->setEnabled(create && forcedType.isEmpty());
+    layout->addRow(QStringLiteral("Type"),typeSelect);
+    auto* initial=new QLineEdit(&dialog);
+    initial->setText(create?(type==QStringLiteral("boolean")?QStringLiteral("false"):
+        type==QStringLiteral("number")?QStringLiteral("0"):QString()):
+        PanelDataSchema::initialValue(original).toString());
+    layout->addRow(QStringLiteral("Initial value"),initial);
+    if(create && forcedType.isEmpty())
+        connect(typeSelect,QOverload<int>::of(&QComboBox::currentIndexChanged),&dialog,[typeSelect,initial](int){
+            const QString current=typeSelect->currentData().toString();
+            initial->setText(current==QStringLiteral("boolean")?QStringLiteral("false"):
+                current==QStringLiteral("number")?QStringLiteral("0"):QString());
+        });
+    auto* message=new QLabel(QStringLiteral("Initial values are saved in the .wfpanel; Run-time values are not."),&dialog);
+    message->setWordWrap(true);layout->addRow(message);
+    auto* buttons=new QDialogButtonBox(QDialogButtonBox::Ok|QDialogButtonBox::Cancel,&dialog);
+    layout->addRow(buttons);
+    connect(buttons,&QDialogButtonBox::rejected,&dialog,&QDialog::reject);
+    connect(buttons,&QDialogButtonBox::accepted,&dialog,[&]{
+        const QString name=nameEdit->text().trimmed();
+        const QString chosenType=typeSelect->currentData().toString();
+        if(!PanelDataSchema::validName(name)) {
+            QMessageBox::warning(&dialog,QStringLiteral("Invalid name"),QStringLiteral("Use a name such as Motor.Speed (letters, numbers, underscores and dots)."));return;
+        }
+        if(create)for(const auto& v:m_panelData)if(v.toObject().value(QStringLiteral("name")).toString()==name) {
+            QMessageBox::warning(&dialog,QStringLiteral("Duplicate name"),name+QStringLiteral(" already exists."));return;
+        }
+        QJsonValue value;
+        if(chosenType==QStringLiteral("number")) {
+            bool ok=false;const double n=initial->text().trimmed().toDouble(&ok);
+            if(!ok || !std::isfinite(n)) {
+                QMessageBox::warning(&dialog,QStringLiteral("Invalid number"),QStringLiteral("Enter a finite numeric initial value."));return;
+            }
+            value=n;
+        } else if(chosenType==QStringLiteral("boolean")) {
+            const QString str=initial->text().trimmed().toLower();
+            if(str!=QStringLiteral("true") && str!=QStringLiteral("false")) {
+                QMessageBox::warning(&dialog,QStringLiteral("Invalid Boolean"),QStringLiteral("Enter true or false."));return;
+            }
+            value=(str==QStringLiteral("true"));
+        } else {
+            if(initial->text().size()>4096) {
+                QMessageBox::warning(&dialog,QStringLiteral("Text too long"),QStringLiteral("Maximum 4096 characters."));return;
+            }
+            value=initial->text();
+        }
+        original=QJsonObject{{QStringLiteral("name"),name},{QStringLiteral("type"),chosenType},
+                              {QStringLiteral("initial"),value}};
+        dialog.accept();
+    });
+    if(dialog.exec()!=QDialog::Accepted)return;
+    QJsonArray next;
+    if(create) {next=m_panelData;next.append(original);} else {
+        for(const auto& v:m_panelData)
+            next.append(v.toObject().value(QStringLiteral("name")).toString()==oldName?QJsonValue(original):v);
+    }
+    m_panelData=next;
+    emit panelDataEdited(next);
+    refreshDataTab();refreshValueBinding();
+    for(int i=0;i<m_dataTree->topLevelItemCount();++i)
+        if(m_dataTree->topLevelItem(i)->data(0,Qt::UserRole).toString()==original.value(QStringLiteral("name")).toString())
+            m_dataTree->setCurrentItem(m_dataTree->topLevelItem(i));
+    if(create && !forcedType.isEmpty() && m_canvas->selectionCount()==1) {
+        PanelControl d=m_canvas->selectedControl();
+        d.bindings.insert(QStringLiteral("value"),original.value(QStringLiteral("name")).toString());
+        m_canvas->updateSelected(d);
+        refreshValueBinding();
+    }
+}
+void PanelDesigner::removeDataVariable() {
+    if(m_running || !m_dataTree->currentItem())return;
+    const QString name=m_dataTree->currentItem()->data(0,Qt::UserRole).toString();
+    if(QMessageBox::question(this,QStringLiteral("Delete Panel Data variable"),
+         QStringLiteral("Delete %1? This is refused if a widget still has a binding to it. JavaScript references cannot be automatically updated.").arg(name),
+         QMessageBox::Yes|QMessageBox::No,QMessageBox::No)!=QMessageBox::Yes)return;
+    QJsonArray next;
+    for(const auto& v:m_panelData)if(v.toObject().value(QStringLiteral("name")).toString()!=name)next.append(v);
+    m_panelData=next;
+    emit panelDataEdited(next);
+    refreshDataTab();refreshValueBinding();
 }
 
 void PanelDesigner::setPanelScriptSource(const QString& source) {

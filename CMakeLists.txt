@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(WFScript VERSION 0.1.0 LANGUAGES CXX)
+project(WFScript VERSION 0.2.0 LANGUAGES CXX)
 
 # Windows application icon uses the platform resource compiler (windres/rc.exe).
 if(WIN32)
@@ -12,10 +12,15 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Qml)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets Qml Sql Network SerialPort)
 
 set(WFSCRIPT_WIDGET_SOURCES
     src/plot/PlotCommand.h
+    src/plot/NativeSampleIndex.h
+    src/plot/PlotPixelColumns.h
+    src/plot/PlotAxisLabels.h
+    src/plot/LegacyXYIndex.h
+    src/plot/DigitalEdgeIndex.h
     src/plot/PanelChartWidget.h
     src/plot/PanelChartWidget.cpp
     src/plot/PanelPlotFactory.h
@@ -30,6 +35,9 @@ set(WFSCRIPT_WIDGET_SOURCES
     src/widgets/BuiltinWidgets.cpp
     src/widgets/EducationWidgets.h
     src/widgets/EducationWidgets.cpp
+    src/widgets/ExperimentTableData.h
+    src/widgets/ExperimentTableModel.h
+    src/widgets/ExperimentTableModel.cpp
     src/widgets/ExperimentWidgets.h
     src/widgets/ExperimentWidgets.cpp
     src/widgets/RunInformationWidget.h
@@ -38,6 +46,8 @@ set(WFSCRIPT_WIDGET_SOURCES
     src/widgets/PanelGauge.cpp
     src/widgets/PanelLabelWidget.h
     src/widgets/PanelLabelWidget.cpp
+    src/widgets/PanelSliderWidget.h
+    src/widgets/PanelSliderWidget.cpp
     src/widgets/DigitalDisplayWidget.h
     src/widgets/DigitalDisplayWidget.cpp
     src/widgets/DigitalDisplayWidgetFactory.h
@@ -58,7 +68,17 @@ set(WFSCRIPT_WIDGET_SOURCES
     src/widgets/EventLogWidget.cpp
     src/widgets/EventLogWidgetFactory.h
     src/widgets/EventLogWidgetFactory.cpp
+    src/widgets/UartTerminalWidget.h
+    src/widgets/UartTerminalWidget.cpp
+    src/widgets/UartTerminalWidgetFactory.h
+    src/widgets/UartTerminalWidgetFactory.cpp
+    src/widgets/CommunicationsTerminalWidget.h
+    src/widgets/CommunicationsTerminalWidget.cpp
+    src/widgets/CommunicationsTerminalWidgetFactory.h
+    src/widgets/CommunicationsTerminalWidgetFactory.cpp
+    src/widgets/PanelThemedCheckBox.h
     src/widgets/InstrumentVisuals.h
+    src/widgets/BasicWidgetVisuals.h
     src/widgets/PrecisionDialWidget.h
     src/widgets/PrecisionDialWidget.cpp
     src/widgets/PrecisionDialWidgetFactory.h
@@ -83,6 +103,11 @@ set(WFSCRIPT_WIDGET_SOURCES
     src/widgets/StatusBannerWidget.cpp
     src/widgets/ProfessionalInputFactories.h
     src/widgets/ProfessionalInputFactories.cpp
+    src/widgets/TextInputValidation.h
+    src/widgets/LabeledTextInputWidget.h
+    src/widgets/LabeledTextInputWidget.cpp
+    src/widgets/LabeledTextInputWidgetFactory.h
+    src/widgets/LabeledTextInputWidgetFactory.cpp
     src/widgets/WidgetInitialValues.h
     src/widgets/WidgetInitialValues.cpp
     src/widgets/WidgetDocumentCodec.h
@@ -116,7 +141,18 @@ qt_add_executable(WFScript
     src/PanelProject.cpp
     src/PanelRuntime.h
     src/PanelRuntime.cpp
+    src/ScriptTimerManager.h
+    src/ScriptTimerManager.cpp
+    src/ScriptUtilityBridge.h
+    src/ScriptUtilityBridge.cpp
+    src/SqliteBridge.h
+    src/SqliteBridge.cpp
+    src/CommunicationBridge.h
+    src/CommunicationBridge.cpp
+    src/BinaryBridge.h
+    src/BinaryBridge.cpp
     src/PanelUiBridge.h
+    src/PanelDataEvents.h
     src/ScriptValueConversion.h
     src/TestRunnerBridge.h
     src/TestRunnerBridge.cpp
@@ -126,6 +162,7 @@ qt_add_executable(WFScript
     src/TestResultsHistory.cpp
     src/TestResultsBrowserDialog.h
     src/TestResultsBrowserDialog.cpp
+    src/TestResultsTableModels.h src/TestResultsTableModels.cpp
     src/plot/PlotBridge.h
     src/plot/PlotBridge.cpp
     src/ScriptLibraryBridge.h
@@ -148,6 +185,7 @@ qt_add_executable(WFScript
     src/ScriptWorker.cpp
     src/DwfRuntime.h
     src/DwfRuntime.cpp
+    src/DwfProtocols.cpp
     src/WaveFormsBindings.h
     src/WaveFormsBindings.cpp
     src/PowerSuppliesBridge.h
@@ -156,6 +194,8 @@ qt_add_executable(WFScript
     src/StaticIOBridge.cpp
     src/PatternsBridge.h
     src/PatternsBridge.cpp
+    src/ProtocolBridge.h
+    src/ProtocolBridge.cpp
     src/CompletionCatalog.h
     src/CompletionCatalog.cpp
     src/ApiKnowledge.h
@@ -185,7 +225,7 @@ if(WIN32)
 endif()
 
 target_include_directories(WFScript PRIVATE src)
-target_link_libraries(WFScript PRIVATE Qt6::Widgets Qt6::Qml)
+target_link_libraries(WFScript PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
 if(MSVC)
     target_compile_options(WFScript PRIVATE /utf-8 /W4)
 else()
@@ -207,7 +247,18 @@ set_target_properties(WFScript PROPERTIES
 #
 # Keep one explicit dependency list instead of silently diverging test targets.
 set(WFSCRIPT_PANEL_RUNTIME_SMOKE_DEPENDENCIES
+    src/ScriptTimerManager.h
+    src/ScriptTimerManager.cpp
+    src/ScriptUtilityBridge.h
+    src/ScriptUtilityBridge.cpp
+    src/SqliteBridge.h
+    src/SqliteBridge.cpp
+    src/CommunicationBridge.h
+    src/CommunicationBridge.cpp
+    src/BinaryBridge.h
+    src/BinaryBridge.cpp
     src/PanelUiBridge.h             # header-only QObject; AUTOMOC generates staticMetaObject
+    src/PanelDataEvents.h
     src/ScriptValueConversion.h
     src/ScriptWorker.h
     src/ScriptWorker.cpp
@@ -221,6 +272,8 @@ set(WFSCRIPT_PANEL_RUNTIME_SMOKE_DEPENDENCIES
     src/StaticIOBridge.cpp
     src/PatternsBridge.h
     src/PatternsBridge.cpp
+    src/ProtocolBridge.h
+    src/ProtocolBridge.cpp
 )
 
 # Optional lightweight simulation tests. The test executable does not launch
@@ -241,6 +294,7 @@ if(WFSCRIPT_BUILD_TESTS)
         src/ScopeAnalysis.cpp
         src/DwfRuntime.h
         src/DwfRuntime.cpp
+        src/DwfProtocols.cpp
         src/CompletionCatalog.h
         src/CompletionCatalog.cpp
         src/ApiKnowledge.h
@@ -249,6 +303,83 @@ if(WFSCRIPT_BUILD_TESTS)
     target_include_directories(WFScriptApiSmoke PRIVATE src)
     target_link_libraries(WFScriptApiSmoke PRIVATE Qt6::Core Qt6::Qml)
     add_test(NAME WFScriptApiSmoke COMMAND WFScriptApiSmoke)
+endif()
+
+
+# v0.2-dev: ProtocolBridge C++/QJSEngine API contracts in Simulation.
+# Native AD3 and SDK ABI validation are separate physical tests.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptProtocolBridgeSmoke
+        tests/protocol_bridge_smoke.cpp
+        src/ProtocolBridge.h src/ProtocolBridge.cpp
+        src/DwfRuntime.h src/DwfRuntime.cpp src/DwfProtocols.cpp
+        src/CompletionCatalog.h src/CompletionCatalog.cpp
+        src/ApiKnowledge.h src/ApiKnowledge.cpp
+        src/ScopeMath.h src/ScopeMath.cpp
+        src/ScopeAnalysis.h src/ScopeAnalysis.cpp)
+    target_include_directories(WFScriptProtocolBridgeSmoke PRIVATE src)
+    target_link_libraries(WFScriptProtocolBridgeSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptProtocolBridgeSmoke COMMAND WFScriptProtocolBridgeSmoke)
+endif()
+
+# v0.2-dev.1: actual C++ native UART queue, callback and Terminal tests.
+# A headless Qt Widgets fixture injects synthetic bytes; no DWF hardware.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptUartAsyncSmoke
+        tests/uart_async_smoke.cpp
+        src/ProtocolBridge.h src/ProtocolBridge.cpp
+        src/DwfRuntime.h src/DwfRuntime.cpp src/DwfProtocols.cpp
+        src/CompletionCatalog.h src/CompletionCatalog.cpp
+        src/ApiKnowledge.h src/ApiKnowledge.cpp
+        src/ScopeMath.h src/ScopeMath.cpp
+        src/ScopeAnalysis.h src/ScopeAnalysis.cpp
+        src/widgets/UartTerminalWidget.h src/widgets/UartTerminalWidget.cpp
+        src/widgets/UartTerminalWidgetFactory.h src/widgets/UartTerminalWidgetFactory.cpp)
+    target_include_directories(WFScriptUartAsyncSmoke PRIVATE src)
+    target_link_libraries(WFScriptUartAsyncSmoke PRIVATE Qt6::Widgets Qt6::Qml)
+    add_test(NAME WFScriptUartAsyncSmoke COMMAND WFScriptUartAsyncSmoke)
+    set_tests_properties(WFScriptUartAsyncSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# v0.2-dev.2: real QJSEngine + native QTimer lifecycle and JS API smoke.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTimerSmoke
+        tests/script_timer_smoke.cpp
+        src/ScriptTimerManager.h src/ScriptTimerManager.cpp
+        src/CompletionCatalog.h src/CompletionCatalog.cpp
+        src/ApiKnowledge.h src/ApiKnowledge.cpp
+        src/EditorAssist.h src/EditorAssist.cpp)
+    target_include_directories(WFScriptTimerSmoke PRIVATE src)
+    target_link_libraries(WFScriptTimerSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptTimerSmoke COMMAND WFScriptTimerSmoke)
+    qt_add_executable(WFScriptUtilitySmoke
+        tests/ScriptUtilitySmoke.cpp
+        src/ScriptUtilityBridge.h src/ScriptUtilityBridge.cpp
+        src/BinaryBridge.h src/BinaryBridge.cpp)
+    target_include_directories(WFScriptUtilitySmoke PRIVATE src)
+    target_link_libraries(WFScriptUtilitySmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptUtilitySmoke COMMAND WFScriptUtilitySmoke)
+    set_tests_properties(WFScriptUtilitySmoke PROPERTIES TIMEOUT 10)
+
+    set_tests_properties(WFScriptTimerSmoke PROPERTIES TIMEOUT 10)
+endif()
+
+# v0.2-dev.4: native opt-in StaticIO monitor and QJSEngine callback test.
+# CTest runs entirely in simulation; physical Scope/Wavegen coexistence is a
+# separate operator test on a real AD3, not an automated CI claim.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptStaticIOMonitorSmoke
+        tests/static_io_monitor_smoke.cpp
+        src/StaticIOBridge.h src/StaticIOBridge.cpp
+        src/DwfRuntime.h src/DwfRuntime.cpp src/DwfProtocols.cpp
+        src/ScopeMath.h src/ScopeMath.cpp
+        src/ScopeAnalysis.h src/ScopeAnalysis.cpp
+        src/CompletionCatalog.h src/CompletionCatalog.cpp
+        src/ApiKnowledge.h src/ApiKnowledge.cpp)
+    target_include_directories(WFScriptStaticIOMonitorSmoke PRIVATE src)
+    target_link_libraries(WFScriptStaticIOMonitorSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptStaticIOMonitorSmoke COMMAND WFScriptStaticIOMonitorSmoke)
+    set_tests_properties(WFScriptStaticIOMonitorSmoke PROPERTIES TIMEOUT 10)
 endif()
 
 # Portable standalone numerical reference (no DWF hardware needed).
@@ -388,7 +519,7 @@ if(WFSCRIPT_BUILD_TESTS)
         tests/panel_script_lifecycle_smoke.cpp
         ${_wfscript_main_sources})
     target_include_directories(WFScriptPanelLifecycleSmoke PRIVATE src)
-    target_link_libraries(WFScriptPanelLifecycleSmoke PRIVATE Qt6::Widgets Qt6::Qml)
+    target_link_libraries(WFScriptPanelLifecycleSmoke PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptPanelLifecycleSmoke COMMAND WFScriptPanelLifecycleSmoke)
     set_tests_properties(WFScriptPanelLifecycleSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
@@ -401,7 +532,7 @@ if(WFSCRIPT_BUILD_TESTS)
         tests/stable_workspace_smoke.cpp
         ${_wfs569_sources})
     target_include_directories(WFScriptStableWorkspaceSmoke PRIVATE src)
-    target_link_libraries(WFScriptStableWorkspaceSmoke PRIVATE Qt6::Widgets Qt6::Qml)
+    target_link_libraries(WFScriptStableWorkspaceSmoke PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptStableWorkspaceSmoke COMMAND WFScriptStableWorkspaceSmoke)
     set_tests_properties(WFScriptStableWorkspaceSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
@@ -439,6 +570,21 @@ if(WFSCRIPT_BUILD_TESTS)
     set_tests_properties(WFScriptPanelDesignerActionsSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 
+# RC1.5.5: automated edge/centre alignment and non-interactive guide overlay.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptPanelSmartGuidesSmoke
+        tests/panel_smart_guides_smoke.cpp
+        src/panel/PanelSmartGuides.h
+        src/PanelCanvas.h src/PanelCanvas.cpp
+        ${WFSCRIPT_WIDGET_SOURCES}
+        src/WaveformPlot.h src/WaveformPlot.cpp
+        src/ScopeFrame.h)
+    target_include_directories(WFScriptPanelSmartGuidesSmoke PRIVATE src)
+    target_link_libraries(WFScriptPanelSmartGuidesSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptPanelSmartGuidesSmoke COMMAND WFScriptPanelSmartGuidesSmoke)
+    set_tests_properties(WFScriptPanelSmartGuidesSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
 # v5.6.13 graphical designer: marquee selection and auto-applying properties.
 if(WFSCRIPT_BUILD_TESTS)
     qt_add_executable(WFScriptPanelInteractionSmoke
@@ -464,6 +610,42 @@ if(WFSCRIPT_BUILD_TESTS)
     target_include_directories(WFScriptLibrariesSmoke PRIVATE src)
     target_link_libraries(WFScriptLibrariesSmoke PRIVATE Qt6::Core Qt6::Qml)
     add_test(NAME WFScriptLibrariesSmoke COMMAND WFScriptLibrariesSmoke)
+endif()
+
+# v0.2-dev.8.6: self-contained DSP Studio third-party modules and expanded library limit.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptDSPModulesSmoke
+        tests/dsp_modules_smoke.cpp
+        src/resources/examples.qrc
+        src/PanelProject.h src/PanelProject.cpp
+        src/ScriptLibraryBridge.h src/ScriptLibraryBridge.cpp)
+    target_include_directories(WFScriptDSPModulesSmoke PRIVATE src)
+    target_link_libraries(WFScriptDSPModulesSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptDSPModulesSmoke COMMAND WFScriptDSPModulesSmoke)
+endif()
+
+# v0.2-dev.8.9: guided interactive AC Network Laboratory (no AD3 required).
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptACNetworkLabSmoke
+        tests/ac_network_lab_smoke.cpp
+        src/resources/examples.qrc
+        src/PanelProject.h src/PanelProject.cpp
+        src/ScriptLibraryBridge.h src/ScriptLibraryBridge.cpp)
+    target_include_directories(WFScriptACNetworkLabSmoke PRIVATE src)
+    target_link_libraries(WFScriptACNetworkLabSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptACNetworkLabSmoke COMMAND WFScriptACNetworkLabSmoke)
+endif()
+
+# v0.2-dev.8.9.3.2: QJSEngine runtime regression for embedded RC Step Laboratory.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptRCStepLabSmoke
+        tests/rc_step_lab_smoke.cpp
+        src/resources/examples.qrc
+        src/PanelProject.h src/PanelProject.cpp
+        src/ScriptLibraryBridge.h src/ScriptLibraryBridge.cpp)
+    target_include_directories(WFScriptRCStepLabSmoke PRIVATE src)
+    target_link_libraries(WFScriptRCStepLabSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptRCStepLabSmoke COMMAND WFScriptRCStepLabSmoke)
 endif()
 
 # v5.6.15 structured JavaScript diagnostics. Requires no DWF hardware.
@@ -558,14 +740,14 @@ if(WFSCRIPT_BUILD_TESTS)
         src/ScriptLibraryBridge.h src/ScriptLibraryBridge.cpp
         src/ScriptErrorDetails.h src/ScriptErrorDetails.cpp
         src/ScriptWorker.h
-        src/DwfRuntime.h src/DwfRuntime.cpp
+        src/DwfRuntime.h src/DwfRuntime.cpp src/DwfProtocols.cpp
         src/WaveFormsBindings.h src/WaveFormsBindings.cpp
         src/ScopeMath.h src/ScopeMath.cpp
         src/ScopeAnalysis.h src/ScopeAnalysis.cpp
         src/ScopeFrame.h src/ScopeTrigger.h src/ScriptHelpers.h)
     target_sources(WFScriptPanelRuntimeLifecycleSmoke PRIVATE ${WFSCRIPT_PANEL_RUNTIME_SMOKE_DEPENDENCIES})
     target_include_directories(WFScriptPanelRuntimeLifecycleSmoke PRIVATE src)
-    target_link_libraries(WFScriptPanelRuntimeLifecycleSmoke PRIVATE Qt6::Core Qt6::Qml)
+    target_link_libraries(WFScriptPanelRuntimeLifecycleSmoke PRIVATE Qt6::Core Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptPanelRuntimeLifecycleSmoke COMMAND WFScriptPanelRuntimeLifecycleSmoke)
     set_tests_properties(WFScriptPanelRuntimeLifecycleSmoke PROPERTIES TIMEOUT 18)
 endif()
@@ -575,10 +757,45 @@ endif()
 if(WFSCRIPT_BUILD_TESTS)
     qt_add_executable(WFScriptPanelProjectSmoke
         tests/panel_project_smoke.cpp
+        src/resources/examples.qrc
         src/PanelProject.h src/PanelProject.cpp)
     target_include_directories(WFScriptPanelProjectSmoke PRIVATE src)
     target_link_libraries(WFScriptPanelProjectSmoke PRIVATE Qt6::Core)
     add_test(NAME WFScriptPanelProjectSmoke COMMAND WFScriptPanelProjectSmoke)
+endif()
+
+# v0.2-dev.8: typed project-owned Panel Data, scalar bindings, worker bridge.
+# No SDK connection, physical hardware, or native widgets required.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptPanelDataSmoke
+        tests/panel_data_smoke.cpp
+        src/PanelProject.h src/PanelProject.cpp
+        src/PanelUiBridge.h src/PanelDataSchema.h)
+    target_include_directories(WFScriptPanelDataSmoke PRIVATE src)
+    target_link_libraries(WFScriptPanelDataSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptPanelDataSmoke COMMAND WFScriptPanelDataSmoke)
+endif()
+
+# v0.2-dev.8.4: run the production subscription JavaScript with a real
+# QJSEngine and worker-side PanelUiBridge (does not require DWF hardware).
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptPanelDataEventsSmoke
+        tests/panel_data_events_smoke.cpp
+        src/PanelDataEvents.h src/PanelUiBridge.h src/PanelDataSchema.h)
+    target_include_directories(WFScriptPanelDataEventsSmoke PRIVATE src)
+    target_link_libraries(WFScriptPanelDataEventsSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptPanelDataEventsSmoke COMMAND WFScriptPanelDataEventsSmoke)
+endif()
+
+# v0.2-dev.8.5: production computed dependency graph, typed native
+# read-only variables and bound input/output integration, no hardware.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptPanelDataComputedSmoke
+        tests/panel_data_computed_smoke.cpp
+        src/PanelDataEvents.h src/PanelUiBridge.h src/PanelDataSchema.h)
+    target_include_directories(WFScriptPanelDataComputedSmoke PRIVATE src)
+    target_link_libraries(WFScriptPanelDataComputedSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptPanelDataComputedSmoke COMMAND WFScriptPanelDataComputedSmoke)
 endif()
 
 # v5.6.22: actual panel hook execution, errors and interrupted shutdown.
@@ -593,14 +810,14 @@ if(WFSCRIPT_BUILD_TESTS)
         src/ScriptLibraryBridge.h src/ScriptLibraryBridge.cpp
         src/ScriptErrorDetails.h src/ScriptErrorDetails.cpp
         src/ScriptWorker.h
-        src/DwfRuntime.h src/DwfRuntime.cpp
+        src/DwfRuntime.h src/DwfRuntime.cpp src/DwfProtocols.cpp
         src/WaveFormsBindings.h src/WaveFormsBindings.cpp
         src/ScopeMath.h src/ScopeMath.cpp
         src/ScopeAnalysis.h src/ScopeAnalysis.cpp
         src/ScopeFrame.h src/ScopeTrigger.h src/ScriptHelpers.h)
     target_sources(WFScriptPanelHooksSmoke PRIVATE ${WFSCRIPT_PANEL_RUNTIME_SMOKE_DEPENDENCIES})
     target_include_directories(WFScriptPanelHooksSmoke PRIVATE src)
-    target_link_libraries(WFScriptPanelHooksSmoke PRIVATE Qt6::Core Qt6::Qml)
+    target_link_libraries(WFScriptPanelHooksSmoke PRIVATE Qt6::Core Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptPanelHooksSmoke COMMAND WFScriptPanelHooksSmoke)
     set_tests_properties(WFScriptPanelHooksSmoke PROPERTIES TIMEOUT 30)
 endif()
@@ -613,7 +830,7 @@ if(WFSCRIPT_BUILD_TESTS)
         tests/panel_lifecycle_settings_smoke.cpp
         ${_wfscript_5622_sources})
     target_include_directories(WFScriptPanelSettingsSmoke PRIVATE src)
-    target_link_libraries(WFScriptPanelSettingsSmoke PRIVATE Qt6::Widgets Qt6::Qml)
+    target_link_libraries(WFScriptPanelSettingsSmoke PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptPanelSettingsSmoke COMMAND WFScriptPanelSettingsSmoke)
     set_tests_properties(WFScriptPanelSettingsSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
@@ -628,15 +845,33 @@ if(WFSCRIPT_BUILD_TESTS)
         tests/workspace_toolbar_smoke.cpp
         ${_wfs5623_sources})
     target_include_directories(WFScriptWorkspaceToolbarSmoke PRIVATE src)
-    target_link_libraries(WFScriptWorkspaceToolbarSmoke PRIVATE Qt6::Widgets Qt6::Qml)
+    target_link_libraries(WFScriptWorkspaceToolbarSmoke PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptWorkspaceToolbarSmoke COMMAND WFScriptWorkspaceToolbarSmoke)
     set_tests_properties(WFScriptWorkspaceToolbarSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# v0.2-dev.8.9.6: run a simulation-only Panel through the real MainWindow,
+# enter/exit the operator presentation, retain console logs and preserve all
+# Page coordinates. Can run on Qt offscreen (no AD3 required).
+if(WFSCRIPT_BUILD_TESTS)
+    get_target_property(_wfs896_sources WFScript SOURCES)
+    list(REMOVE_ITEM _wfs896_sources src/main.cpp)
+    qt_add_executable(WFScriptOperatorViewSmoke
+        tests/panel_operator_view_smoke.cpp
+        ${_wfs896_sources})
+    target_include_directories(WFScriptOperatorViewSmoke PRIVATE src)
+    target_link_libraries(WFScriptOperatorViewSmoke PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
+    add_test(NAME WFScriptOperatorViewSmoke COMMAND WFScriptOperatorViewSmoke)
+    set_tests_properties(WFScriptOperatorViewSmoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        TIMEOUT 30)
 endif()
 
 # v5.6.24: event inspector persistence and real source-aware event dispatch.
 if(WFSCRIPT_BUILD_TESTS)
     qt_add_executable(WFScriptPanelEventInspectorSmoke
         src/resources/icons.qrc
+        src/resources/examples.qrc
         tests/panel_event_binding_smoke.cpp
         src/PanelDesigner.h src/PanelDesigner.cpp
         src/panel/PageAppearanceEditor.h src/panel/PageAppearanceEditor.cpp
@@ -659,14 +894,14 @@ if(WFSCRIPT_BUILD_TESTS)
         src/ScriptLibraryBridge.h src/ScriptLibraryBridge.cpp
         src/ScriptErrorDetails.h src/ScriptErrorDetails.cpp
         src/ScriptWorker.h
-        src/DwfRuntime.h src/DwfRuntime.cpp
+        src/DwfRuntime.h src/DwfRuntime.cpp src/DwfProtocols.cpp
         src/WaveFormsBindings.h src/WaveFormsBindings.cpp
         src/ScopeMath.h src/ScopeMath.cpp
         src/ScopeAnalysis.h src/ScopeAnalysis.cpp
         src/ScopeFrame.h src/ScopeTrigger.h src/ScriptHelpers.h)
     target_sources(WFScriptPanelEventRuntimeSmoke PRIVATE ${WFSCRIPT_PANEL_RUNTIME_SMOKE_DEPENDENCIES})
     target_include_directories(WFScriptPanelEventRuntimeSmoke PRIVATE src)
-    target_link_libraries(WFScriptPanelEventRuntimeSmoke PRIVATE Qt6::Core Qt6::Qml)
+    target_link_libraries(WFScriptPanelEventRuntimeSmoke PRIVATE Qt6::Core Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptPanelEventRuntimeSmoke COMMAND WFScriptPanelEventRuntimeSmoke)
     set_tests_properties(WFScriptPanelEventRuntimeSmoke PROPERTIES TIMEOUT 16)
 endif()
@@ -701,6 +936,21 @@ if(WFSCRIPT_BUILD_TESTS)
     target_link_libraries(WFScriptWidgetRegistrySmoke PRIVATE Qt6::Widgets)
     add_test(NAME WFScriptWidgetRegistrySmoke COMMAND WFScriptWidgetRegistrySmoke)
     set_tests_properties(WFScriptWidgetRegistrySmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# v0.2-dev.8.3: offscreen regression for all widget factories, preserved
+# native Button/Label typography, and Numeric/Toggle/Gauge paint/resize.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptBasicWidgetVisualSmoke
+        tests/basic_widget_visual_smoke.cpp
+        src/PanelCanvas.h src/PanelCanvas.cpp
+        ${WFSCRIPT_WIDGET_SOURCES}
+        src/WaveformPlot.h src/WaveformPlot.cpp
+        src/ScopeFrame.h)
+    target_include_directories(WFScriptBasicWidgetVisualSmoke PRIVATE src)
+    target_link_libraries(WFScriptBasicWidgetVisualSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptBasicWidgetVisualSmoke COMMAND WFScriptBasicWidgetVisualSmoke)
+    set_tests_properties(WFScriptBasicWidgetVisualSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 
 # v5.6.30: metadata-driven property form and typed extended .wfpanel fields.
@@ -771,6 +1021,22 @@ if(WFSCRIPT_BUILD_TESTS)
     target_link_libraries(WFScriptInputInteractionSmoke PRIVATE Qt6::Widgets)
     add_test(NAME WFScriptInputInteractionSmoke COMMAND WFScriptInputInteractionSmoke)
     set_tests_properties(WFScriptInputInteractionSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.3.1: native labeled text/IPv4 inputs, string binding, visual events and
+# strict IP validation; offscreen test needs no AD3 or network instrument.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTextInputSmoke
+        tests/text_input_widget_smoke.cpp
+        src/PanelUiBridge.h
+        src/PanelCanvas.h src/PanelCanvas.cpp
+        ${WFSCRIPT_WIDGET_SOURCES}
+        src/WaveformPlot.h src/WaveformPlot.cpp
+        src/ScopeFrame.h)
+    target_include_directories(WFScriptTextInputSmoke PRIVATE src)
+    target_link_libraries(WFScriptTextInputSmoke PRIVATE Qt6::Widgets Qt6::Qml)
+    add_test(NAME WFScriptTextInputSmoke COMMAND WFScriptTextInputSmoke)
+    set_tests_properties(WFScriptTextInputSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 
 # v5.6.34: theme/project JSON, inspector and native widget lifetime smoke.
@@ -900,7 +1166,7 @@ if(WFSCRIPT_BUILD_TESTS)
     qt_add_executable(WFScriptSuppliesSmoke
         tests/supplies_api_smoke.cpp
         src/PowerSuppliesBridge.h src/PowerSuppliesBridge.cpp
-        src/DwfRuntime.h src/DwfRuntime.cpp
+        src/DwfRuntime.h src/DwfRuntime.cpp src/DwfProtocols.cpp
         src/CompletionCatalog.h src/CompletionCatalog.cpp
         src/ApiKnowledge.h src/ApiKnowledge.cpp)
     target_include_directories(WFScriptSuppliesSmoke PRIVATE src)
@@ -950,6 +1216,17 @@ if(WFSCRIPT_BUILD_TESTS)
     target_link_libraries(WFScriptEventLogSmoke PRIVATE Qt6::Widgets Qt6::Qml)
     add_test(NAME WFScriptEventLogSmoke COMMAND WFScriptEventLogSmoke)
     set_tests_properties(WFScriptEventLogSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.4: crossing Event Log retention capacity must stay incremental.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptEventLogCapacityRC15144Smoke
+        tests/event_log_capacity_rc15144_smoke.cpp
+        src/widgets/EventLogWidget.h src/widgets/EventLogWidget.cpp)
+    target_include_directories(WFScriptEventLogCapacityRC15144Smoke PRIVATE src)
+    target_link_libraries(WFScriptEventLogCapacityRC15144Smoke PRIVATE Qt6::Widgets Qt6::Qml)
+    add_test(NAME WFScriptEventLogCapacityRC15144Smoke COMMAND WFScriptEventLogCapacityRC15144Smoke)
+    set_tests_properties(WFScriptEventLogCapacityRC15144Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 
 # v5.6.56 — actual QJSEngine-to-C++-to-JS test runner smoke, no DWF DLL.
@@ -1030,17 +1307,46 @@ if(WFSCRIPT_BUILD_TESTS)
     add_test(NAME WFScriptDefinitionRunnerSmoke COMMAND WFScriptDefinitionRunnerSmoke)
 endif()
 
+# Shared rich JavaScript editor used by the main workspace AND Test Sequence.
+# The same ScriptEditor (completion, F1 help, diagnostics, line numbers) must
+# be linked into every standalone native TestSequenceEditor GUI CTest.
+set(WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES
+    src/ScriptEditor.h src/ScriptEditor.cpp
+    src/EditorAssist.h src/EditorAssist.cpp
+    src/JavaScriptHighlighter.h src/JavaScriptHighlighter.cpp
+    src/ApiDiagnostics.h src/ApiDiagnostics.cpp
+    src/CompletionCatalog.h src/CompletionCatalog.cpp
+    src/CompletionTypeResolver.h src/CompletionTypeResolver.cpp
+    src/ModuleExportCatalog.h src/ModuleExportCatalog.cpp
+    src/ApiKnowledge.h src/ApiKnowledge.cpp)
+
 # v5.6.62: offline visual editor and strict embedded JSON-literal roundtrip.
 # Does not require an AD3, QJSEngine or real hardware; offscreen Qt Widgets.
 if(WFSCRIPT_BUILD_TESTS)
     qt_add_executable(WFScriptVisualTestSequenceSmoke
         tests/test_sequence_editor_562_smoke.cpp
         src/TestSequenceEditor.h src/TestSequenceEditor.cpp
-        src/RunInformationEditor.h src/RunInformationEditor.cpp)
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
     target_include_directories(WFScriptVisualTestSequenceSmoke PRIVATE src)
     target_link_libraries(WFScriptVisualTestSequenceSmoke PRIVATE Qt6::Widgets)
     add_test(NAME WFScriptVisualTestSequenceSmoke COMMAND WFScriptVisualTestSequenceSmoke)
     set_tests_properties(WFScriptVisualTestSequenceSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.7: readable Test Sequence Editor (offscreen Qt Widgets). Verifies
+# procedure vs completion-poll presentation, editing, grouping, JSON preview,
+# and the unchanged definition schema used by the native Test Executive.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorUXSmoke
+        tests/test_sequence_editor_rc157_smoke.cpp
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorUXSmoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorUXSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorUXSmoke COMMAND WFScriptTestSequenceEditorUXSmoke)
+    set_tests_properties(WFScriptTestSequenceEditorUXSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 endif()
 
 # v5.6.63: native project configuration guard and C++ numeric limits.
@@ -1109,7 +1415,8 @@ if(WFSCRIPT_BUILD_TESTS)
     qt_add_executable(WFScriptResultsBrowserSmoke
         tests/test_results_browser_567_smoke.cpp
         src/TestResultsRepository.h src/TestResultsHistory.cpp
-        src/TestResultsBrowserDialog.h src/TestResultsBrowserDialog.cpp)
+        src/TestResultsBrowserDialog.h src/TestResultsBrowserDialog.cpp
+        src/TestResultsTableModels.h src/TestResultsTableModels.cpp)
     target_include_directories(WFScriptResultsBrowserSmoke PRIVATE src)
     target_link_libraries(WFScriptResultsBrowserSmoke PRIVATE Qt6::Widgets)
     add_test(NAME WFScriptResultsBrowserSmoke COMMAND WFScriptResultsBrowserSmoke)
@@ -1158,3 +1465,403 @@ endif()
 # with windeployqt (see docs/BUILD_WINDOWS.md).
 include(GNUInstallDirs)
 install(TARGETS WFScript RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} BUNDLE DESTINATION .)
+
+# SQLite worker + real QJSEngine callback / round-trip regression (no AD3).
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptSQLiteSmoke
+        tests/SqliteSmoke.cpp
+        src/SqliteBridge.h src/SqliteBridge.cpp
+        src/ScriptValueConversion.h)
+    target_include_directories(WFScriptSQLiteSmoke PRIVATE src)
+    target_link_libraries(WFScriptSQLiteSmoke PRIVATE Qt6::Core Qt6::Qml Qt6::Sql)
+    add_test(NAME WFScriptSQLiteSmoke COMMAND WFScriptSQLiteSmoke)
+    set_tests_properties(WFScriptSQLiteSmoke PROPERTIES TIMEOUT 20)
+endif()
+
+# v0.2-dev.6: localhost serial/TCP/UDP API, binary bytes and JS callbacks.
+# No external hardware or DWF SDK required; real Windows COM tests are manual.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptCommunicationsSmoke
+        tests/communications_smoke.cpp
+        src/CommunicationBridge.h src/CommunicationBridge.cpp
+        src/BinaryBridge.h src/BinaryBridge.cpp
+        src/ScriptValueConversion.h)
+    target_include_directories(WFScriptCommunicationsSmoke PRIVATE src)
+    target_link_libraries(WFScriptCommunicationsSmoke PRIVATE
+        Qt6::Core Qt6::Qml Qt6::Network Qt6::SerialPort)
+    add_test(NAME WFScriptCommunicationsSmoke COMMAND WFScriptCommunicationsSmoke)
+    set_tests_properties(WFScriptCommunicationsSmoke PROPERTIES TIMEOUT 12)
+endif()
+
+# v0.2-dev.7: transport-independent Communications Terminal widget, offscreen.
+# Uses the real Qt factory, sendRequested EventSink and ui.set() value contract.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptCommunicationsTerminalSmoke
+        tests/communications_terminal_smoke.cpp
+        src/widgets/CommunicationsTerminalWidget.h src/widgets/CommunicationsTerminalWidget.cpp
+        src/widgets/CommunicationsTerminalWidgetFactory.h src/widgets/CommunicationsTerminalWidgetFactory.cpp)
+    target_include_directories(WFScriptCommunicationsTerminalSmoke PRIVATE src)
+    target_link_libraries(WFScriptCommunicationsTerminalSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptCommunicationsTerminalSmoke COMMAND WFScriptCommunicationsTerminalSmoke)
+    set_tests_properties(WFScriptCommunicationsTerminalSmoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# v0.2-dev.8.9.8: tabbed Diagnostics Console + live Panel Data Watch;
+# filtered per-run logs, wrapping, value highlighting and user layout settings.
+# Test still uses a real PanelDataLab simulation with no physical hardware.
+if(WFSCRIPT_BUILD_TESTS)
+    get_target_property(_wfs897_sources WFScript SOURCES)
+    list(REMOVE_ITEM _wfs897_sources src/main.cpp)
+    qt_add_executable(WFScriptOperatorDockWatchSmoke
+        tests/panel_operator_dock_watch_smoke.cpp
+        ${_wfs897_sources})
+    target_include_directories(WFScriptOperatorDockWatchSmoke PRIVATE src)
+    target_link_libraries(WFScriptOperatorDockWatchSmoke PRIVATE
+        Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
+    add_test(NAME WFScriptOperatorDockWatchSmoke COMMAND WFScriptOperatorDockWatchSmoke)
+    set_tests_properties(WFScriptOperatorDockWatchSmoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        TIMEOUT 35)
+endif()
+
+# v0.2 candidate Binary Lab: native buffer, streaming IEEE frame, and real TCP echo.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptBinaryBridgeSmoke
+        tests/binary_bridge_smoke.cpp
+        src/BinaryBridge.h src/BinaryBridge.cpp
+        src/CommunicationBridge.h src/CommunicationBridge.cpp
+        src/ScriptValueConversion.h)
+    target_include_directories(WFScriptBinaryBridgeSmoke PRIVATE src)
+    target_link_libraries(WFScriptBinaryBridgeSmoke PRIVATE
+        Qt6::Core Qt6::Qml Qt6::Network Qt6::SerialPort)
+    add_test(NAME WFScriptBinaryBridgeSmoke COMMAND WFScriptBinaryBridgeSmoke)
+    set_tests_properties(WFScriptBinaryBridgeSmoke PROPERTIES TIMEOUT 15)
+endif()
+
+# RC1.5 - native chart dense-envelope and cache performance correction. Pure
+# index/envelope unit tests require no GUI; QWidget offscreen checks geometry budgets.
+if(WFSCRIPT_BUILD_TESTS)
+    add_executable(WFScriptNativeEnvelopeStress tests/native_envelope_stress.cpp)
+    add_test(NAME WFScriptNativeEnvelopeStress COMMAND WFScriptNativeEnvelopeStress)
+    add_executable(WFScriptNativeSampleIndexSmoke tests/native_sample_index_smoke.cpp)
+    add_test(NAME WFScriptNativeSampleIndexSmoke COMMAND WFScriptNativeSampleIndexSmoke)
+    qt_add_executable(WFScriptNativeChartSmoke
+        tests/native_chart_smoke.cpp
+        src/plot/PlotCommand.h
+        src/plot/NativeSampleIndex.h
+        src/plot/PanelChartWidget.h src/plot/PanelChartWidget.cpp)
+    target_include_directories(WFScriptNativeChartSmoke PRIVATE src)
+    target_link_libraries(WFScriptNativeChartSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptNativeChartSmoke COMMAND WFScriptNativeChartSmoke)
+    set_tests_properties(WFScriptNativeChartSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.2 legacy XY performance: a Qt-independent irregular-X index test and
+# an optional offscreen QWidget smoke. Performance thresholds are measured in
+# native paint primitives, not wall-clock benchmarks on different computers.
+if(WFSCRIPT_BUILD_TESTS)
+    add_executable(WFScriptLegacyXYIndexStress tests/legacy_xy_index_stress.cpp)
+    add_test(NAME WFScriptLegacyXYIndexStress COMMAND WFScriptLegacyXYIndexStress)
+    qt_add_executable(WFScriptLegacyChartPerformanceSmoke
+        tests/legacy_chart_performance_smoke.cpp
+        src/plot/PlotCommand.h src/plot/NativeSampleIndex.h
+        src/plot/LegacyXYIndex.h
+        src/plot/PanelChartWidget.h src/plot/PanelChartWidget.cpp)
+    target_include_directories(WFScriptLegacyChartPerformanceSmoke PRIVATE src)
+    target_link_libraries(WFScriptLegacyChartPerformanceSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptLegacyChartPerformanceSmoke COMMAND WFScriptLegacyChartPerformanceSmoke)
+    set_tests_properties(WFScriptLegacyChartPerformanceSmoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 35)
+endif()
+
+# RC1.5.3 shared pixel-grid + edge-indexed Digital Timing/Protocol plotting.
+# The two index tests require only a C++17 compiler; the QWidget test is
+# conditional on the optional Qt CTest build. No hardware required.
+if(WFSCRIPT_BUILD_TESTS)
+    add_executable(WFScriptPixelColumnAlignmentStress
+        tests/chart_pixel_alignment_stress.cpp)
+    add_test(NAME WFScriptPixelColumnAlignmentStress COMMAND WFScriptPixelColumnAlignmentStress)
+    add_executable(WFScriptDigitalEdgeIndexStress tests/digital_edge_index_stress.cpp)
+    add_test(NAME WFScriptDigitalEdgeIndexStress COMMAND WFScriptDigitalEdgeIndexStress)
+    qt_add_executable(WFScriptDigitalChartPerformanceSmoke
+        tests/digital_chart_performance_smoke.cpp
+        src/plot/PlotCommand.h src/plot/PlotPixelColumns.h
+        src/plot/NativeSampleIndex.h src/plot/LegacyXYIndex.h
+        src/plot/DigitalEdgeIndex.h
+        src/plot/PanelChartWidget.h src/plot/PanelChartWidget.cpp)
+    target_include_directories(WFScriptDigitalChartPerformanceSmoke PRIVATE src)
+    target_link_libraries(WFScriptDigitalChartPerformanceSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptDigitalChartPerformanceSmoke COMMAND WFScriptDigitalChartPerformanceSmoke)
+    set_tests_properties(WFScriptDigitalChartPerformanceSmoke PROPERTIES
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen" TIMEOUT 40)
+endif()
+
+# RC1.5.4.1: cross-chart linear X tick precision regression (QtCore only).
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptChartAxisLabelsSmoke
+        tests/chart_axis_labels_smoke.cpp src/plot/PlotAxisLabels.h)
+    target_include_directories(WFScriptChartAxisLabelsSmoke PRIVATE src)
+    target_link_libraries(WFScriptChartAxisLabelsSmoke PRIVATE Qt6::Core)
+    add_test(NAME WFScriptChartAxisLabelsSmoke COMMAND WFScriptChartAxisLabelsSmoke)
+endif()
+
+# RC1.5.6 — retained test-results widget hierarchy; independent of AD3 or Rigol.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptResultWidgetsIncrementalSmoke
+        tests/test_result_widgets_incremental_smoke.cpp
+        src/widgets/TestSequenceWidget.h src/widgets/TestSequenceWidget.cpp
+        src/widgets/MeasurementTableWidget.h src/widgets/MeasurementTableWidget.cpp
+        src/widgets/EventLogWidget.h src/widgets/EventLogWidget.cpp)
+    target_include_directories(WFScriptResultWidgetsIncrementalSmoke PRIVATE src)
+    target_link_libraries(WFScriptResultWidgetsIncrementalSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptResultWidgetsIncrementalSmoke COMMAND WFScriptResultWidgetsIncrementalSmoke)
+    set_tests_properties(WFScriptResultWidgetsIncrementalSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.8: Modeless, integrated test authoring editor (offscreen native Qt).
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorRC158Smoke
+        tests/test_sequence_editor_rc158_smoke.cpp
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorRC158Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorRC158Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorRC158Smoke COMMAND WFScriptTestSequenceEditorRC158Smoke)
+    set_tests_properties(WFScriptTestSequenceEditorRC158Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.9: real QJSEngine callback completion and parameter passing tests.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestRunnerCallbackSmoke
+        tests/test_runner_callback_smoke.cpp
+        src/TestRunnerBridge.h src/TestRunnerBridge.cpp
+        src/TestResultsRepository.cpp)
+    target_include_directories(WFScriptTestRunnerCallbackSmoke PRIVATE src)
+    target_link_libraries(WFScriptTestRunnerCallbackSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptTestRunnerCallbackSmoke COMMAND WFScriptTestRunnerCallbackSmoke)
+endif()
+
+# RC1.5.9: embedded ScriptEditor + JSON parameters + callback mode.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorRC159Smoke
+        tests/test_sequence_editor_rc159_smoke.cpp
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorRC159Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorRC159Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorRC159Smoke COMMAND WFScriptTestSequenceEditorRC159Smoke)
+    set_tests_properties(WFScriptTestSequenceEditorRC159Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.10: structured multi-measurement callbacks, arrays and atomic validation.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestRunnerStructuredResultsSmoke
+        tests/test_runner_structured_results_smoke.cpp
+        src/TestRunnerBridge.h src/TestRunnerBridge.cpp
+        src/StructuredTestResults.h src/TestResultsRepository.cpp)
+    target_include_directories(WFScriptTestRunnerStructuredResultsSmoke PRIVATE src)
+    target_link_libraries(WFScriptTestRunnerStructuredResultsSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptTestRunnerStructuredResultsSmoke COMMAND WFScriptTestRunnerStructuredResultsSmoke)
+endif()
+
+# RC1.5.10: native named-result table and always-reachable editor actions.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorRC1510Smoke
+        tests/test_sequence_editor_rc1510_smoke.cpp
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/StructuredTestResults.h
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorRC1510Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorRC1510Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorRC1510Smoke COMMAND WFScriptTestSequenceEditorRC1510Smoke)
+    set_tests_properties(WFScriptTestSequenceEditorRC1510Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.2: expanded-step/measurement capacity and bounded live-window regression.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestRunnerCapacityRC15142Smoke
+        tests/test_runner_capacity_rc1514_2_smoke.cpp
+        src/TestSequenceCapacity.h src/TestSequenceLoops.h
+        src/TestRunnerBridge.h src/TestRunnerBridge.cpp
+        src/StructuredTestResults.h src/TestResultsRepository.cpp)
+    target_include_directories(WFScriptTestRunnerCapacityRC15142Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestRunnerCapacityRC15142Smoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptTestRunnerCapacityRC15142Smoke COMMAND WFScriptTestRunnerCapacityRC15142Smoke)
+endif()
+
+# RC1.5.11: bounded declarative sweeps/loops, reference values and native execution.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceLoopsSmoke
+        tests/test_sequence_loops_smoke.cpp
+        src/TestSequenceLoops.h
+        src/TestRunnerBridge.h src/TestRunnerBridge.cpp
+        src/StructuredTestResults.h src/TestResultsRepository.cpp)
+    target_include_directories(WFScriptTestSequenceLoopsSmoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceLoopsSmoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptTestSequenceLoopsSmoke COMMAND WFScriptTestSequenceLoopsSmoke)
+endif()
+
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorRC1511Smoke
+        tests/test_sequence_editor_rc1511_smoke.cpp
+        src/TestSequenceLoops.h
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/StructuredTestResults.h
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorRC1511Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorRC1511Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorRC1511Smoke COMMAND WFScriptTestSequenceEditorRC1511Smoke)
+    set_tests_properties(WFScriptTestSequenceEditorRC1511Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.12: modeless hierarchical test editor, inline sweep editing, and
+# lossless preservation of child relative/named-result acceptance rules.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorRC1512Smoke
+        tests/test_sequence_editor_rc1512_smoke.cpp
+        src/TestSequenceLoops.h
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/StructuredTestResults.h
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorRC1512Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorRC1512Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorRC1512Smoke COMMAND WFScriptTestSequenceEditorRC1512Smoke)
+    set_tests_properties(WFScriptTestSequenceEditorRC1512Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.13: read-only human-readable execution preview uses the exact native
+# expansion logic, supports filtered sweep iterations and preserves authored data.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorRC1513Smoke
+        tests/test_sequence_editor_rc1513_smoke.cpp
+        src/TestSequenceLoops.h
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/StructuredTestResults.h
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorRC1513Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorRC1513Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorRC1513Smoke COMMAND WFScriptTestSequenceEditorRC1513Smoke)
+    set_tests_properties(WFScriptTestSequenceEditorRC1513Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14: bounded native conditional branching and declared variables.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestConditionalRC1514Smoke
+        tests/test_conditional_rc1514_smoke.cpp
+        src/TestSequenceConditions.h src/TestSequenceLoops.h
+        src/TestRunnerBridge.h src/TestRunnerBridge.cpp
+        src/StructuredTestResults.h src/TestResultsRepository.cpp)
+    target_include_directories(WFScriptTestConditionalRC1514Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestConditionalRC1514Smoke PRIVATE Qt6::Core Qt6::Qml)
+    add_test(NAME WFScriptTestConditionalRC1514Smoke COMMAND WFScriptTestConditionalRC1514Smoke)
+endif()
+
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorRC1514Smoke
+        tests/test_sequence_editor_rc1514_smoke.cpp
+        src/TestSequenceConditions.h src/TestSequenceLoops.h
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/StructuredTestResults.h
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorRC1514Smoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorRC1514Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorRC1514Smoke COMMAND WFScriptTestSequenceEditorRC1514Smoke)
+    set_tests_properties(WFScriptTestSequenceEditorRC1514Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.1: Sweep/Repeat as direct children of IF/ELSE, including under an
+# outer sweep. Verify authored tree order and native expansion preservation.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptTestSequenceEditorNestedConditionalSmoke
+        tests/test_sequence_editor_nested_conditionals_rc1514_1_smoke.cpp
+        src/TestSequenceConditions.h src/TestSequenceLoops.h
+        src/TestSequenceEditor.h src/TestSequenceEditor.cpp
+        src/StructuredTestResults.h
+        src/RunInformationEditor.h src/RunInformationEditor.cpp
+        ${WFSCRIPT_TEST_EDITOR_SCRIPT_SOURCES})
+    target_include_directories(WFScriptTestSequenceEditorNestedConditionalSmoke PRIVATE src)
+    target_link_libraries(WFScriptTestSequenceEditorNestedConditionalSmoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptTestSequenceEditorNestedConditionalSmoke COMMAND WFScriptTestSequenceEditorNestedConditionalSmoke)
+    set_tests_properties(WFScriptTestSequenceEditorNestedConditionalSmoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.3 — genuine virtual GUI models, 10k rows, full-range scroll,
+# and follow-tail behavior. No AD3 / Rigol hardware required.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptLargeSweepVirtualRC15143Smoke
+        tests/large_sweep_virtual_rc15143_smoke.cpp
+        src/TestSequenceCapacity.h
+        src/widgets/TestSequenceWidget.h src/widgets/TestSequenceWidget.cpp
+        src/widgets/MeasurementTableWidget.h src/widgets/MeasurementTableWidget.cpp
+        src/widgets/EventLogWidget.h src/widgets/EventLogWidget.cpp)
+    target_include_directories(WFScriptLargeSweepVirtualRC15143Smoke PRIVATE src)
+    target_link_libraries(WFScriptLargeSweepVirtualRC15143Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptLargeSweepVirtualRC15143Smoke COMMAND WFScriptLargeSweepVirtualRC15143Smoke)
+    set_tests_properties(WFScriptLargeSweepVirtualRC15143Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.5: native Experiment DataTable virtual model + worker contract.
+# Exercises 100k retained rows, rolling inserts, edits and no full-reset on overflow.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptExperimentTableRC15145Smoke
+        tests/experiment_table_rc15145_smoke.cpp
+        src/PanelUiBridge.h src/ScriptValueConversion.h
+        src/widgets/ExperimentTableData.h
+        src/widgets/ExperimentTableModel.h src/widgets/ExperimentTableModel.cpp)
+    target_include_directories(WFScriptExperimentTableRC15145Smoke PRIVATE src)
+    target_link_libraries(WFScriptExperimentTableRC15145Smoke PRIVATE Qt6::Widgets Qt6::Qml)
+    add_test(NAME WFScriptExperimentTableRC15145Smoke COMMAND WFScriptExperimentTableRC15145Smoke)
+    set_tests_properties(WFScriptExperimentTableRC15145Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.7 — 100k live results + 100k archived results and lazy JSON.
+# GUI model/view stress test does not start instruments or the TestRunner.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptLargeResultsVirtualRC15147Smoke
+        tests/large_results_virtual_rc15147_smoke.cpp
+        src/TestSequenceCapacity.h
+        src/widgets/MeasurementTableWidget.h src/widgets/MeasurementTableWidget.cpp
+        src/TestResultsRepository.h src/TestResultsHistory.cpp
+        src/TestResultsTableModels.h src/TestResultsTableModels.cpp
+        src/TestResultsBrowserDialog.h src/TestResultsBrowserDialog.cpp)
+    target_include_directories(WFScriptLargeResultsVirtualRC15147Smoke PRIVATE src)
+    target_link_libraries(WFScriptLargeResultsVirtualRC15147Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptLargeResultsVirtualRC15147Smoke COMMAND WFScriptLargeResultsVirtualRC15147Smoke)
+    set_tests_properties(WFScriptLargeResultsVirtualRC15147Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.8 — Measurement Table title/toolbar plus unchanged 100k virtual append.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptMeasurementHeaderRC15148Smoke
+        tests/measurement_header_rc15148_smoke.cpp
+        src/widgets/MeasurementTableWidget.h src/widgets/MeasurementTableWidget.cpp)
+    target_include_directories(WFScriptMeasurementHeaderRC15148Smoke PRIVATE src)
+    target_link_libraries(WFScriptMeasurementHeaderRC15148Smoke PRIVATE Qt6::Widgets)
+    add_test(NAME WFScriptMeasurementHeaderRC15148Smoke COMMAND WFScriptMeasurementHeaderRC15148Smoke)
+    set_tests_properties(WFScriptMeasurementHeaderRC15148Smoke PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()
+
+# RC1.5.14.9: appearance propagation on existing and newly created widgets.
+# Theme changes must not rebuild high-volume table data or lose checkbox state.
+if(WFSCRIPT_BUILD_TESTS)
+    qt_add_executable(WFScriptPanelThemeLifecycleRC15149Smoke
+        tests/panel_theme_lifecycle_rc15149_smoke.cpp
+        src/PanelCanvas.h src/PanelCanvas.cpp
+        ${WFSCRIPT_WIDGET_SOURCES}
+        src/WaveformPlot.h src/WaveformPlot.cpp
+        src/ScopeFrame.h)
+    target_include_directories(WFScriptPanelThemeLifecycleRC15149Smoke PRIVATE src)
+    target_link_libraries(WFScriptPanelThemeLifecycleRC15149Smoke PRIVATE Qt6::Widgets Qt6::Qml)
+    add_test(NAME WFScriptPanelThemeLifecycleRC15149Smoke
+             COMMAND WFScriptPanelThemeLifecycleRC15149Smoke)
+    set_tests_properties(WFScriptPanelThemeLifecycleRC15149Smoke
+                         PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()

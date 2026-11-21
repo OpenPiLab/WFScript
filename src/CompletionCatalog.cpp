@@ -14,7 +14,7 @@ void functions(QVector<Item>& a, const QStringList& names, const QString& descri
     for (const QString& name:names) add(a,name,K::Function,description.isEmpty() ? QStringLiteral("Callable method") : description);
 }
 QString canonical(QString path) {
-    const QStringList aliases={"Scope","Wavegen","Logic","Patterns"};
+    const QStringList aliases={"Scope","Wavegen","Logic","Patterns","Protocol"};
     if(path=="Supplies1" || path.startsWith("Supplies1."))path.replace(0,9,"Supplies");
     for (const auto& alias:aliases) {
         if (path == alias || path.startsWith(alias + '.')) {
@@ -41,17 +41,111 @@ QVector<Item> entries(const QString& objectPath) {
     const QString p=canonical(objectPath);
     QVector<Item> a;
     if (p.isEmpty()) {
-        objects(a,{"Scope1","Scope","Wavegen1","Wavegen","Logic1","Logic","Supplies","Supplies1","StaticIO","Patterns1","Patterns","Device"},"WaveForms-compatible hardware controller");
+        objects(a,{"Scope1","Scope","Wavegen1","Wavegen","Logic1","Logic","Supplies","Supplies1","StaticIO","Patterns1","Patterns","Protocol1","Protocol","Device"},"WaveForms-compatible hardware controller");
         objects(a,{"ui"},"Panel designer interaction (panel scripts only)");
+        objects(a,{"Data"},"Project-owned typed Panel Data shared across Pages and bound widgets");
+        objects(a,{"Binary"},"Native binary buffers, streams and bulk numeric samples");
+        objects(a,{"FileIO","Tool","Database"},"Panel file access, asynchronous dialogs and optional SQLite database");
+        objects(a,{"Serial","TCP","UDP"},"Native opt-in PC serial and TCP/UDP communications; not AD3 digital pins");
         objects(a,{"TestRunner"},"Native Qt/C++ test executive; JavaScript-defined steps");
         objects(a,{"plots"},"Independent native Panel chart API (panel scripts only)");
         objects(a,{"console","Math","JSON","modules"},"JavaScript or library object");
         functions(a,{"include"},"Load a classic .js helper into the current script engine once");
+        // Table-specific methods also appear under ui completion.
+        functions(a,{"setTimeout","clearTimeout","setInterval","clearInterval"},
+                  "Panel-only JavaScript timers backed by the Qt worker event loop; 10ms..24h, up to 256 active");
         functions(a,{"print","clear","wait","min","max","pow","round","abs","floor","ceil",
                      "sqrt","sin","cos","tan","asin","acos","atan","atan2","exp","log","log10"},
                   "WaveForms-style script helper");
         for (const QString word : {"var","let","const","function","if","else","for","while","return","throw","try","catch","new"})
             add(a,word,K::Keyword,"JavaScript keyword");
+    } else if(p=="Binary") {
+        functions(a,{"create","fromArray","fromHex","fromUtf8","fromBase64","concat",
+                     "wrapIEEE","stream","pattern","wordPattern","clockUs"},
+                  "Create native binary buffers; benchmark helpers pattern/wordPattern/clockUs");
+        add(a,"lastError",K::String,"Most recent Binary factory error");
+    } else if(p=="BinaryBuffer") {
+        functions(a,{"slice","ieeePayload","readU8","readI8","readU16LE","readU16BE",
+                     "readI16LE","readI16BE","readU32LE","readU32BE","readI32LE","readI32BE",
+                     "readF32LE","readF32BE","readF64LE","readF64BE","readU64LE","readU64BE",
+                     "readI64LE","readI64BE","writeU8","writeI8","writeU16LE","writeU16BE",
+                     "writeI16LE","writeI16BE","writeU32LE","writeU32BE","writeI32LE","writeI32BE",
+                     "writeF32LE","writeF32BE","writeF64LE","writeF64BE","writeU64LE","writeU64BE",
+                     "writeI64LE","writeI64BE","fill","copyFrom","writeUtf8","toUtf8",
+                     "toBase64","sum32","sum32Range","crc16","crc16Range","crc32","crc32Range","xor8","indexOf","equals",
+                     "readBits","writeBits","readBits64","writeBits64","readSignal","writeSignal","statsU16LE","statsNumeric",
+                     "decodeSamples","toHex","toArray","release"},
+                  "Bounded native-buffer read/write, bit fields, checksums and bulk decoding");
+        add(a,"length",K::Number,"Length of this byte buffer/view");
+        add(a,"lastError",K::String,"Last native-buffer operation error");
+    } else if(p=="BinaryStream") {
+        functions(a,{"append","readLine","readIEEE","readFixed","readUntil","readLengthPrefixed","clear"},
+                  "Native byte-stream accumulation and protocol framing");
+        add(a,"pending",K::Number,"Buffered byte count");
+        add(a,"lastError",K::String,"Most recent framing error; null can mean incomplete frame");
+    } else if(p=="BinarySamples") {
+        functions(a,{"stats","rangeStats","minMaxBins","toArray","at","release"},
+                  "Native numeric sample storage, statistics and plot-ready min/max bins");
+        add(a,"length",K::Number,"Native sample count");
+        add(a,"lastError",K::String,"Last sample operation error");
+    } else if(p=="Data") {
+        functions(a,{"get","set","names","onChange","offChange","computed","isComputed"},"Shared typed values and change callbacks; subscribers run for Data.set and bound input edits");
+    } else if(p=="Serial") {
+        functions(a,{"ports","create"},"List PC serial ports or create an unopened QSerialPort connection");
+    } else if(p=="TCP") {
+        functions(a,{"create","createServer"},"Create a TCP client or local TCP listening server; explicit connect/listen");
+    } else if(p=="UDP") {
+        functions(a,{"create"},"Create an unbound UDP datagram socket; explicit bind");
+    } else if(p=="SerialConnection" || p=="TCPConnection" || p=="TCPServer" || p=="UDPConnection") {
+        functions(a,{"on","off","close","info"},"Node-style event handlers and connection lifecycle");
+        if(p=="SerialConnection")functions(a,{"open","write"},"Open COM port; write UTF-8, byte[] or native BinaryBuffer");
+        if(p=="TCPConnection")functions(a,{"connect","write"},"Connect asynchronously; write UTF-8, byte[] or native BinaryBuffer");
+        if(p=="TCPServer")functions(a,{"listen"},"Listen for incoming TCP clients; on('connection',function(client){...})");
+        if(p=="UDPConnection")functions(a,{"bind","send"},"Bind to local port / send a text or byte[] datagram");
+    } else if(p=="FileIO") {
+        functions(a,{"dataDirectory","dataPath","exists","readText","writeText","appendText","readJson","writeJson","readCsv","writeCsv","readBytes","writeBytes","readBuffer","writeBuffer","appendBuffer"},"Bounded file I/O; shared PanelData directory or operator-granted file");
+    } else if(p=="Database") {
+        functions(a,{"open","exec","query","close"},"Nonblocking Qt SQLite calls; database shared through the common PanelData folder");
+    } else if(p=="Tool") {
+        functions(a,{"question","getText","getNumber","getItem","getOpenFile","getSaveFile"},"Asynchronous Qt operator dialogs; callback receives {accepted,value,kind}");
+    } else if(p=="Protocol1") {
+        objects(a,{"UART","SPI","I2C","CAN","SWD"},"Native Digilent Chapter 13 digital protocol bridges");
+        functions(a,{"stop","status"},"Stop and release digital resources / query active protocol");
+        add(a,"lastError",K::String,"Last digital protocol shutdown error");
+        add(a,"simulation",K::Boolean,"True when no hardware access is performed");
+    } else if(p=="Protocol1.UART") {
+        functions(a,{"configure","startRx","startAutoRx","stopAutoRx","onData","clearOnData","available","stats","write","writeText","read","Send","SendArray","Receiver","Receive","ReceiveArray"},
+                  "UART TX/RX; byte arrays and UTF-8 text; no passive UART Spy decoder in SDK");
+        add(a,"autoReceiving",K::Boolean,"True while native Qt timer drains the SDK into a bounded queue");
+        add(a,"lastError",K::String,"Most recent UART failure");
+        add(a,"configured",K::Boolean,"UART configured for this script session");
+        add(a,"simulation",K::Boolean,"No hardware activity; empty receive data");
+    } else if(p=="Protocol1.SPI") {
+        functions(a,{"configure","transfer","command","Start","Stop","ReadWrite","Read","Read0","Write",
+                     "WriteDual","ReadDual","WriteQuad","ReadQuad"},
+                  "Native SPI master transactions: 1..32-bit words, SISO/standard/dual/quad, optional command/dummy");
+        add(a,"lastError",K::String,"Most recent SPI failure");
+        add(a,"configured",K::Boolean,"SPI configured for this script session");
+        add(a,"simulation",K::Boolean,"No hardware activity; simulated RX is zero-filled and marked");
+    } else if(p=="Protocol1.I2C") {
+        functions(a,{"configure","writeRead","write","read","Clear","Receiver","spyPoll","Receive",
+                     "Write","Read","ReadSub"},
+                  "I2C master with 7-bit addresses and native I2C Spy; no native slave emulation");
+        add(a,"lastError",K::String,"Most recent I2C failure or NACK details");
+        add(a,"configured",K::Boolean,"I2C configured for this script session");
+        add(a,"simulation",K::Boolean,"No hardware activity; ACK is not simulated");
+    } else if(p=="Protocol1.CAN") {
+        functions(a,{"configure","startRx","send","receive","Send","Receiver","Receive"},
+                  "Classical CAN 11/29-bit identifiers; no native CAN FD support");
+        add(a,"lastError",K::String,"Most recent classical CAN SDK error");
+        add(a,"configured",K::Boolean,"CAN configured for this script session");
+        add(a,"simulation",K::Boolean,"No hardware activity; no simulated frames");
+    } else if(p=="Protocol1.SWD") {
+        functions(a,{"configure","clear","readRegister","writeRegister"},
+                  "SWD debug-port AP/DP operations with ACK and parity status");
+        add(a,"lastError",K::String,"Most recent SWD SDK error");
+        add(a,"configured",K::Boolean,"SWD configured for this script session");
+        add(a,"simulation",K::Boolean,"No hardware activity");
     } else if(p=="Device") {
         functions(a,{"isConnected"},"Whether a hardware or simulated device is available");
         add(a,"name",K::String,"Connected device name");add(a,"SN",K::String,"Connected device serial number");
@@ -145,8 +239,10 @@ QVector<Item> entries(const QString& objectPath) {
         add(a,"real",K::Number,"Most recent voltage status; simulation is an ideal model");
     } else if(p=="StaticIO") {
         objects(a,{"Channel0","Channel1"},"Eight DIO pins per WaveForms Static I/O group");
-        functions(a,{"config","setPin","readPin","readGroup","status","capabilities","stop"},
-                  "Static digital I/O: explicit commit, masked status, and fail-safe high-Z release");
+        functions(a,{"config","setPin","readPin","readGroup","status","capabilities","stop",
+                     "onChange","clearOnChange","clearAllOnChange","startMonitor","stopMonitor","monitorStats"},
+                  "Static digital I/O: explicitly started read-only input monitoring; output control remains separate");
+        add(a,"monitoring",K::Boolean,"True only after explicit startMonitor(), false after stopMonitor()");
         add(a,"lastError",K::String,"Last StaticIO SDK or validation error");
         add(a,"simulation",K::Boolean,"True when running a software-only ideal echo model");
     } else if(p=="StaticIO.Channel0" || p=="StaticIO.Channel1") {
@@ -202,13 +298,20 @@ QVector<Item> entries(const QString& objectPath) {
     } else if(p=="TestRunner") {
         functions(a,{"configure","add","onFinished","clear","reset","run","next","abort","terminate","report","measure",
                      "summary","results","state","setRunInfo","runInfo","pendingRunInfo","setVariable","variable","variables",
-                     "saveReport","exportReport","archiveInfo","loadDefinition","loadDefinitionFile","saveDefinition","definition"},
+                     "saveReport","exportReport","archiveInfo","loadDefinition","loadDefinitionFile","saveDefinition","definition",
+                     "complete","fail","isActive"},
                   "Qt/C++ sequencer owns step execution, measurements, limits and widget updates");
         add(a,"lastError",K::String,"Last TestRunner configuration or step exception");
     } else if(p=="ui") {
+        functions(a,{"tableRowCount","tableSlice","tableRow","tableSelection",
+                     "tableSetTitle","tableSetStatus","tableFollow",
+                     "tableImportCsv","tableExportCsv","tableCopySelection"},
+                  "Experiment DataTable: bounded reads, selection, header controls and CSV actions");
         functions(a,{"on","get","set"},"Panel widget state, structured Test Sequence / Measurement Table / Event Log updates, and callbacks");
     } else if(p=="plots") {
-        functions(a,{"setSeries","setSamples","fromScope","append","appendPoint","styleSeries",
+        functions(a,{"setSeries","setNativeSamples","nativeSeriesInfo",
+                     "getView","setView","onViewChanged",
+                     "setSamples","fromScope","append","appendPoint","styleSeries",
                      "configure","removeSeries","clear"},
                   "Panel-only native plots: explicit data delivery to a plot widget ID");
     } else if(p=="modules") {

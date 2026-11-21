@@ -24,6 +24,12 @@ function init(){
  const ctx={Math,Number,String,Array,Error,isFinite,ui,plots,print(s){calls.logs.push(s);}};
  vm.createContext(ctx);
  vm.runInContext(source,ctx,{timeout:2000});
+ assert.equal(Object.keys(events).length,0,'manual UI binding should be absent');
+ for(const ctrl of panel.pages.flatMap(p=>p.controls)) for(const [event,b] of Object.entries(ctrl.events||{})) {
+   assert(b.enabled && typeof ctx[b.handler]==='function',ctrl.id+'/'+event);
+   const key=ctrl.id+'.'+event;assert(!events[key],key+' double bound');events[key]=ctx[b.handler];
+ }
+ assert.equal(Object.keys(events).length,6,'six saved calibration UI event bindings');
  return {values,events,calls,ctx,fire(id,event='clicked',arg){assert(events[id+'.'+event]);events[id+'.'+event](arg);}};
 }
 const t=init();

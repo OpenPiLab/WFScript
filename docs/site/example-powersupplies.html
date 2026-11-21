@@ -1,0 +1,89 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lab 17 — V+ / V− Power Supplies · WFScript</title><meta name="description" content="WFScript illustrated user documentation for Windows Qt6 scripting and instrumentation"><link rel="stylesheet" href="style.css"></head><body><div class="layout"><aside><div class="brand">WFScript<small>Developer & Instrumentation Guide</small></div><div class="nav-title">Explore documentation</div><nav><a href="index.html" class="">Overview</a><a href="getting-started.html" class="">Getting Started</a><a href="user-guide.html" class="">User Guide</a><div class="nav-group">Chapters</div><a href="guide-01.html" class="nested">1: How WFScript fits together</a><a href="guide-02.html" class="nested">2: Panels, Pages and the design workflow</a><a href="guide-03.html" class="nested">3: Widgets, styling and interaction</a><a href="guide-04.html" class="nested">4: JavaScript, callbacks and modules</a><a href="guide-05.html" class="nested">5: Shared Panel Data and computed values</a><a href="guide-06.html" class="nested">6: Charts and measurements</a><a href="guide-07.html" class="nested">7: Analog Discovery 3 instrumentation</a><a href="guide-08.html" class="nested">8: Digital timing, I/O and protocols</a><a href="guide-09.html" class="nested">9: Serial, TCP and UDP communications</a><a href="guide-10.html" class="nested">10: Files, SQLite and native binary data</a><a href="guide-11.html" class="nested">11: The native Test Executive</a><a href="guide-12.html" class="nested">12: Sweeps, loops and conditional execution</a><a href="guide-13.html" class="nested">13: Operator input and manual steps</a><a href="guide-14.html" class="nested">14: Reports, measurements and history</a><a href="guide-15.html" class="nested">15: External Rigol instruments and SCPI Panels</a><a href="guide-16.html" class="nested">16: Building complete applications</a><a href="guide-17.html" class="nested">17: Troubleshooting without guessing</a><a href="guide-18.html" class="nested">18: Testing, validation and publication</a><a href="api-reference.html" class="">API Reference</a><a href="examples.html" class="">Example Library</a><a href="find.html" class="">Search docs</a></nav><div class="aside-foot">Version basis: RC1.5.14.10.8<br>Windows Qt 6.9.2 • 116/116 CTests<br>Public v0.1 release is separate.</div></aside><main><header class="head"><div><strong>WFScript Documentation</strong> · RC1.5.14.10.8</div><div><a href="find.html">Search documentation</a> · <a href="api-reference.html">API Reference</a></div></header><article><h1>Lab 17 — V+ / V− Power Supplies</h1>
+<p><strong>Level:</strong> Intermediate<br />
+<strong>Category:</strong> Analog Instruments<br />
+<strong>Pages:</strong> Supplies</p>
+<h2>What you will build or observe</h2>
+<p>Set separate V+/V− rails and watch actual readback follow changes over time.</p>
+<h2>Before you run</h2>
+<p>Simulation first. Physical mode can energize the AD3 supply pins; verify wiring, load and safe voltage.</p>
+<h2>Follow along</h2>
+<ol>
+<li>Set V+ and V− values and enable at least one rail.</li>
+<li>Press POWER ON and watch the readouts update automatically.</li>
+<li>Change a setpoint and compare the settled readback.</li>
+<li>Press POWER OFF and allow the bounded readback refresh to finish.</li>
+</ol>
+<h2>Follow the JavaScript</h2>
+<p><code>psPowerOn</code> → <code>psStart()</code>; 250 ms read-only timer → <code>psShowStatus()</code> → psPlusReadout/psMinusReadout.</p>
+<p>All entries below come from <strong>saved widget Properties → Events</strong> bindings in this <code>.wfpanel</code> (not from manual <code>ui.on()</code> calls). The script contains the named functions.</p>
+<table>
+<thead>
+<tr>
+  <th>Page</th>
+  <th>Control (ID)</th>
+  <th>Event</th>
+  <th>JavaScript function</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Supplies</td>
+  <td><code>psVPlus</code> (numeric_stepper)</td>
+  <td><code>valueChanged</code></td>
+  <td><code>psChanged()</code></td>
+</tr>
+<tr>
+  <td>Supplies</td>
+  <td><code>psVMinus</code> (numeric_stepper)</td>
+  <td><code>valueChanged</code></td>
+  <td><code>psChanged()</code></td>
+</tr>
+<tr>
+  <td>Supplies</td>
+  <td><code>psEnablePlus</code> (switch_button)</td>
+  <td><code>toggled</code></td>
+  <td><code>psChanged()</code></td>
+</tr>
+<tr>
+  <td>Supplies</td>
+  <td><code>psEnableMinus</code> (switch_button)</td>
+  <td><code>toggled</code></td>
+  <td><code>psChanged()</code></td>
+</tr>
+<tr>
+  <td>Supplies</td>
+  <td><code>psPowerOn</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>psStart()</code></td>
+</tr>
+<tr>
+  <td>Supplies</td>
+  <td><code>psPowerOff</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>psStop()</code></td>
+</tr>
+<tr>
+  <td>Supplies</td>
+  <td><code>psRefresh</code> (button)</td>
+  <td><code>clicked</code></td>
+  <td><code>onPsRefreshClicked()</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Make one small change</h2>
+<p>Change a setpoint while powered in Simulation and watch how the readout updates without pressing READ STATUS.</p>
+<p>To modify the example in the app, choose <strong>Stop / Design</strong>, open the Script Editor, find the named function or constant, make one change, and run the Panel again. When you like it, use <strong>Save As</strong> to keep your own project.</p>
+<h2>Why this works</h2>
+<p>Actual readback must not be replaced by the requested setpoint. The polling timer never configures outputs.</p>
+<h2>Safety and scope</h2>
+<p>Physical supplies are explicitly enabled; an unconfirmed stop must not be displayed as confirmed OFF.</p>
+<h2>If something does not work</h2>
+<p>If a readout lags, distinguish hardware settlement from the 250 ms refresh; an unavailable readback is reported.</p>
+<h2>Related files</h2>
+<ul>
+<li><strong>Editable project:</strong> <code>examples/panels/PowerSupplies.wfpanel</code></li>
+<li><strong>Readable JavaScript:</strong> <code>examples/source/PowerSupplies.js</code></li>
+<li>The <code>.wfpanel</code> embeds the script, Pages and event assignments; opening it in WFScript does not require the <code>.js</code> file alongside it.</li>
+<li>In the complete source tree run <code>python tools/build_examples.py</code> after modifying the readable <code>.js</code> version.</li>
+</ul>
+<p class="doc-footnote">Source: <code>examples/guides/PowerSupplies.md</code> in RC1.5.14.10.8. See the actual bundled Panel for live behavior and exact event bindings.</p></article></main></div></body></html>

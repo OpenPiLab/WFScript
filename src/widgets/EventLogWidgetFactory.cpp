@@ -4,7 +4,7 @@
 #include <QtGlobal>
 
 QVector<WidgetProperty> EventLogWidgetFactory::properties() const {
-    WidgetProperty limit{"maxEntries","Maximum log entries","integer",true,10,2000};
+    WidgetProperty limit{"maxEntries","Maximum retained log entries","integer",true,10,100000};
     limit.defaultValue=500;limit.category=QStringLiteral("History");
     auto flag=[](const char* id,const char* label,bool def){
         WidgetProperty p{QString::fromLatin1(id),QString::fromLatin1(label),"boolean",true};

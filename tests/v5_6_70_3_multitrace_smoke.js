@@ -14,6 +14,12 @@ function setup(physical=false,faultAt=0){
  const scope={Time:{Rate:{value:0},Samples:{value:0}},Channel1:{Range:{value:5},Offset:{value:0},Attenuation:{value:1},statistics(){if(faultAt&&calls.scopeSingle===faultAt)throw Error('simulated acquisition fault');const amp=wg.Channel1.Simple.Amplitude.value;return {count:8192,mean:0,rms:amp/Math.SQRT2};}},Trigger:{Trigger:{text:'None'}},single(){calls.scopeSingle++;return true;},wait(){const f=wg.Channel1.Simple.Frequency.value,a=wg.Channel1.Simple.Amplitude.value;scopeBuffer=Array.from({length:128},(_,i)=>a*Math.sin(2*Math.PI*f*i/250000));return true;},stop(){calls.scopeStop++;return true;}};
  const ctx={Device:{SN:physical?'210415AAA':'DEMO'},Wavegen1:wg,Scope1:scope,ui:{get(id){return controls[id];},set(id,v){controls[id]=v;return true;},on(id,event,fn){handlers[id+'.'+event]=fn;}},plots:{clear(id){assert(id==='wavePreview');plotSeries.clear();calls.clears++;return true;},configure(id,opts){calls.configure.push(opts);return true;},fromScope(id,ch,name){assert(physical,'physical capture expected');assert(ch===1);calls.fromScope.push(name);plotSeries.set(name,scopeBuffer.slice());return true;},setSeries(id,name,x,y,opts){assert(!physical||name.includes('MODEL ONLY'),'physical setSeries allowed only for explicit preview');assert.strictEqual(x.length,y.length);calls.setSeries.push({name,length:x.length,opts});plotSeries.set(name,y.slice());return true;},styleSeries(id,name,opts){assert(plotSeries.has(name),'style must follow copied capture');calls.style.push({name,opts});return true;}},wait(s){assert(s>=.1&&s<=1);calls.dwell.push(s);},print(x){logs.push(x);},Math,Array,Number,String,Error,isFinite};
  vm.createContext(ctx);vm.runInContext(script,ctx);
+ assert.equal(Object.keys(handlers).length,0,'no manual UI callbacks');
+ for(const c of panel.pages.flatMap(p=>p.controls)) for(const [event,b] of Object.entries(c.events||{})) {
+   const key=c.id+'.'+event;assert(b.enabled && typeof ctx[b.handler]==='function',key);
+   assert(!handlers[key],key+' duplicate');handlers[key]=ctx[b.handler];
+ }
+ assert.equal(Object.keys(handlers).length,9,'all nine Wavegen recipe handlers are designer-owned');
  return {controls,handlers,logs,calls,plotSeries,wg,scope,ctx};
 }
 function fire(test,id,e='clicked',arg){assert(test.handlers[id+'.'+e],id+'.'+e);test.handlers[id+'.'+e](arg);}

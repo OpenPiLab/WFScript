@@ -1,0 +1,212 @@
+{
+  "canvasHeight": 900,
+  "canvasWidth": 1360,
+  "controls": [
+    {
+      "id": "heading",
+      "type": "label",
+      "x": 30,
+      "y": 12,
+      "width": 1260,
+      "height": 44,
+      "text": "EXPERIMENT DATATABLE  ·  50,000-ROW STREAMING LAB  ·  RC1.5.14.5",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "subTitle",
+      "type": "label",
+      "x": 30,
+      "y": 50,
+      "width": 1290,
+      "height": 32,
+      "text": "Simulates microcontroller packets from 10 / 20 / 30 ms timers. Appends batches to a virtual rolling table; no hardware required.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "startButton",
+      "type": "button",
+      "x": 30,
+      "y": 94,
+      "width": 176,
+      "height": 43,
+      "text": "START STREAM",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "startStream"
+        }
+      }
+    },
+    {
+      "id": "stopButton",
+      "type": "button",
+      "x": 222,
+      "y": 94,
+      "width": 176,
+      "height": 43,
+      "text": "STOP STREAM",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "stopStream"
+        }
+      }
+    },
+    {
+      "id": "clearButton",
+      "type": "button",
+      "x": 414,
+      "y": 94,
+      "width": 148,
+      "height": 43,
+      "text": "CLEAR TABLE",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "clearTable"
+        }
+      }
+    },
+    {
+      "id": "verifyButton",
+      "type": "button",
+      "x": 578,
+      "y": 94,
+      "width": 195,
+      "height": 43,
+      "text": "CHECK ROW WINDOW",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "checkWindow"
+        }
+      }
+    },
+    {
+      "id": "sampleButton",
+      "type": "button",
+      "x": 789,
+      "y": 94,
+      "width": 190,
+      "height": 43,
+      "text": "INJECT 1000 ROWS",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {
+        "clicked": {
+          "enabled": true,
+          "handler": "injectSample"
+        }
+      }
+    },
+    {
+      "id": "status",
+      "type": "label",
+      "x": 30,
+      "y": 147,
+      "width": 1290,
+      "height": 38,
+      "text": "STOPPED — stream ~3,300 rows/s. Keep running after 50,000 rows; scroll while it rolls.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "notes",
+      "type": "label",
+      "x": 30,
+      "y": 187,
+      "width": 1290,
+      "height": 48,
+      "text": "Right-click table to Export CSV or Import CSV (5-column header required). CSV holds only the last 50,000 rows. Sequence and callbackEpochMs allow continuity/jitter analysis. If editing, stop first.",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "textFormat": "Plain Text",
+        "wordWrap": true,
+        "borderVisible": false
+      }
+    },
+    {
+      "id": "experimentTable",
+      "type": "experiment_table",
+      "x": 30,
+      "y": 240,
+      "width": 1290,
+      "height": 500,
+      "text": "Synthetic measurements",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "columns": "Seq|Callback Epoch (ms)|Timer|Simulated Voltage (V)|Callback Delta (ms)",
+        "initialRows": "",
+        "maxRows": 50000,
+        "editable": true
+      }
+    },
+    {
+      "id": "diagnostics",
+      "type": "event_log",
+      "x": 30,
+      "y": 750,
+      "width": 1290,
+      "height": 135,
+      "text": "Stream Diagnostics",
+      "value": 0,
+      "min": 0,
+      "max": 100,
+      "events": {},
+      "properties": {
+        "autoScroll": true,
+        "maxEntries": 2500,
+        "showSource": true,
+        "showTimestamp": true
+      }
+    }
+  ],
+  "description": "RC1.5.14.5 hardware-free Experiment DataTable rolling-retention, timer and CSV lab. Script sample batches, 50,000 retained rows, import/export and editable cells.\nRC1.5.14.5.1 validates public table-read methods before starting timers.",
+  "format": "WFScriptPanel",
+  "libraries": [],
+  "script": "// RC1.5.14.5.1 — virtual Experiment DataTable stress-test Panel.\n// Mimics batched TCP/UDP packets without a device. Export the TABLE CSV\n// after the retained row count reaches 50,000 and has rolled for >=30 s.\n// Timer timestamp is captured in JS, so the table can be checked for continuity.\n// Table CSV has only a retained window, not an archival recording.\nvar streamTimers=[], flushTimer=0, statusTimer=0;\nvar running=false, seq=0, generated=0, sent=0, errors=0, runs=0;\nvar previous={id:0,id1:0,id2:0};\nvar queue=[];\nvar startedAt=0;\n\nfunction requireTableReadApi() {\n    if (typeof ui.tableRowCount === 'function' && typeof ui.tableSlice === 'function')\n        return true;\n    var message = 'Experiment DataTable Lab requires WFScript RC1.5.14.5.1 or newer: public ui.tableRowCount / ui.tableSlice unavailable';\n    print(message);\n    ui.set('diagnostics',{append:{level:'ERROR',source:'DataTable',message:message}});\n    return false;\n}\nfunction addDiagnostic(level, message) {\n    ui.set('diagnostics',{append:{level:level,source:'DataTable',message:message}});\n}\nfunction makePacket(timerName, points) {\n    if(!running)return;\n    var now=Date.now();\n    var delta=previous[timerName]?now-previous[timerName]:0;\n    previous[timerName]=now;\n    for(var k=0;k<points;++k){\n        seq++;\n        var v=3.300 + 0.135*Math.sin(seq/31) + 0.025*Math.sin(seq/9);\n        queue.push([seq,now,timerName,Number(v.toFixed(5)),delta]);\n    }\n    generated+=points;\n}\nfunction flushQueue() {\n    if(!queue.length)return;\n    // Bounded GUI packets; no snapshots of all existing rows.\n    var rows=queue.splice(0,Math.min(1000,queue.length));\n    if(!ui.set('experimentTable',{appendRows:rows})) {\n        errors++;\n        addDiagnostic('ERROR','appendRows rejected, size='+rows.length);\n        stopStream();\n        return;\n    }\n    sent+=rows.length;\n    if(sent%10000<rows.length)\n        addDiagnostic('INFO','sent='+sent+' retained='+ui.tableRowCount('experimentTable')+' callbackEpochMs='+Date.now());\n}\nfunction refreshStatus() {\n    var retained=ui.tableRowCount('experimentTable');\n    var elapsed=startedAt?((Date.now()-startedAt)/1000).toFixed(1):'0.0';\n    ui.set('status',(running?'RUNNING':'STOPPED')+' | sent='+sent+' | retained='+retained+\n        '/50000 | queued='+queue.length+' | errors='+errors+' | elapsed='+elapsed+' s');\n}\nfunction startStream() {\n    if(!requireTableReadApi())return;\n    if(running)return;\n    runs++;running=true;startedAt=Date.now();\n    previous={id:0,id1:0,id2:0};\n    streamTimers.push(setInterval(function(){makePacket('id',20);},10));\n    streamTimers.push(setInterval(function(){makePacket('id1',20);},20));\n    streamTimers.push(setInterval(function(){makePacket('id2',12);},30));\n    flushTimer=setInterval(flushQueue,50);\n    statusTimer=setInterval(refreshStatus,250);\n    addDiagnostic('INFO','RUN '+runs+' START | callbackEpochMs='+Date.now());\n    refreshStatus();\n}\nfunction stopStream() {\n    if(!running)return;\n    running=false;\n    for(var i=0;i<streamTimers.length;i++)clearInterval(streamTimers[i]);\n    streamTimers=[];\n    if(flushTimer){clearInterval(flushTimer);flushTimer=0;}\n    if(statusTimer){clearInterval(statusTimer);statusTimer=0;}\n    while(queue.length)flushQueue();\n    addDiagnostic('PASS','STOP | sent='+sent+' retained='+ui.tableRowCount('experimentTable')+\n        ' | callbackEpochMs='+Date.now());\n    refreshStatus();\n}\nfunction clearTable() {\n    if(!requireTableReadApi())return;\n    stopStream();\n    if(!ui.set('experimentTable',{clear:true})){\n        addDiagnostic('ERROR','Cannot clear data table');return;\n    }\n    seq=0;sent=0;generated=0;errors=0;queue=[];\n    addDiagnostic('INFO','CLEAR all retained data');\n    refreshStatus();\n}\nfunction injectSample(){\n    if(!requireTableReadApi())return;\n    // Drain older queued rows first so global sequence order stays monotonic.\n    while(queue.length)flushQueue();\n    // Manual burst remains safe while running; appendRows has a 2048-row cap.\n    var batch=[];var now=Date.now();\n    for(var i=0;i<1000;i++){\n        seq++;\n        batch.push([seq,now,'manual',Number((3.2+Math.sin(seq/30)*0.1).toFixed(5)),0]);\n    }\n    if(ui.set('experimentTable',{appendRows:batch}))sent+=batch.length;\n    else {errors++;addDiagnostic('ERROR','Manual burst rejected');}\n    refreshStatus();\n}\nfunction checkWindow() {\n    if(!requireTableReadApi())return;\n    var n=ui.tableRowCount('experimentTable');\n    var first=ui.tableSlice('experimentTable',0,1);\n    var last=ui.tableSlice('experimentTable',Math.max(0,n-1),1);\n    var ok=n>=1 && first && last && first.length==1 && last.length==1;\n    var message='n='+n+' firstSeq='+(ok?first[0][0]:'none')+\n        ' lastSeq='+(ok?last[0][0]:'none')+' sourceRuns='+runs;\n    addDiagnostic(ok?'PASS':'WARN','Window check: '+message);\n    print('Experiment window: '+message);\n}\nfunction onStartup(){\n    if(!requireTableReadApi())return;\n    ui.set('experimentTable',{clear:true});\n    addDiagnostic('INFO','Ready: stream ~3300 rows/s; 50k capacity in ~15 seconds');\n    refreshStatus();\n}\nfunction onShutdown(){stopStream();}\n",
+  "scriptName": "ExperimentDataTable_Streaming_50k.js",
+  "version": 1
+}

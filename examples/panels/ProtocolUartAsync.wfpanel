@@ -1,0 +1,743 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "UART asynchronous native receiver, JS callbacks, C++ Terminal widget, and project-owned Test Executive — WFScript v0.2-dev.1",
+  "scriptName": "ProtocolUartAsync.js",
+  "activePageId": "uart_native",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "uart_native",
+      "name": "01 Native Terminal",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "title01",
+          "type": "label",
+          "text": "01 — UART Terminal | Native C++ receiver",
+          "x": 24,
+          "y": 16,
+          "width": 1090,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "safety01",
+          "type": "label",
+          "text": "Connect AD3 DIO0 through 1 kΩ to DIO1. Set Physical AD3 before Run Panel. CONFIGURE AUTO starts the native 10 ms poller. The terminal fills without any onData JavaScript.",
+          "x": 24,
+          "y": 79,
+          "width": 1090,
+          "height": 73,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "asyncConfigure",
+          "type": "button",
+          "text": "CONFIGURE AUTO",
+          "x": 24,
+          "y": 165,
+          "width": 172,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAsyncConfigureClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "manualConfigure",
+          "type": "button",
+          "text": "CONFIGURE MANUAL",
+          "x": 206,
+          "y": 165,
+          "width": 185,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onManualConfigureClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "asyncSend",
+          "type": "button",
+          "text": "SEND HELLO",
+          "x": 401,
+          "y": 165,
+          "width": 151,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAsyncSendClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "asyncRead",
+          "type": "button",
+          "text": "READ QUEUE/SDK",
+          "x": 562,
+          "y": 165,
+          "width": 176,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAsyncReadClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "asyncStats",
+          "type": "button",
+          "text": "RX STATISTICS",
+          "x": 748,
+          "y": 165,
+          "width": 166,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAsyncStatsClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "asyncStopTimer",
+          "type": "button",
+          "text": "PAUSE AUTO RX",
+          "x": 24,
+          "y": 207,
+          "width": 172,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAsyncStopTimerClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "asyncClear",
+          "type": "button",
+          "text": "CLEAR TERMINAL",
+          "x": 206,
+          "y": 207,
+          "width": 185,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAsyncClearClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "asyncRelease",
+          "type": "button",
+          "text": "RELEASE DIO",
+          "x": 401,
+          "y": 207,
+          "width": 151,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onAsyncReleaseClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "asyncStatus",
+          "type": "label",
+          "text": "IDLE — select receiver mode",
+          "x": 24,
+          "y": 260,
+          "width": 1090,
+          "height": 45,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "uartView",
+          "type": "uart_terminal",
+          "text": "Hardware-driven UART RX — Terminal",
+          "x": 24,
+          "y": 319,
+          "width": 1090,
+          "height": 282,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "sendRequested": {
+              "handler": "onUartViewSendRequested",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "maxLines": 1000,
+            "hexMode": false
+          }
+        },
+        {
+          "id": "asyncLog",
+          "type": "event_log",
+          "text": "UART Operator Activity",
+          "x": 24,
+          "y": 617,
+          "width": 1090,
+          "height": 145,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "showTimestamp": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "uart_callback",
+      "name": "02 JavaScript Callback",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "title02",
+          "type": "label",
+          "text": "02 — JavaScript onData() | Event-driven RX",
+          "x": 24,
+          "y": 16,
+          "width": 1090,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "safety02",
+          "type": "label",
+          "text": "C++ drains SDK data into a 64 KB queue. onData(chunk) receives a COPY on the script thread. A callback may update any Panel widget. read() still consumes the queue independently.",
+          "x": 24,
+          "y": 79,
+          "width": 1090,
+          "height": 78,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "callbackStart",
+          "type": "button",
+          "text": "START + REGISTER",
+          "x": 24,
+          "y": 169,
+          "width": 190,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackStartClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbackSend",
+          "type": "button",
+          "text": "SEND CALLBACK",
+          "x": 224,
+          "y": 169,
+          "width": 170,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackSendClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbackDrain",
+          "type": "button",
+          "text": "READ QUEUE",
+          "x": 404,
+          "y": 169,
+          "width": 159,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackDrainClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbackDisable",
+          "type": "button",
+          "text": "REMOVE CALLBACK",
+          "x": 573,
+          "y": 169,
+          "width": 186,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackDisableClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbackStats",
+          "type": "button",
+          "text": "STATS",
+          "x": 769,
+          "y": 169,
+          "width": 140,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackStatsClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbackRelease",
+          "type": "button",
+          "text": "RELEASE",
+          "x": 919,
+          "y": 169,
+          "width": 166,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCallbackReleaseClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "callbackStatus",
+          "type": "label",
+          "text": "Awaiting callback receiver",
+          "x": 24,
+          "y": 222,
+          "width": 1090,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "callbackCount",
+          "type": "label",
+          "text": "0 bytes observed by JS callback",
+          "x": 24,
+          "y": 281,
+          "width": 1090,
+          "height": 60,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "callbackLog",
+          "type": "event_log",
+          "text": "JavaScript Callback Notifications",
+          "x": 24,
+          "y": 354,
+          "width": 1090,
+          "height": 399,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "showTimestamp": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "uart_test",
+      "name": "03 Automated Test",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "title03",
+          "type": "label",
+          "text": "03 — Automated UART Echo Test | Native Test Executive",
+          "x": 24,
+          "y": 16,
+          "width": 1090,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "safety03",
+          "type": "label",
+          "text": "Project-owned Setup -> Main -> Cleanup. Main uses a native scheduled poll step, timeout 1600 ms, and numeric PASS limit exactly 5 bytes. No JavaScript busy-wait. Simulation intentionally does NOT PASS.",
+          "x": 24,
+          "y": 81,
+          "width": 1090,
+          "height": 82,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "testRun",
+          "type": "button",
+          "text": "RUN TEST",
+          "x": 24,
+          "y": 177,
+          "width": 165,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onTestRunClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "testStop",
+          "type": "button",
+          "text": "TERMINATE + CLEANUP",
+          "x": 199,
+          "y": 177,
+          "width": 211,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onTestStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "testReset",
+          "type": "button",
+          "text": "RESET",
+          "x": 420,
+          "y": 177,
+          "width": 165,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onTestResetClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "testReport",
+          "type": "button",
+          "text": "REPORT SUMMARY",
+          "x": 595,
+          "y": 177,
+          "width": 183,
+          "height": 37,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onTestReportClicked",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "testStatus",
+          "type": "label",
+          "text": "READY",
+          "x": 24,
+          "y": 229,
+          "width": 1090,
+          "height": 53,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        },
+        {
+          "id": "testSequence",
+          "type": "test_sequence",
+          "text": "UART Native Test Sequence",
+          "x": 24,
+          "y": 298,
+          "width": 750,
+          "height": 289,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "testEchoBytes",
+          "type": "measurement_result",
+          "text": "Echoed Byte Count",
+          "x": 798,
+          "y": 298,
+          "width": 316,
+          "height": 160,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "bytes",
+            "decimals": 0
+          }
+        },
+        {
+          "id": "testLog",
+          "type": "event_log",
+          "text": "Native Test Execution Log",
+          "x": 24,
+          "y": 602,
+          "width": 1090,
+          "height": 152,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "showTimestamp": true
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: UART Asynchronous Lab — Native Terminal, Callbacks and Test\n// │ Level: Advanced  |  Mode: hardware-capable\n// │\n// │ GOAL: Compare native UART Terminal display, JavaScript receive callbacks and automated\n// │    echo testing.\n// │ BEFORE RUN: No DIO is driven on startup. Physical echo test requires DIO0→1 kΩ→DIO1;\n// │    simulation must not PASS the hardware test.\n// │ TRY FIRST: On Native Terminal configure auto reception, then send and read text.\n// │ TRACE: `uartView` sendRequested → `onUartViewSendRequested(text)`;\n// │    `Protocol1.UART.onData()` remains a device callback.\n// │ EDIT SAFELY: Change the displayed receive message without changing the native buffer\n// │    management.\n// │ REMEMBER: The widget can display native receive data without manually polling from a\n// │    JavaScript timer; TestRunner owns its scheduler.\n// │\n// │ EVENT TIP: Select `asyncConfigure` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/ProtocolUartAsync.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * UART Async Lab (three Pages), v0.2-dev.1\n * One QJSEngine, one native receive poller, no JS polling timer.\n * Native UART Terminal subscribes automatically to RX chunks, on any Page.\n * DIO0 -> 1 kOhm -> DIO1 for local loopback. NEVER drive external wiring until checked.\n * Opening the Panel does not configure hardware or start a receiver.\n */\nfunction note(target, message, level) {\n    ui.set(target, {\n        append: {\n            source: 'UART',\n            level: level || 'INFO',\n            message: String(message)\n        }\n    });\n    print('[UART Async] ' + message);\n}\nfunction checked(action) {\n    try {\n        action();\n    } catch (e) {\n        note('asyncLog', String(e), 'ERROR');\n        note('callbackLog', String(e), 'ERROR');\n        ui.set('testStatus', String(e));\n    }\n}\nfunction configure(mode) {\n    // Explicit operator action: no automatic DIO drive on Panel load.\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    const baud = 115200;\n    if (!Protocol1.UART.configure({\n        tx: 0,\n        rx: 1,\n        baudRate: baud,\n        dataBits: 8,\n        parity: 'none',\n        stopBits: 1\n    }))\n        throw Error(Protocol1.UART.lastError);\n    if (mode === 'auto') {\n        if (!Protocol1.UART.startAutoRx({\n            pollIntervalMs: 10,\n            bufferSize: 65536\n        }))\n            throw Error(Protocol1.UART.lastError);\n    } else if (!Protocol1.UART.startRx()) throw Error(Protocol1.UART.lastError);\n    note('asyncLog', 'CONFIGURED / ' + baud + ' baud / RX mode ' + mode +\n        (Protocol1.simulation ? ' / SIMULATION (no real bytes)' : ' / REAL AD3'));\n}\nfunction transmit(text) {\n    const tx = String(text) + '\\n';\n    const r = Protocol1.UART.writeText(tx);\n    if (!r.ok) throw Error(r.error);\n    note('asyncLog', 'TX ' + JSON.stringify(tx) + (r.simulated ? ' SIMULATION' : ''));\n}\nfunction showStats(log) {\n    const s = Protocol1.UART.stats();\n    const message = 'auto=' + s.autoReceiving + ' queued=' + s.available + ' RX=' + s.receivedBytes +\n        ' SDK overflow=' + s.sdkOverflows + ' dropped=' + s.queueDroppedBytes;\n    ui.set(log === 'callbackLog' ? 'callbackStatus' : 'asyncStatus', message);\n    note(log, message);\n}\n// Page 01: C++ direct receive + optional manual read.\n// Designer event: select asyncConfigure -> Properties -> Events -> clicked\n/**\n * CORE LESSON — Enables the native asynchronous UART receiver when the user requests it. The\n * receive queue is not polled by a custom JavaScript timer.\n */\nfunction onAsyncConfigureClicked() {\n    return checked(() => configure('auto'));\n}\n// Designer event: select manualConfigure -> Properties -> Events -> clicked\nfunction onManualConfigureClicked() {\n    return checked(() => configure('manual'));\n}\n// Designer event: select uartView -> Properties -> Events -> sendRequested\nfunction onUartViewSendRequested(text) {\n    return checked(() => transmit(text));\n}\n// Designer event: select asyncSend -> Properties -> Events -> clicked\nfunction onAsyncSendClicked() {\n    return checked(() => transmit('HELLO'));\n}\n// Designer event: select asyncRead -> Properties -> Events -> clicked\nfunction onAsyncReadClicked() {\n    return checked(() => {\n        const r = Protocol1.UART.read(4096);\n        if (!r.ok) throw Error(r.error);\n        note('asyncLog', 'read() ' + r.count + ' bytes / ' + JSON.stringify(String.fromCharCode.apply(null, r.data)) +\n            ' / ' + (r.queued ? 'native queue' : 'direct SDK') + ' / overflow=' + !!r.overflow);\n    });\n}\n// Designer event: select asyncStats -> Properties -> Events -> clicked\nfunction onAsyncStatsClicked() {\n    return checked(() => showStats('asyncLog'));\n}\n// Designer event: select asyncStopTimer -> Properties -> Events -> clicked\nfunction onAsyncStopTimerClicked() {\n    return checked(() => {\n        Protocol1.UART.stopAutoRx();\n        note('asyncLog', 'Native polling paused; read() preserves queued bytes');\n    });\n}\n// Designer event: select asyncClear -> Properties -> Events -> clicked\nfunction onAsyncClearClicked() {\n    return ui.set('uartView', { clear: true });\n}\n// Designer event: select asyncRelease -> Properties -> Events -> clicked\nfunction onAsyncReleaseClicked() {\n    return checked(() => {\n        if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n        note('asyncLog', 'UART fully released, output pins returned to safe state');\n    });\n}\n\n// Page 02: JS callbacks see COPIES. They never consume the native queue.\n// Callback exceptions go through PanelRuntime's source-aware diagnostics.\nlet callbackBytes = 0;\nfunction handleUartChunk(chunk) {\n    callbackBytes += chunk.count;\n    ui.set('callbackCount', String(callbackBytes) + ' bytes observed by JS callback');\n    note('callbackLog', 'onData ' + JSON.stringify(chunk.text) + ' / ' + chunk.count + ' bytes' +\n        (chunk.overflow ? ' SDK OVERFLOW' : '') + ' / ' + chunk.timestampSource,\n        chunk.overflow ? 'WARN' : 'INFO');\n}\n// Designer event: select callbackStart -> Properties -> Events -> clicked\nfunction onCallbackStartClicked() {\n    return checked(() => {\n        configure('auto');\n        callbackBytes = 0;\n        if (!Protocol1.UART.onData(handleUartChunk)) throw Error(Protocol1.UART.lastError);\n        note('callbackLog', 'onData callback registered; no JavaScript timer');\n    });\n}\n// Designer event: select callbackDisable -> Properties -> Events -> clicked\nfunction onCallbackDisableClicked() {\n    return checked(() => {\n        Protocol1.UART.clearOnData();\n        note('callbackLog', 'Callback removed; native RX and queue still active');\n    });\n}\n// Designer event: select callbackSend -> Properties -> Events -> clicked\nfunction onCallbackSendClicked() {\n    return checked(() => transmit('CALLBACK'));\n}\n// Designer event: select callbackDrain -> Properties -> Events -> clicked\nfunction onCallbackDrainClicked() {\n    return checked(() => {\n        const r = Protocol1.UART.read(4096);\n        if (!r.ok) throw Error(r.error);\n        note('callbackLog', 'Queue read: ' + r.count + ' bytes; JS callback count stays at ' + callbackBytes);\n    });\n}\n// Designer event: select callbackStats -> Properties -> Events -> clicked\nfunction onCallbackStatsClicked() {\n    return checked(() => showStats('callbackLog'));\n}\n// Designer event: select callbackRelease -> Properties -> Events -> clicked\nfunction onCallbackReleaseClicked() {\n    return checked(() => {\n        if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n        note('callbackLog', 'RX stopped, callback cleared, hardware released');\n    });\n}\n\n// Page 03: the Test Executive uses a project-owned definition and module.\n// Its native polling step (20 ms) consumes the UART queue without busy-waiting.\n// Designer event: select testRun -> Properties -> Events -> clicked\nfunction onTestRunClicked() {\n    if (!TestRunner.run()) ui.set('testStatus', 'Run rejected: ' + TestRunner.lastError);\n    else ui.set('testStatus', 'TEST RUNNING: expected echo is TEST\\n');\n}\n// Designer event: select testStop -> Properties -> Events -> clicked\nfunction onTestStopClicked() {\n    if (!TestRunner.terminate()) ui.set('testStatus', 'Terminate rejected: ' + TestRunner.lastError);\n}\n// Designer event: select testReset -> Properties -> Events -> clicked\nfunction onTestResetClicked() {\n    if (!TestRunner.reset()) ui.set('testStatus', 'Reset rejected: ' + TestRunner.lastError);\n    else ui.set('testStatus', 'READY — press RUN TEST to start');\n}\n// Designer event: select testReport -> Properties -> Events -> clicked\nfunction onTestReportClicked() {\n    const sum = TestRunner.summary();\n    const report = TestRunner.report();\n    ui.set('testStatus', 'State ' + sum.state + ' / measurements ' + (report.measurements || []).length +\n        ' / execution ' + (report.executionId || 'none'));\n}\nTestRunner.onFinished(function () {\n    const s = TestRunner.summary();\n    ui.set('testStatus', 'FINISHED / ' + s.state + ' / ' + s.passed + ' passed / ' + s.failed + ' failed');\n});\nui.set('testStatus', 'READY — press RUN TEST to start');\nui.set('asyncStatus', 'IDLE — select a receive mode; no pins driven');\nui.set('callbackStatus', 'IDLE — explicit callback registration required');\n",
+  "libraries": [
+    {
+      "name": "UARTEchoTestSteps.mjs",
+      "source": "// LEARNING TIP: Setup enables a real receiver, sendEchoTest() transmits known bytes, pollEchoTest() checks the queue, and Cleanup releases pins. Simulation cannot earn a hardware PASS.\n\n/** UARTEchoTestSteps.mjs — project-owned Test Executive handlers.\n * C++ polls the SDK independently, while TestRunner uses its own nonblocking\n * 20 ms scheduler. No nested event loops, JS timers, or busy-wait loops.\n * This test REQUIRES DIO0 -> 1k -> DIO1. Simulation is not a PASS.\n */\nlet uartEchoData = [];\nconst uartExpected = [84, 69, 83, 84, 10];\n\n// \"TEST\\n\"\nexport function setupUartEcho() {\n    uartEchoData = [];\n    if (Protocol1.simulation) throw Error('Physical AD3 required; simulation cannot PASS a UART loopback');\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    if (!Protocol1.UART.configure({\n        tx: 0,\n        rx: 1,\n        baudRate: 115200,\n        dataBits: 8,\n        parity: 'none',\n        stopBits: 1\n    }))\n        throw Error(Protocol1.UART.lastError);\n    if (!Protocol1.UART.startAutoRx({\n        pollIntervalMs: 10,\n        bufferSize: 65536\n    }))\n        throw Error(Protocol1.UART.lastError);\n    print('[UART Test] Setup: native receiver enabled; DIO0 -> 1k -> DIO1');\n    return true;\n}\nexport function sendEchoTest() {\n    uartEchoData = [];\n    // Discard previous bytes before measuring the new response.\n    while (Protocol1.UART.available() > 0) {\n        const old = Protocol1.UART.read(4096);\n        if (!old.ok) throw Error(old.error);\n    }\n    const tx = Protocol1.UART.writeText('TEST\\n');\n    if (!tx.ok) throw Error(tx.error);\n    print('[UART Test] TX TEST\\\\n, await exactly 5 echoed bytes');\n}\nexport function pollEchoTest() {\n    const r = Protocol1.UART.read(1024);\n    // native queue, not direct SDK\n    if (!r.ok) throw Error(r.error);\n    if (r.overflow) throw Error('SDK UART receive overflow');\n    for (const b of r.data) uartEchoData.push(b);\n    if (uartEchoData.length < uartExpected.length) return undefined;\n    const s = Protocol1.UART.stats();\n    if (s.queueDroppedBytes > 0 || s.sdkOverflows > 0 || s.parityErrors > 0)\n        throw Error('UART receive errors: ' + JSON.stringify(s));\n    if (uartEchoData.length !== uartExpected.length ||\n        uartEchoData.some((v, i) => v !== uartExpected[i]))\n        throw Error('Unexpected UART echo: ' + JSON.stringify(uartEchoData));\n    print('[UART Test] PASS: expected bytes received, ' + uartEchoData.length + ' bytes');\n    return uartEchoData.length; // numeric TestRunner limits 5..5\n}\nexport function cleanupUartEcho() {\n    Protocol1.UART.clearOnData();\n    Protocol1.UART.stopAutoRx();\n    if (!Protocol1.stop()) throw Error('Cannot confirm digital shutdown: ' + Protocol1.lastError);\n    print('[UART Test] Cleanup: SDK released, DIO outputs safe');\n    return true;\n}\n"
+    }
+  ],
+  "testDefinition": {
+    "schemaVersion": 1,
+    "id": "uart-asynchronous-echo",
+    "title": "UART 115200 8N1 — 5-Byte Physical Loopback",
+    "config": {
+      "sequenceId": "testSequence",
+      "logId": "testLog",
+      "stopOnFailure": true,
+      "totalTimeoutMs": 5000
+    },
+    "steps": [
+      {
+        "id": "setup",
+        "name": "SETUP — Start native UART reception",
+        "group": "setup",
+        "type": "action",
+        "mode": "once",
+        "timeoutMs": 800,
+        "handler": "setupUartEcho"
+      },
+      {
+        "id": "echo",
+        "name": "MAIN — Verify echoed TEST\\n bytes",
+        "group": "main",
+        "type": "numeric",
+        "mode": "poll",
+        "intervalMs": 20,
+        "timeoutMs": 1600,
+        "limits": {
+          "low": 5,
+          "high": 5
+        },
+        "unit": "bytes",
+        "resultWidget": "testEchoBytes",
+        "handlers": {
+          "start": "sendEchoTest",
+          "poll": "pollEchoTest"
+        }
+      },
+      {
+        "id": "cleanup",
+        "name": "CLEANUP — Release UART digital resources",
+        "group": "cleanup",
+        "type": "action",
+        "mode": "once",
+        "timeoutMs": 800,
+        "handler": "cleanupUartEcho"
+      }
+    ]
+  },
+  "testLibrary": "UARTEchoTestSteps.mjs",
+  "runInformation": {
+    "fields": []
+  },
+  "reportStorage": {
+    "autoSave": false,
+    "directory": ""
+  }
+}

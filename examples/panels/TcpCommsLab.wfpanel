@@ -1,0 +1,179 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "lifecycle": {
+    "initializeEnabled": true,
+    "shutdownEnabled": true
+  },
+  "libraries": [],
+  "testDefinition": {},
+  "testLibrary": "",
+  "description": "No other machine needed. Start an ephemeral server on 127.0.0.1; two clients use separate text-line and binary streams.",
+  "scriptName": "TcpCommsLab.js",
+  "activePageId": "tcp_main",
+  "script": "// ┌─ WFScript LEARNING LAB: TCP Local Client/Server — Text & Binary\n// │ Level: Beginner–Intermediate\n// │\n// │ GOAL: Use a TCP client/server on localhost and compare text lines with binary stream\n// │    data.\n// │ BEFORE RUN: No hardware or external network; localhost (`127.0.0.1`) is enough.\n// │ TRY FIRST: Click START SERVER.\n// │ TRACE: `tcpStart` → `startLocal()` → TCP listener/client; socket `on(\"data\")` callbacks\n// │    receive bytes.\n// │ EDIT SAFELY: Change the example text and observe the echoed reply.\n// │ REMEMBER: TCP preserves byte order but not message boundaries. Delimiters/framing belong\n// │    in the application.\n// │\n// │ EVENT TIP: Select `tcpStart` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/TcpCommsLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/** WFScript v0.2-dev.6 — Local TCP client & server.\n * No extra computer, instrument, firewall rule or hardware is needed.\n * TCP is a byte stream: use on('line') for LF text and on('data') for bytes.\n * Two distinct connections prevent binary packets from contaminating a\n * line-oriented text parser. Start/stop is always explicit.\n */\nlet server = null,\n    textClient = null,\n    binaryClient = null;\nlet accepted = [];\nconst pattern = [0, 1, 2, 127, 128, 254, 255, 0];\nfunction log(msg, level) {\n    print('[TCP] ' + msg);\n    ui.set('tcpEvents', {\n        append: {\n            level: level || 'INFO',\n            source: 'TCP Loopback',\n            message: String(msg)\n        }\n    });\n}\nfunction status(s) {\n    ui.set('tcpStatus', s);\n}\n/**\n * CORE LESSON — Creates a localhost TCP listener and client. TCP delivers ordered bytes, not\n * message boundaries; the example separately illustrates text framing and binary data.\n */\nfunction startLocal() {\n    if (server) {\n        log('Server already started', 'WARN');\n        return;\n    }\n    server = TCP.createServer({\n        host: '127.0.0.1',\n        port: 0\n    });\n    server.on('error', e => log('Server error: ' + e, 'ERROR'));\n    server.on('connection', function (peer) {\n        accepted.push(peer);\n        log('Server accepted client #' + accepted.length);\n        peer.on('data', function (bytes) {\n            // Echo exactly the received bytes; TCP can split one write into chunks.\n            peer.write(bytes);\n        });\n        peer.on('error', e => log('Peer error: ' + e, 'ERROR'));\n    });\n    server.on('listening', function () {\n        const port = server.info().localPort;\n        status('Server listening on 127.0.0.1:' + port);\n        log('Ephemeral local TCP port ' + port + ' (no network exposure)', 'PASS');\n        textClient = TCP.create({\n            host: '127.0.0.1',\n            port: port\n        });\n        textClient.on('connect', () => log('Text TCP client connected', 'PASS'));\n        textClient.on('line', text => log('Text echo: ' + JSON.stringify(text), 'PASS'));\n        textClient.on('error', e => log('Text client error: ' + e, 'ERROR'));\n        textClient.connect();\n        binaryClient = TCP.create({\n            host: '127.0.0.1',\n            port: port\n        });\n        let bytesReceived = [];\n        binaryClient.on('connect', () => log('Binary TCP client connected', 'PASS'));\n        binaryClient.on('data', function (bytes) {\n            bytesReceived = bytesReceived.concat(bytes);\n            while (bytesReceived.length >= pattern.length) {\n                const received = bytesReceived.splice(0, pattern.length);\n                const ok = received.every((v, i) => v === pattern[i]);\n                log('Binary echo: [' + received.join(',') + '] ' + (ok ? 'PASS' : 'FAIL'), ok ? 'PASS' : 'FAIL');\n            }\n        });\n        binaryClient.on('error', e => log('Binary client error: ' + e, 'ERROR'));\n        binaryClient.connect();\n    });\n    server.listen();\n}\nfunction textTest() {\n    if (!textClient || !textClient.info().open) {\n        log('Start server and allow connection first', 'WARN');\n        return;\n    }\n    const text = 'SCPI *IDN?\\n';\n    log('TX text ' + JSON.stringify(text));\n    textClient.write(text);\n}\nfunction binaryTest() {\n    if (!binaryClient || !binaryClient.info().open) {\n        log('Start server and allow connection first', 'WARN');\n        return;\n    }\n    log('TX binary [' + pattern.join(',') + ']');\n    binaryClient.write(pattern);\n}\nfunction stopLocal() {\n    for (const p of [textClient, binaryClient].concat(accepted)) if (p) {\n        try {\n            p.close();\n        } catch (e) { }\n    }\n    if (server) {\n        try {\n            server.close();\n        } catch (e) { }\n    }\n    textClient = null;\n    binaryClient = null;\n    accepted = [];\n    server = null;\n    status('TCP stopped');\n    log('All TCP connections closed');\n}\n\n// UI actions use Property Editor > Events (select a control, then Go to Handler).\n// Serial/TCP/UDP .on() below are transport callbacks, NOT widget events.\nfunction onInitialize() {\n    status('TCP stopped — start local listener');\n    log('Ready. Click START SERVER to create client/server on 127.0.0.1.');\n}\nfunction onShutdown() {\n    stopLocal();\n}\n",
+  "pages": [
+    {
+      "id": "tcp_main",
+      "name": "01 Local TCP Client & Server",
+      "width": 1170,
+      "height": 800,
+      "controls": [
+        {
+          "id": "tcpTitle",
+          "type": "label",
+          "text": "Local TCP Client & Server — Text & Binary",
+          "x": 22,
+          "y": 18,
+          "width": 1120,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "tcpIntro",
+          "type": "label",
+          "text": "No other machine needed. Start an ephemeral server on 127.0.0.1; two clients use separate text-line and binary streams.",
+          "x": 22,
+          "y": 86,
+          "width": 1120,
+          "height": 85,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "tcpStart",
+          "type": "button",
+          "text": "START SERVER",
+          "x": 22,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "startLocal",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "tcpText",
+          "type": "button",
+          "text": "SEND TEXT",
+          "x": 302,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "textTest",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "tcpBinary",
+          "type": "button",
+          "text": "SEND BINARY",
+          "x": 582,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "binaryTest",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "tcpStop",
+          "type": "button",
+          "text": "STOP TCP",
+          "x": 862,
+          "y": 188,
+          "width": 265,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "stopLocal",
+              "enabled": true
+            }
+          },
+          "properties": {}
+        },
+        {
+          "id": "tcpStatus",
+          "type": "label",
+          "text": "Not started",
+          "x": 22,
+          "y": 272,
+          "width": 1120,
+          "height": 64,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 7
+          }
+        },
+        {
+          "id": "tcpEvents",
+          "type": "event_log",
+          "text": "",
+          "x": 22,
+          "y": 348,
+          "width": 1120,
+          "height": 258,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 150
+          }
+        }
+      ]
+    }
+  ]
+}

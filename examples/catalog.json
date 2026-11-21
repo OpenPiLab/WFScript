@@ -3,13 +3,19 @@
     "file": "GettingStarted",
     "title": "Getting Started",
     "category": "Getting Started",
-    "description": "Quick tour, editor workflow, simulation, and hardware safety."
+    "description": "Quick tour and hands-on Property Editor Events tutorial (no manual ui.on registration)."
+  },
+  {
+    "file": "PanelDataLab",
+    "title": "Panel Data — Shared Variables & Bindings",
+    "category": "Getting Started",
+    "description": "One-Page live motor workbench: edit typed shared data on the left and immediately watch synchronized bindings on the right; simulation only."
   },
   {
     "file": "WidgetPlayground",
     "title": "Widget Playground",
     "category": "Getting Started",
-    "description": "A two-Page simulation of professional widgets and shared UI state."
+    "description": "Two-page simulation showing professional widgets and Property Editor-managed change, press, release and reset events."
   },
   {
     "file": "LabelFormatting",
@@ -18,10 +24,34 @@
     "description": "Edit multiline Label text, choose plain or rich HTML formatting, and update from ui.set()."
   },
   {
+    "file": "PanelTimers",
+    "title": "Panel JavaScript Timers — Interval & Timeout",
+    "category": "Getting Started",
+    "description": "Two pages: timer lifecycle and named Property Editor button handlers; timers remain native Qt-backed."
+  },
+  {
+    "file": "ScriptUtilityLab",
+    "title": "File I/O & Operator Dialogs",
+    "category": "Getting Started",
+    "description": "Simulation-safe CSV logger, JSON/binary file round trips, open/save grants and asynchronous operator prompts."
+  },
+  {
+    "file": "SQLiteDataLab",
+    "title": "SQLite Database & Data Logging",
+    "category": "Tables & Data",
+    "description": "Two-page SQLite logging and query demo with visually assigned operator actions and async SQL callbacks."
+  },
+  {
     "file": "EducationalVisuals",
     "title": "Embedded Images and Instruction Cards",
     "category": "Graphics & Charts",
     "description": "Two-Page illustrated RC filter guide with a fully embedded schematic and editable Procedure, Warning, Information and Success cards."
+  },
+  {
+    "file": "JavaScriptDSPStudio",
+    "title": "JavaScript DSP Studio — Third-Party Libraries",
+    "category": "Graphics & Charts",
+    "description": "Self-contained signal-processing workbench using Fraction.js, Pako, base64-js plus reusable FFT and filter modules; three live plots, no hardware output."
   },
   {
     "file": "ChartTechniques",
@@ -72,6 +102,18 @@
     "description": "Control W1, preview waveforms, and capture Scope CH1."
   },
   {
+    "file": "ACNetworkLaboratory",
+    "title": "AC Network Laboratory — Theory to Breadboard & AD3",
+    "category": "Analog Instruments",
+    "description": "Ten-Page interactive RC theory-to-AD3 laboratory: guided breadboard, physical CH1/CH2 Bode data, transparent least-squares mathematical derivation and source walkthrough, and synthetic/real curve-fit plus residual explorer."
+  },
+  {
+    "file": "RCStepResponseLaboratory",
+    "title": "RC Step Response — Exponential Fitting & Time Constant",
+    "category": "Analog Instruments",
+    "description": "Eleven-Page R/C differential-equation and square-wave laboratory, annotated exponential least-squares JavaScript, synthetic versus AD3 measurement, 63.2% crossing, residuals, export and comparison with the AC cutoff experiment."
+  },
+  {
     "file": "AD3ScopeExplorer",
     "title": "AD3 Scope and Range Discovery",
     "category": "Analog Instruments",
@@ -88,6 +130,12 @@
     "title": "Static Digital I/O",
     "category": "Digital Instruments",
     "description": "Set Z, LOW and HIGH per pin, read inputs and test a physical loopback."
+  },
+  {
+    "file": "DigitalInputMonitor",
+    "title": "Digital Input Test Station — Native Monitor",
+    "category": "Digital Instruments",
+    "description": "Three Pages: opt-in read-only StaticIO polling, debounced JavaScript callbacks and project-owned physical START/interlock test. No hardware actions on load."
   },
   {
     "file": "LogicAnalyzer",
@@ -130,5 +178,65 @@
     "title": "AD3 Hardware Test Station — W1 to CH1",
     "category": "Test Sequences & Executive",
     "description": "Real AD3 loopback with project-owned Setup/Main/Cleanup, one CH1 acquisition, four native numeric PASS/FAIL checks, UUT identity, archived JSON reports."
+  },
+  {
+    "file": "ProtocolUART",
+    "title": "UART Protocol — Native SDK Terminal",
+    "category": "Digital Instruments",
+    "description": "Connect DIO0 to DIO1 through 1 kΩ for local loopback. Common ground. 3.3 V logic. Opening this Panel never drives pins. Controller API example; simulation safe."
+  },
+  {
+    "file": "ProtocolSPI",
+    "title": "SPI Protocol — Master Transactions",
+    "category": "Digital Instruments",
+    "description": "Loopback: DIO1 → 1 kΩ → DIO2. A real JEDEC flash requires compatible 3.3 V wiring and selected CS. No output on load. Controller API example; simulation safe."
+  },
+  {
+    "file": "ProtocolI2C",
+    "title": "I²C Protocol — Master and Spy",
+    "category": "Digital Instruments",
+    "description": "Connect external 3.3 V pull-ups and a suitable sensor/EEPROM. Address is 7-bit (e.g. 0x48). No output on load. Controller API example; simulation safe."
+  },
+  {
+    "file": "ProtocolCAN",
+    "title": "CAN Protocol — Classical CAN",
+    "category": "Digital Instruments",
+    "description": "AD3 DIO pins MUST use a suitable 3.3 V CAN transceiver. NEVER connect DIO directly to CANH/CANL. Terminate bus properly. Controller API example; simulation safe."
+  },
+  {
+    "file": "ProtocolSWD",
+    "title": "SWD Protocol — Target Registers",
+    "category": "Digital Instruments",
+    "description": "Only connect a voltage-compatible 3.3 V debug target with common GND. Read-only demonstration; never writes registers automatically. Controller API example; simulation safe."
+  },
+  {
+    "file": "ProtocolUartAsync",
+    "title": "UART Asynchronous Lab — Native Terminal, Callbacks and Test",
+    "category": "Digital Instruments",
+    "description": "Three Pages: C++ RX Terminal, JavaScript onData callback and project-owned 5-byte Test Executive echo. DIO0 -> 1 kΩ -> DIO1. No output until configured."
+  },
+  {
+    "file": "SerialCommsLab",
+    "title": "PC Serial — Text & Binary",
+    "category": "Communications",
+    "description": "PC Serial text/binary communications, visual button-event bindings, device event callbacks."
+  },
+  {
+    "file": "TcpCommsLab",
+    "title": "TCP Local Client/Server — Text & Binary",
+    "category": "Communications",
+    "description": "Local TCP text/binary client/server echo with visual button-event bindings."
+  },
+  {
+    "file": "UdpCommsLab",
+    "title": "UDP Local Datagram Echo — Text & Binary",
+    "category": "Communications",
+    "description": "Local UDP datagrams with text/binary echo and visual button-event bindings."
+  },
+  {
+    "file": "CommunicationsTerminalLab",
+    "title": "Communications Terminal — Serial / TCP / UDP",
+    "category": "Communications",
+    "description": "Three-page TCP/UDP/Serial Terminal: Property Editor-managed sendRequested(payload) and operator events."
   }
 ]

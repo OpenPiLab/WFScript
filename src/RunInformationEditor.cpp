@@ -58,6 +58,9 @@ void RunInformationEditor::addRow(const QJsonObject& f) {
     set(5,choices.join(" | "));
 }
 void RunInformationEditor::acceptFields() {
+    if(applyFields())accept();
+}
+bool RunInformationEditor::applyFields(QString* error) {
     QJsonArray fields;
     for(int r=0;r<m_table->rowCount();++r) {
         const auto cell=[&](int col){auto* item=m_table->item(r,col);return item?item->text().trimmed():QString();};
@@ -73,13 +76,22 @@ void RunInformationEditor::acceptFields() {
         if(type=="boolean")field.insert("default",raw.compare("true",Qt::CaseInsensitive)==0 || raw=="1");
         else if(type=="number" && !raw.isEmpty()) {
             bool ok=false;const double n=raw.toDouble(&ok);
-            if(!ok) {QMessageBox::warning(this,"Invalid number","Default for "+cell(1)+" must be numeric");return;}
+            if(!ok) {
+                if(error)*error=QStringLiteral("Default for %1 must be numeric").arg(cell(1));
+                else QMessageBox::warning(this,"Invalid number","Default for "+cell(1)+" must be numeric");
+                return false;
+            }
             field.insert("default",n);
         } else if(type!="number")field.insert("default",raw);
         fields.append(field);
     }
     const QJsonObject next{{"fields",fields}};
-    QString error;
-    if(!RunInformationSchema::validate(next,&error)){QMessageBox::warning(this,"Invalid Run Information",error);return;}
-    m_schema=next;accept();
+    QString message;
+    if(!RunInformationSchema::validate(next,&message)){
+        if(error)*error=message;
+        else QMessageBox::warning(this,"Invalid Run Information",message);
+        return false;
+    }
+    m_schema=next;
+    return true;
 }

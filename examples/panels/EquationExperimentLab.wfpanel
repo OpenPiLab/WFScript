@@ -3,7 +3,7 @@
   "version": 2,
   "description": "v5.6.70 Equation & Experiment Table example: local equation renderer, editable experiment data, right-click CSV, no hardware output.",
   "scriptName": "EquationExperimentLab.js",
-  "script": "/**\n * Equation & Experiment Tables — hardware-safe, self-contained demonstration.\n * No AD3 output or external modules are used.\n * Equation source is a SUPPORTED LaTeX-style subset, NOT a complete TeX engine.\n * Right-click an Experiment Data Table to export its contents to CSV.\n */\nconst R=10000;\nconst C=10e-9;\nconst sweep=[100,500,1000,1592,2000,5000];\nfunction format(n,d) { return Number(n).toFixed(d); }\nfunction gainAt(f) { return 1/Math.sqrt(1+Math.pow(2*Math.PI*f*R*C,2)); }\nfunction rowsFor(freq) {\n    return sweep.map(function(f){\n        const predicted=gainAt(f);\n        // The measured column is left blank until a real instrument or student supplies a value.\n        return [String(f),format(predicted,4),'',''];\n    });\n}\nfunction populateLab() {\n    const f=Number(ui.get('frequencyInput'));\n    if (!isFinite(f)) throw new Error('Invalid frequency');\n    const omega=2*Math.PI*f;\n    const predicted=gainAt(f);\n    ui.set('selectedFrequency',f);\n    ui.set('selectedGain',predicted);\n    ui.set('liveEquation','|H(j\\\\omega)|=\\\\frac{1}{\\\\sqrt{1+(\\\\omega RC)^2}}');\n    ui.set('predictionTable',rowsFor(f));\n    ui.set('studentTable',rowsFor(f));\n    print('RC lab simulation: '+f+' Hz, predicted gain='+format(predicted,4));\n}\nui.on('frequencyInput','valueChanged',populateLab);\nui.on('fillTable','clicked',populateLab);\nui.on('clearTable','clicked',function(){ui.set('predictionTable',[]);ui.set('studentTable',[]);});\nui.on('studentTable','valueChanged',function(rows){\n    print('Student edited an observation: '+rows.length+' data rows; edits are runtime values, not saved design defaults.');\n});\npopulateLab();\n",
+  "script": "// ┌─ WFScript LEARNING LAB: Mathematical Equations and Experiment Tables\n// │ Level: Beginner–Intermediate\n// │\n// │ GOAL: Combine a theory Page, a frequency slider and editable experiment tables.\n// │ BEFORE RUN: No hardware; equations and predicted measurements are simulated.\n// │ TRY FIRST: Examine the Equations & Theory Page.\n// │ TRACE: `frequencyInput` → `populateLab()` → table updates; `studentTable` →\n// │    `onStudentTableValueChanged(rows)`.\n// │ EDIT SAFELY: Edit the mathematical input value or a predicted-data cell and watch the\n// │    table update.\n// │ REMEMBER: A table can accept operator-entered values and a separate results table can\n// │    show calculated values.\n// │\n// │ EVENT TIP: Select `frequencyInput` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/EquationExperimentLab.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * Equation & Experiment Tables — hardware-safe, self-contained demonstration.\n * No AD3 output or external modules are used.\n * Equation source is a SUPPORTED LaTeX-style subset, NOT a complete TeX engine.\n * Right-click an Experiment Data Table to export its contents to CSV.\n */\nconst R = 10000;\nconst C = 10e-9;\nconst sweep = [100, 500, 1000, 1592, 2000, 5000];\nfunction format(n, d) {\n    return Number(n).toFixed(d);\n}\nfunction gainAt(f) {\n    return 1 / Math.sqrt(1 + Math.pow(2 * Math.PI * f * R * C, 2));\n}\nfunction rowsFor(freq) {\n    return sweep.map(function (f) {\n        const predicted = gainAt(f);\n        // The measured column is left blank until a real instrument or student supplies a value.\n        return [String(f), format(predicted, 4), '', ''];\n    });\n}\n/**\n * CORE LESSON — Updates predicted experiment values from the selected frequency. It is\n * deliberately distinct from the student-editable table and physical measurement.\n */\nfunction populateLab() {\n    const f = Number(ui.get('frequencyInput'));\n    if (!isFinite(f)) throw new Error('Invalid frequency');\n    const omega = 2 * Math.PI * f;\n    const predicted = gainAt(f);\n    ui.set('selectedFrequency', f);\n    ui.set('selectedGain', predicted);\n    ui.set('liveEquation', '|H(j\\\\omega)|=\\\\frac{1}{\\\\sqrt{1+(\\\\omega RC)^2}}');\n    ui.set('predictionTable', rowsFor(f));\n    ui.set('studentTable', rowsFor(f));\n    print('RC lab simulation: ' + f + ' Hz, predicted gain=' + format(predicted, 4));\n}\n\n\nfunction onClearTableClicked() {\n    ui.set('predictionTable', []);\n    ui.set('studentTable', []);\n}\nfunction onStudentTableValueChanged(rows) {\n    print('Student edited an observation: ' + rows.length + ' data rows; edits are runtime values, not saved design defaults.');\n}\npopulateLab();\n",
   "activePageId": "equations",
   "appearance": {
     "themeMode": "dark",
@@ -199,7 +199,12 @@
           "value": 1000,
           "min": 100,
           "max": 5000,
-          "events": {},
+          "events": {
+            "valueChanged": {
+              "handler": "populateLab",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -266,12 +271,18 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "valueChanged": {
+              "handler": "onStudentTableValueChanged",
+              "enabled": true
+            }
+          },
           "properties": {
             "columns": "Frequency (Hz)|Predicted Gain|Measured Gain|Error (%)",
             "initialRows": "100|0.998||\n500|0.954||\n1000|0.847||\n1592|0.707||\n5000|0.303||",
             "maxRows": 250,
-            "editable": true
+            "editable": true,
+            "emitFullChangeEvent": true
           }
         },
         {
@@ -285,7 +296,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "populateLab",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {
@@ -299,7 +315,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {},
+          "events": {
+            "clicked": {
+              "handler": "onClearTableClicked",
+              "enabled": true
+            }
+          },
           "properties": {}
         },
         {

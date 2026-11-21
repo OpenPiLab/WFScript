@@ -24,6 +24,8 @@ class QMouseEvent;
 class QPaintEvent;
 class QDropEvent;
 class QDragEnterEvent;
+class QDragMoveEvent;
+class QDragLeaveEvent;
 
 // Native Qt Widgets are used in BOTH design and run mode.
 // This intentionally uses no QGraphicsProxyWidget, web content, or Qt Designer code.
@@ -31,12 +33,16 @@ class PanelCanvas final : public QWidget {
     Q_OBJECT
 public:
     explicit PanelCanvas(QWidget* parent = nullptr);
-    // The persisted document bounds and this QWidget's actual pixel bounds
-    // are identical. The surrounding scroll-area viewport is workspace only.
+    // Saved Page coordinates remain logical document pixels. Run mode can
+    // present a temporary scaled view without changing saved geometry.
     QSize documentSize() const { return m_documentSize; }
     QSize minimumContentSize() const;
     bool setDocumentSize(const QSize& requested);
-    QSize sizeHint() const override { return m_documentSize; }
+    QSize sizeHint() const override { return presentedSize(); }
+    QSize presentedSize() const;
+    qreal presentationScale() const { return m_presentationScale; }
+    // Used only for Run-mode display. Design editing always uses 100% coordinates.
+    void setPresentationScale(qreal scale);
     bool designMode() const { return m_designMode; }
     void setDesignMode(bool design);
     void setRunInformationDefinition(const QJsonObject& schema);
@@ -65,6 +71,8 @@ public:
     QUndoStack* undoStack() const { return m_undoStack; }
     void resetDesignHistory();
     bool snapToGrid() const { return m_snapToGrid; }
+    bool alignmentGuidesEnabled() const { return m_alignmentGuidesEnabled; }
+    void setAlignmentGuidesEnabled(bool enabled);
     void setSnapToGrid(bool enabled) { m_snapToGrid = enabled; }
     void copySelected();
     void cutSelected();
@@ -96,6 +104,8 @@ protected:
     void mouseMoveEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void dragEnterEvent(QDragEnterEvent*) override;
+    void dragMoveEvent(QDragMoveEvent*) override;
+    void dragLeaveEvent(QDragLeaveEvent*) override;
     void dropEvent(QDropEvent*) override;
     void keyPressEvent(QKeyEvent*) override;
     void contextMenuEvent(QContextMenuEvent*) override;
@@ -117,6 +127,11 @@ private:
     bool m_restoringHistory = false;
     bool m_batchEditing = false;
     bool m_snapToGrid = false;
+    bool m_alignmentGuidesEnabled = true;
+    QWidget* m_alignmentOverlay = nullptr;
+    void clearAlignmentGuides();
+    QVector<QRect> alignmentPeers() const;
+    QRect selectionBoundingGeometry() const;
     int m_pasteOffset = 0;
     struct Snapshot {
         QJsonArray controls;
@@ -140,6 +155,8 @@ private:
     QSet<QWidget*> m_marqueeBase;
     QFrame* m_resize = nullptr;
     QSize m_documentSize{900, 550};
+    qreal m_presentationScale=1.0;
+    void refreshPresentedGeometry();
     bool m_designMode = true;
     QJsonObject m_runInformationDefinition;
     QVariantMap m_runInformationInput; // pending UUT values, one shared GUI model across Pages
@@ -159,5 +176,5 @@ private:
     void syncSelection();
     void selectRectWithBase(const QRect& rectangle, const QSet<QWidget*>& base);
     void growDocumentToFit(const QRect& widgetGeometry);
-    static PanelControl readItem(const Item& item);
+    PanelControl readItem(const Item& item) const;
 };

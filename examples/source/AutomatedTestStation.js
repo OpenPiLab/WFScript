@@ -1,3 +1,24 @@
+// ┌─ WFScript LEARNING LAB: Automated Test Station — Project-Owned C++ Executive
+// │ Level: Advanced
+// │
+// │ GOAL: Operate a project-owned Setup/Main/Cleanup Test Executive and inspect archived
+// │    reports.
+// │ BEFORE RUN: No AD3 hardware needed; embedded `TestSteps.mjs` returns simulated
+// │    measurements.
+// │ TRY FIRST: In Design mode open Test Sequence to inspect steps, limits and Run
+// │    Information fields.
+// │ TRACE: `uutRun` → `onUutRunClicked()` → `TestRunner.run()`. Native C++ owns step
+// │    scheduling; `TestSteps.mjs` exports measurement functions.
+// │ EDIT SAFELY: Change a numeric test limit in the Test Sequence Editor—not in this
+// │    operator script—and observe the new verdict.
+// │ REMEMBER: There is **one test definition**, edited visually. The operator script only
+// │    invokes actions and displays saved results.
+// │
+// │ EVENT TIP: Select `uutRun` in Design mode → Properties → Events → Go to Handler.
+// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.
+// │ FULL LAB GUIDE: examples/guides/AutomatedTestStation.md (in the complete source ZIP).
+// └────────────────────────────────────────────────────────────────────────────
+
 /**
  * OPERATOR PANEL — four jobs only: Run, Next, Stop/Reset, Display.
  *
@@ -9,29 +30,65 @@
  * There is no TestRunner.loadDefinition(), add() or configure() here.
  */
 
+/**
+ * CORE LESSON — Centralizes operator-command error reporting. TestRunner already owns the saved
+ * sequence definition and Run Information; this Panel should not recreate them.
+ */
 function operatorAction(action) {
     if (!action()) {
-        const message='Executive: '+TestRunner.lastError;
+        const message = 'Executive: ' + TestRunner.lastError;
         print(message);
-        ui.set('uutFooter',message);
+        ui.set('uutFooter', message);
     } else {
-        ui.set('uutFooter','Test action accepted — inspect the Test Station and Run Report pages.');
+        ui.set('uutFooter', 'Test action accepted — inspect the Test Station and Run Report pages.');
     }
 }
 
 // Button IDs correspond directly to buttons on Page 01.
-ui.on('stationPass', 'clicked', function() { operatorAction(function() { return TestRunner.run(); }); });
+// Designer event: select stationPass -> Properties -> Events -> clicked
+function onStationPassClicked() {
+    operatorAction(function () {
+        return TestRunner.run();
+    });
+}
 // Native Run Information widget supplies the fields to C++ automatically.
 // This button runs the very same project-owned sequence, with no metadata script.
-ui.on('uutRun', 'clicked', function() { operatorAction(function() { return TestRunner.run(); }); });
-ui.on('uutReset','clicked', function() { operatorAction(function() { return TestRunner.reset(); }); refreshReport(); });
-ui.on('stationNext', 'clicked', function() { operatorAction(function() { return TestRunner.next(); }); });
-ui.on('stationFail', 'clicked', function() { operatorAction(function() { return TestRunner.terminate(); }); });
-ui.on('stationReset', 'clicked', function() { operatorAction(function() { return TestRunner.reset(); }); refreshReport(); });
+// Designer event: select uutRun -> Properties -> Events -> clicked
+function onUutRunClicked() {
+    operatorAction(function () {
+        return TestRunner.run();
+    });
+}
+// Designer event: select uutReset -> Properties -> Events -> clicked
+function onUutResetClicked() {
+    operatorAction(function () {
+        return TestRunner.reset();
+    });
+    refreshReport();
+}
+// Designer event: select stationNext -> Properties -> Events -> clicked
+function onStationNextClicked() {
+    operatorAction(function () {
+        return TestRunner.next();
+    });
+}
+// Designer event: select stationFail -> Properties -> Events -> clicked
+function onStationFailClicked() {
+    operatorAction(function () {
+        return TestRunner.terminate();
+    });
+}
+// Designer event: select stationReset -> Properties -> Events -> clicked
+function onStationResetClicked() {
+    operatorAction(function () {
+        return TestRunner.reset();
+    });
+    refreshReport();
+}
 
 function escapeText(value) {
     return String(value === undefined || value === null ? '' : value)
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function refreshReport() {
@@ -40,7 +97,7 @@ function refreshReport() {
     const steps = r.steps || [];
     const measurements = r.measurements || [];
     const runInfo = r.runInfo || {};
-    const archive = r.executionId ? TestRunner.archiveInfo() : {status:'idle'};
+    const archive = r.executionId ? TestRunner.archiveInfo() : { status: 'idle' };
     const archiveText = archive.status === 'saved'
         ? 'AUTO-ARCHIVED JSON: ' + archive.path
         : archive.status === 'error'
@@ -49,14 +106,14 @@ function refreshReport() {
                 ? 'Automatic archiving is disabled in Test Sequence > Report Storage.'
                 : 'Archive status: ' + archive.status;
     if (r.executionId) ui.set('reportFooter', archiveText);
-    const metadata = Object.keys(runInfo).map(function(key) {
+    const metadata = Object.keys(runInfo).map(function (key) {
         return '<tr><td>' + escapeText(key) + '</td><td>' + escapeText(runInfo[key]) + '</td></tr>';
     }).join('');
-    const rows = steps.map(function(step) {
+    const rows = steps.map(function (step) {
         return '<tr><td>' + escapeText(step.name) + '</td><td>' +
             escapeText(step.status) + '</td><td>' + escapeText(step.elapsedMs) + ' ms</td></tr>';
     }).join('');
-    const data = measurements.map(function(m) {
+    const data = measurements.map(function (m) {
         return '<tr><td>' + escapeText(m.name) + '</td><td>' +
             escapeText(m.value) + ' ' + escapeText(m.unit) + '</td><td>' +
             escapeText(m.low) + ' – ' + escapeText(m.high) + '</td><td>' +
@@ -79,26 +136,35 @@ function saveReport(format) {
     ui.set('reportFooter', escapeText(message));
     print(message);
 }
-ui.on('reportRefresh','clicked', refreshReport);
-ui.on('reportExportJson','clicked',function() { saveReport('json'); });
-ui.on('reportExportCsv','clicked',function() { saveReport('csv'); });
+// Designer event: reportRefresh / clicked -> refreshReport (assigned in Properties -> Events).
+// Designer event: select reportExportJson -> Properties -> Events -> clicked
+function onReportExportJsonClicked() {
+    saveReport('json');
+}
+// Designer event: select reportExportCsv -> Properties -> Events -> clicked
+function onReportExportCsvClicked() {
+    saveReport('csv');
+}
 
 
 // Page 06 demonstrates the project-owned pending model and two synchronized
 // form widgets. This is READ-ONLY JavaScript; it never configures or copies
 // UUT data. The C++ model owns both forms and the TestRunner start snapshot.
-ui.on('mirrorRead','clicked',function() {
-    const pending=TestRunner.pendingRunInfo();
-    const mainView=ui.get('uutFields');
-    const mirrorView=ui.get('uutFieldsMirror');
-    const completed=TestRunner.runInfo();
-    const message='Pending UUT: '+JSON.stringify(pending)+
-        '\nPage 01 view: '+JSON.stringify(mainView)+
-        '\nPage 06 view: '+JSON.stringify(mirrorView)+
-        '\nFrozen executed UUT: '+JSON.stringify(completed);
+// Designer event: select mirrorRead -> Properties -> Events -> clicked
+function onMirrorReadClicked() {
+    const pending = TestRunner.pendingRunInfo();
+    const mainView = ui.get('uutFields');
+    const mirrorView = ui.get('uutFieldsMirror');
+    const completed = TestRunner.runInfo();
+    const message = 'Pending UUT: ' + JSON.stringify(pending) +
+        '\nPage 01 view: ' + JSON.stringify(mainView) +
+        '\nPage 06 view: ' + JSON.stringify(mirrorView) +
+        '\nFrozen executed UUT: ' + JSON.stringify(completed);
     print(message);
-    ui.set('mirrorStatus',message);
-});
+    ui.set('mirrorStatus', message);
+}
 
-TestRunner.onFinished(function() { refreshReport(); });
+TestRunner.onFinished(function () {
+    refreshReport();
+});
 refreshReport(); // Reading state is safe; no test runs at Panel startup.

@@ -1,0 +1,21 @@
+{
+  "phase": 2,
+  "examples": {
+    "ScriptUtilityLab": 14,
+    "LabelFormatting": 1,
+    "EquationExperimentLab": 4,
+    "AD3ScopeExplorer": 2,
+    "PowerSupplies": 7,
+    "ClockPWM": 6,
+    "LogicAnalyzer": 5,
+    "QuadratureEncoder": 8,
+    "SequenceLab": 7,
+    "StaticDigitalIO": 3,
+    "ProtocolUART": 4,
+    "ProtocolSPI": 4,
+    "ProtocolI2C": 5,
+    "ProtocolCAN": 4,
+    "ProtocolSWD": 4
+  },
+  "total": 78
+}

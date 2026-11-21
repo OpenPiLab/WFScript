@@ -1,0 +1,293 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Visual regression panel for all Greek and TeX-style symbols used by the built-in AC and RC teaching laboratories. No hardware.",
+  "scriptName": "EquationSymbolCoverage.js",
+  "activePageId": "symbols",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "symbols",
+      "name": "Equation Symbol Coverage",
+      "width": 1360,
+      "height": 620,
+      "controls": [
+        {
+          "id": "symbolsHeader",
+          "type": "label",
+          "text": "EQUATION SYMBOL COVERAGE  |  WFScript v0.2-dev.8.9.5",
+          "x": 22,
+          "y": 12,
+          "width": 1316,
+          "height": 54,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10,
+            "textFormat": "Plain Text",
+            "wordWrap": false
+          }
+        },
+        {
+          "id": "symbolEq01",
+          "type": "equation",
+          "text": "01  Exponential noise",
+          "x": 22,
+          "y": 80,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "y_i=V_\\infty+A e^{-t_i/\\tau}+\\varepsilon_i",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq02",
+          "type": "equation",
+          "text": "02  Greek uppercase sums",
+          "x": 467,
+          "y": 80,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "A=\\frac{\\Sigma Ey-(\\Sigma E)(\\Sigma y)/N}{\\Sigma E^2-(\\Sigma E)^2/N}",
+            "pointSize": 18,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq03",
+          "type": "equation",
+          "text": "03  Sigma and summation",
+          "x": 912,
+          "y": 80,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\Sigma\\quad\\sum_{i=0}^{N}y_i",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq04",
+          "type": "equation",
+          "text": "04  Common Greek",
+          "x": 22,
+          "y": 205,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\alpha+\\beta+\\gamma+\\Delta+\\theta+\\phi",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq05",
+          "type": "equation",
+          "text": "05  Epsilon variants",
+          "x": 467,
+          "y": 205,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\epsilon+\\varepsilon+\\pi+\\omega+\\tau",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq06",
+          "type": "equation",
+          "text": "06  Equivalence arrows",
+          "x": 912,
+          "y": 205,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\rightarrow\\quad\\Leftrightarrow\\quad\\Longleftrightarrow",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq07",
+          "type": "equation",
+          "text": "07  Percent and approximation",
+          "x": 22,
+          "y": 330,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "1-e^{-5}\\approx99.33\\%",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq08",
+          "type": "equation",
+          "text": "08  RC cutoff equation",
+          "x": 467,
+          "y": 330,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "f_c=\\frac{1}{2\\pi RC}",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq09",
+          "type": "equation",
+          "text": "09  Capacitor impedance",
+          "x": 912,
+          "y": 330,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "Z_C=\\frac{1}{j\\omega C}",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq10",
+          "type": "equation",
+          "text": "10  Frequency response",
+          "x": 22,
+          "y": 455,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "H(j\\omega)=\\frac{1}{1+j\\omega RC}",
+            "pointSize": 18,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq11",
+          "type": "equation",
+          "text": "11  Phase difference",
+          "x": 467,
+          "y": 455,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\phi_H=\\phi_{out}-\\phi_{in}",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolEq12",
+          "type": "equation",
+          "text": "12  Calculus / units",
+          "x": 912,
+          "y": 455,
+          "width": 420,
+          "height": 113,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "source": "\\int_0^T v(t)i(t)\\,dt\\quad\\tau=559.58\\,\\mu s",
+            "pointSize": 21,
+            "borderVisible": true,
+            "titleVisible": true
+          }
+        },
+        {
+          "id": "symbolsFooter",
+          "type": "label",
+          "text": "Verify there are no literal backslashes or missing-glyph boxes. Fit Page should require no scrolling. No AD3 or script actions.",
+          "x": 22,
+          "y": 583,
+          "width": 1316,
+          "height": 29,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": false,
+            "wordWrap": false,
+            "textFormat": "Plain Text"
+          }
+        }
+      ]
+    }
+  ],
+  "libraries": [],
+  "script": "// Equation glyph coverage panel. No script actions and no hardware operations.\n"
+}

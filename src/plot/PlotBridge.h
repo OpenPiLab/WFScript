@@ -4,6 +4,7 @@
 #include <QSet>
 #include <QHash>
 #include <QVariantList>
+#include <QVariantMap>
 
 class ScopeBridge;
 
@@ -22,6 +23,12 @@ public:
                                   const QVariantList& x, const QVariantList& y,
                                   const QVariantMap& options);
     Q_INVOKABLE bool appendPoint(const QString& plotId,const QString& name,double x,double y);
+    Q_INVOKABLE bool setNativeSamples(const QString& plotId,const QString& name,QObject* samples,
+                                      double xStep,double xStart,const QVariantMap& options);
+    Q_INVOKABLE bool setView(const QString& plotId,double xMin,double xMax,double yMin,double yMax);
+    Q_INVOKABLE QVariantMap getView(const QString& plotId) const;
+    Q_INVOKABLE QVariantMap nativeSeriesInfo(const QString& plotId,const QString& name) const;
+    void receiveView(const QString& plotId,const QVariantMap& view);
     Q_INVOKABLE bool setSamples(const QString& plotId, const QString& name,
                                 const QVariantList& y, double sampleRateHz,
                                 double startSeconds, const QVariantMap& options);
@@ -38,6 +45,8 @@ private:
     QString m_lastError;
     // Names only for synchronous series-capacity validation; no sample cache.
     QHash<QString,QSet<QString>> m_seriesNames;
+    QHash<QString,QVariantMap> m_views;
+    QHash<QString,QHash<QString,QVariantMap>> m_nativeInfo;
     bool validPlot(const QString& id);
     bool validSeriesOptions(const QVariantMap& options);
     bool validNewSeries(const QString& id,const QString& name);

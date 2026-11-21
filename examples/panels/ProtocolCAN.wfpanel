@@ -1,0 +1,238 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "CAN Protocol — Classical CAN — WFScript v0.2-dev native Digilent SDK protocols",
+  "scriptName": "ProtocolCAN.js",
+  "activePageId": "protocol_can",
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "pages": [
+    {
+      "id": "protocol_can",
+      "name": "CAN Protocol",
+      "width": 1160,
+      "height": 790,
+      "controls": [
+        {
+          "id": "canTitle",
+          "type": "label",
+          "text": "CLASSICAL CAN  /  TX DIO0 · RX DIO1",
+          "x": 24,
+          "y": 18,
+          "width": 1112,
+          "height": 50,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "canSafety",
+          "type": "label",
+          "text": "AD3 DIO pins MUST use a suitable 3.3 V CAN transceiver. NEVER connect DIO directly to CANH/CANL. Terminate bus properly.",
+          "x": 24,
+          "y": 80,
+          "width": 1112,
+          "height": 80,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "canRate",
+          "type": "option_selector",
+          "text": "BUS RATE, Hz",
+          "x": 24,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "125000|250000|500000",
+            "defaultIndex": 2,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "canId",
+          "type": "option_selector",
+          "text": "STANDARD IDENTIFIER",
+          "x": 380,
+          "y": 179,
+          "width": 332,
+          "height": 72,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "options": "0x123|0x456|0x7DF",
+            "defaultIndex": 0,
+            "accent": "cyan"
+          }
+        },
+        {
+          "id": "canCfg",
+          "type": "button",
+          "text": "CONFIGURE / START RX",
+          "x": 24,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCanCfgClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "canSend",
+          "type": "button",
+          "text": "TRANSMIT FRAME",
+          "x": 300,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCanSendClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "canRead",
+          "type": "button",
+          "text": "POLL RX",
+          "x": 576,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCanReadClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "canStop",
+          "type": "button",
+          "text": "RELEASE PINS",
+          "x": 852,
+          "y": 278,
+          "width": 258,
+          "height": 58,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {
+            "clicked": {
+              "handler": "onCanStopClicked",
+              "enabled": true
+            }
+          },
+          "properties": {
+            "accent": "cyan",
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "canStatus",
+          "type": "label",
+          "text": "IDLE",
+          "x": 24,
+          "y": 385,
+          "width": 1112,
+          "height": 76,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        },
+        {
+          "id": "canLog",
+          "type": "event_log",
+          "text": "CAN Transaction & Event Log",
+          "x": 24,
+          "y": 476,
+          "width": 1112,
+          "height": 239,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "maxEntries": 500,
+            "autoScroll": true,
+            "showTimestamp": true,
+            "showSource": true
+          }
+        },
+        {
+          "id": "canFoot",
+          "type": "label",
+          "text": "Simulation results are labeled as simulation. This is a native SDK controller example, not a passive waveform decoder.\\nStop/Close releases protocol outputs. Configure buttons may physically drive selected DIO pins.",
+          "x": 24,
+          "y": 727,
+          "width": 1112,
+          "height": 55,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "borderVisible": true,
+            "cornerRadius": 10
+          }
+        }
+      ]
+    }
+  ],
+  "script": "// ┌─ WFScript LEARNING LAB: CAN Protocol — Classical CAN\n// │ Level: Advanced  |  Mode: hardware-capable\n// │\n// │ GOAL: Configure classical CAN, transmit a frame and poll the receive side.\n// │ BEFORE RUN: Use Simulation first. Physical CAN requires an appropriate external CAN\n// │    transceiver, wiring and bus termination.\n// │ TRY FIRST: Press CONFIGURE / START RX.\n// │ TRACE: `canCfg` → `onCanCfgClicked()` → `Protocol1.CAN.configure({tx:0,rx:1,...})`.\n// │ EDIT SAFELY: Change the standard CAN identifier in the Panel and observe the formatting\n// │    of the transmitted ID.\n// │ REMEMBER: CAN traffic, acknowledgement and frame reception are bus-level phenomena, not\n// │    guaranteed by script execution.\n// │\n// │ EVENT TIP: Select `canCfg` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/ProtocolCAN.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n// Classical CAN only. Requires proper physical CAN transceiver and bus.\nfunction canLog(t) {\n    ui.set('canStatus', t);\n    ui.set('canLog', {\n        append: {\n            level: t.indexOf('ERROR') >= 0 ? 'ERROR' : (t.indexOf('NACK') >= 0 || t.indexOf('UNCONFIRMED') >= 0 ? 'WARN' : 'INFO'),\n            source: 'CAN',\n            message: t\n        }\n    });\n    print('CAN: ' + t);\n}\nfunction canTry(fn) {\n    try {\n        fn();\n    } catch (e) {\n        canLog('ERROR: ' + String(e));\n    }\n}\n/**\n * CORE LESSON — Initializes native classical CAN and receive mode. Physical CAN requires a real\n * transceiver; AD3 DIO pins must never connect to CANH/CANL directly.\n */\nfunction canConfigure() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    const rate = Number(ui.get('canRate'));\n    if (!Protocol1.CAN.configure({\n        tx: 0,\n        rx: 1,\n        rateHz: rate\n    })) throw Error(Protocol1.CAN.lastError);\n    if (!Protocol1.CAN.startRx()) throw Error(Protocol1.CAN.lastError);\n    canLog((Protocol1.simulation ? 'SIMULATED' : 'READY') + ' / ' + rate + ' bit/s (classical CAN)');\n}\nfunction canSend() {\n    const id = parseInt(String(ui.get('canId')), 16);\n    const r = Protocol1.CAN.send(id, false, false, [0x12, 0x34, 0x56]);\n    if (!r.ok) throw Error(r.error);\n    canLog((r.simulated ? 'SIMULATION — no transmitted CAN frame' : 'TX COMPLETE') + ' / ID 0x' + id.toString(16));\n}\nfunction canRead() {\n    const r = Protocol1.CAN.receive();\n    if (!r.ok) throw Error(r.error);\n    if (r.simulated) {\n        canLog('SIMULATION — no bus traffic');\n        return;\n    }\n    if (!r.received) {\n        canLog('NO NEW FRAME');\n        return;\n    }\n    canLog('CAN ID 0x' + Number(r.id).toString(16) + ' DLC ' + r.dlc + ' STATUS ' + r.status + ' DATA ' + JSON.stringify(r.data) +\n        (r.status === 1 ? ' OK' : ' — DECODE ERROR'));\n}\nfunction canStop() {\n    if (!Protocol1.stop()) throw Error(Protocol1.lastError);\n    canLog('STOPPED / pins released');\n}\nfunction onCanCfgClicked() {\n    return canTry(canConfigure);\n}\nfunction onCanSendClicked() {\n    return canTry(canSend);\n}\nfunction onCanReadClicked() {\n    return canTry(canRead);\n}\nfunction onCanStopClicked() {\n    return canTry(canStop);\n}\ncanLog('IDLE — a CAN TRANSCEIVER is mandatory; NEVER connect CANH/CANL to DIO pins');\n"
+}

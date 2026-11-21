@@ -7,6 +7,12 @@ PanelControl PanelPlotFactory::defaultDefinition(const QString& id) const {
     d.text=QStringLiteral("Data Plot");
     return d;
 }
+QVector<PanelEventDefinition> PanelPlotFactory::events() const {
+    return {{QStringLiteral("viewChanged"),
+             QStringLiteral("viewChanged(view: object)"),
+             QStringLiteral("The operator zoomed, panned, or reset the X/Y axes; receives xMin/xMax/yMin/yMax/isZoomed."),
+             QStringLiteral("view")}};
+}
 QVector<WidgetProperty> PanelPlotFactory::properties() const {
     QVector<WidgetProperty> definitions={
         {"text","Chart title","string",true},
@@ -54,9 +60,11 @@ QVector<WidgetProperty> PanelPlotFactory::properties() const {
     }
     return definitions;
 }
-QWidget* PanelPlotFactory::create(const PanelControl& def,QWidget* parent,EventSink) const {
+QWidget* PanelPlotFactory::create(const PanelControl& def,QWidget* parent,EventSink onUserEvent) const {
     auto* chart=new PanelChartWidget(parent);
     chart->applyDefinition(def);
+    QObject::connect(chart,&PanelChartWidget::viewChanged,chart,
+        [onUserEvent](const QVariantMap& view){if(onUserEvent)onUserEvent(QStringLiteral("viewChanged"),view);});
     return chart;
 }
 void PanelPlotFactory::applyDefinition(QWidget* widget,const PanelControl& def) const {

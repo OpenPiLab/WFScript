@@ -15,6 +15,12 @@ int main(int argc,char** argv) {
     check(ApiKnowledge::lookup("Scope.Channel2.spectrum").example.contains("spectrum("),"FFT documentation");
     check(ApiKnowledge::lookup("Wavegen.Channel2.Simple.Amplitude.value").unit=="V peak","generator units");
     check(ApiKnowledge::lookup("Scope.single").summary.size()>4,"catalog summary");
+    for (const QString& path:{QStringLiteral("Serial.create"),QStringLiteral("Serial.ports"),
+            QStringLiteral("TCP.create"),QStringLiteral("TCP.createServer"),
+            QStringLiteral("UDP.create"),QStringLiteral("SerialConnection.write"),
+            QStringLiteral("TCPConnection.on"),QStringLiteral("TCPServer.listen"),
+            QStringLiteral("UDPConnection.send")})
+        check(ApiKnowledge::lookup(path).known,QStringLiteral("missing communications F1/help: ")+path);
     for(const auto& path:ApiKnowledge::curatedPaths()) {
         const auto doc=ApiKnowledge::lookup(path);
         check(doc.known,QStringLiteral("stale curated API documentation: ")+path);

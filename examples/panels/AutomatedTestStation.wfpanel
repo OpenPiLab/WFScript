@@ -204,7 +204,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onUutRunClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "uutReset",
@@ -217,7 +222,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onUutResetClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "uutDetails",
@@ -382,7 +392,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onStationNextClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "stationPass",
@@ -395,7 +410,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onStationPassClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "stationFail",
@@ -408,7 +428,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onStationFailClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "stationReset",
@@ -421,7 +446,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onStationResetClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "stationSummary",
@@ -669,7 +699,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "refreshReport",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "reportApi",
@@ -739,7 +774,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onReportExportJsonClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "reportExportCsv",
@@ -752,7 +792,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onReportExportCsvClicked",
+              "enabled": true
+            }
+          }
         }
       ]
     },
@@ -824,7 +869,12 @@
           "value": 0,
           "min": 0,
           "max": 100,
-          "events": {}
+          "events": {
+            "clicked": {
+              "handler": "onMirrorReadClicked",
+              "enabled": true
+            }
+          }
         },
         {
           "id": "mirrorStatus",
@@ -867,11 +917,11 @@
       ]
     }
   ],
-  "script": "/**\n * OPERATOR PANEL — four jobs only: Run, Next, Stop/Reset, Display.\n *\n * The C++ runtime has ALREADY loaded the saved project test definition\n * and resolved TestSteps.mjs BEFORE this script is evaluated.\n *\n * To edit timing, limits, step order or handlers: Panel Designer > Test Sequence.\n * To change what a measurement does: edit TestSteps.mjs.\n * There is no TestRunner.loadDefinition(), add() or configure() here.\n */\n\nfunction operatorAction(action) {\n    if (!action()) {\n        const message='Executive: '+TestRunner.lastError;\n        print(message);\n        ui.set('uutFooter',message);\n    } else {\n        ui.set('uutFooter','Test action accepted — inspect the Test Station and Run Report pages.');\n    }\n}\n\n// Button IDs correspond directly to buttons on Page 01.\nui.on('stationPass', 'clicked', function() { operatorAction(function() { return TestRunner.run(); }); });\n// Native Run Information widget supplies the fields to C++ automatically.\n// This button runs the very same project-owned sequence, with no metadata script.\nui.on('uutRun', 'clicked', function() { operatorAction(function() { return TestRunner.run(); }); });\nui.on('uutReset','clicked', function() { operatorAction(function() { return TestRunner.reset(); }); refreshReport(); });\nui.on('stationNext', 'clicked', function() { operatorAction(function() { return TestRunner.next(); }); });\nui.on('stationFail', 'clicked', function() { operatorAction(function() { return TestRunner.terminate(); }); });\nui.on('stationReset', 'clicked', function() { operatorAction(function() { return TestRunner.reset(); }); refreshReport(); });\n\nfunction escapeText(value) {\n    return String(value === undefined || value === null ? '' : value)\n        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');\n}\n\nfunction refreshReport() {\n    const r = TestRunner.report();\n    const s = TestRunner.summary();\n    const steps = r.steps || [];\n    const measurements = r.measurements || [];\n    const runInfo = r.runInfo || {};\n    const archive = r.executionId ? TestRunner.archiveInfo() : {status:'idle'};\n    const archiveText = archive.status === 'saved'\n        ? 'AUTO-ARCHIVED JSON: ' + archive.path\n        : archive.status === 'error'\n            ? 'ARCHIVE FAILED: ' + archive.error\n            : archive.status === 'disabled'\n                ? 'Automatic archiving is disabled in Test Sequence > Report Storage.'\n                : 'Archive status: ' + archive.status;\n    if (r.executionId) ui.set('reportFooter', archiveText);\n    const metadata = Object.keys(runInfo).map(function(key) {\n        return '<tr><td>' + escapeText(key) + '</td><td>' + escapeText(runInfo[key]) + '</td></tr>';\n    }).join('');\n    const rows = steps.map(function(step) {\n        return '<tr><td>' + escapeText(step.name) + '</td><td>' +\n            escapeText(step.status) + '</td><td>' + escapeText(step.elapsedMs) + ' ms</td></tr>';\n    }).join('');\n    const data = measurements.map(function(m) {\n        return '<tr><td>' + escapeText(m.name) + '</td><td>' +\n            escapeText(m.value) + ' ' + escapeText(m.unit) + '</td><td>' +\n            escapeText(m.low) + ' – ' + escapeText(m.high) + '</td><td>' +\n            escapeText(m.status) + '</td></tr>';\n    }).join('');\n    ui.set('stationReport', '<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\">' +\n        '<h2>Native Test Report</h2><p><b>Status:</b> ' + escapeText(s.state) +\n        ' &nbsp; <b>Configured deadline:</b> ' + escapeText(s.totalTimeoutMs) + ' ms' +\n        ' &nbsp; <b>Elapsed:</b> ' + escapeText(s.elapsedMs) + ' ms</p>' +\n        '<p><b>Execution ID:</b> ' + escapeText(r.executionId || 'Not yet started') + '</p>' +\n        '<p><b>Archive:</b> ' + escapeText(archiveText) + '</p>' +\n        '<h3>Run Information</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Field</th><th align=\"left\">Value</th></tr>' + metadata + '</table>' +\n        '<h3>Steps</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Step</th><th>Status</th><th>Elapsed</th></tr>' + rows + '</table>' +\n        '<h3>Measurements</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Measurement</th><th>Actual</th><th>Limits</th><th>Verdict</th></tr>' + data + '</table></div>');\n}\n\nfunction saveReport(format) {\n    const file = TestRunner.exportReport(format);\n    const message = file ? 'Saved ' + format.toUpperCase() + ': ' + file : 'Cannot export: ' + TestRunner.lastError;\n    ui.set('reportFooter', escapeText(message));\n    print(message);\n}\nui.on('reportRefresh','clicked', refreshReport);\nui.on('reportExportJson','clicked',function() { saveReport('json'); });\nui.on('reportExportCsv','clicked',function() { saveReport('csv'); });\n\n\n// Page 06 demonstrates the project-owned pending model and two synchronized\n// form widgets. This is READ-ONLY JavaScript; it never configures or copies\n// UUT data. The C++ model owns both forms and the TestRunner start snapshot.\nui.on('mirrorRead','clicked',function() {\n    const pending=TestRunner.pendingRunInfo();\n    const mainView=ui.get('uutFields');\n    const mirrorView=ui.get('uutFieldsMirror');\n    const completed=TestRunner.runInfo();\n    const message='Pending UUT: '+JSON.stringify(pending)+\n        '\\nPage 01 view: '+JSON.stringify(mainView)+\n        '\\nPage 06 view: '+JSON.stringify(mirrorView)+\n        '\\nFrozen executed UUT: '+JSON.stringify(completed);\n    print(message);\n    ui.set('mirrorStatus',message);\n});\n\nTestRunner.onFinished(function() { refreshReport(); });\nrefreshReport(); // Reading state is safe; no test runs at Panel startup.\n",
+  "script": "// ┌─ WFScript LEARNING LAB: Automated Test Station — Project-Owned C++ Executive\n// │ Level: Advanced\n// │\n// │ GOAL: Operate a project-owned Setup/Main/Cleanup Test Executive and inspect archived\n// │    reports.\n// │ BEFORE RUN: No AD3 hardware needed; embedded `TestSteps.mjs` returns simulated\n// │    measurements.\n// │ TRY FIRST: In Design mode open Test Sequence to inspect steps, limits and Run\n// │    Information fields.\n// │ TRACE: `uutRun` → `onUutRunClicked()` → `TestRunner.run()`. Native C++ owns step\n// │    scheduling; `TestSteps.mjs` exports measurement functions.\n// │ EDIT SAFELY: Change a numeric test limit in the Test Sequence Editor—not in this\n// │    operator script—and observe the new verdict.\n// │ REMEMBER: There is **one test definition**, edited visually. The operator script only\n// │    invokes actions and displays saved results.\n// │\n// │ EVENT TIP: Select `uutRun` in Design mode → Properties → Events → Go to Handler.\n// │ Dynamic UI events can use `ui.on` — do NOT duplicate a saved designer binding.\n// │ FULL LAB GUIDE: examples/guides/AutomatedTestStation.md (in the complete source ZIP).\n// └────────────────────────────────────────────────────────────────────────────\n\n/**\n * OPERATOR PANEL — four jobs only: Run, Next, Stop/Reset, Display.\n *\n * The C++ runtime has ALREADY loaded the saved project test definition\n * and resolved TestSteps.mjs BEFORE this script is evaluated.\n *\n * To edit timing, limits, step order or handlers: Panel Designer > Test Sequence.\n * To change what a measurement does: edit TestSteps.mjs.\n * There is no TestRunner.loadDefinition(), add() or configure() here.\n */\n\n/**\n * CORE LESSON — Centralizes operator-command error reporting. TestRunner already owns the saved\n * sequence definition and Run Information; this Panel should not recreate them.\n */\nfunction operatorAction(action) {\n    if (!action()) {\n        const message = 'Executive: ' + TestRunner.lastError;\n        print(message);\n        ui.set('uutFooter', message);\n    } else {\n        ui.set('uutFooter', 'Test action accepted — inspect the Test Station and Run Report pages.');\n    }\n}\n\n// Button IDs correspond directly to buttons on Page 01.\n// Designer event: select stationPass -> Properties -> Events -> clicked\nfunction onStationPassClicked() {\n    operatorAction(function () {\n        return TestRunner.run();\n    });\n}\n// Native Run Information widget supplies the fields to C++ automatically.\n// This button runs the very same project-owned sequence, with no metadata script.\n// Designer event: select uutRun -> Properties -> Events -> clicked\nfunction onUutRunClicked() {\n    operatorAction(function () {\n        return TestRunner.run();\n    });\n}\n// Designer event: select uutReset -> Properties -> Events -> clicked\nfunction onUutResetClicked() {\n    operatorAction(function () {\n        return TestRunner.reset();\n    });\n    refreshReport();\n}\n// Designer event: select stationNext -> Properties -> Events -> clicked\nfunction onStationNextClicked() {\n    operatorAction(function () {\n        return TestRunner.next();\n    });\n}\n// Designer event: select stationFail -> Properties -> Events -> clicked\nfunction onStationFailClicked() {\n    operatorAction(function () {\n        return TestRunner.terminate();\n    });\n}\n// Designer event: select stationReset -> Properties -> Events -> clicked\nfunction onStationResetClicked() {\n    operatorAction(function () {\n        return TestRunner.reset();\n    });\n    refreshReport();\n}\n\nfunction escapeText(value) {\n    return String(value === undefined || value === null ? '' : value)\n        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n}\n\nfunction refreshReport() {\n    const r = TestRunner.report();\n    const s = TestRunner.summary();\n    const steps = r.steps || [];\n    const measurements = r.measurements || [];\n    const runInfo = r.runInfo || {};\n    const archive = r.executionId ? TestRunner.archiveInfo() : { status: 'idle' };\n    const archiveText = archive.status === 'saved'\n        ? 'AUTO-ARCHIVED JSON: ' + archive.path\n        : archive.status === 'error'\n            ? 'ARCHIVE FAILED: ' + archive.error\n            : archive.status === 'disabled'\n                ? 'Automatic archiving is disabled in Test Sequence > Report Storage.'\n                : 'Archive status: ' + archive.status;\n    if (r.executionId) ui.set('reportFooter', archiveText);\n    const metadata = Object.keys(runInfo).map(function (key) {\n        return '<tr><td>' + escapeText(key) + '</td><td>' + escapeText(runInfo[key]) + '</td></tr>';\n    }).join('');\n    const rows = steps.map(function (step) {\n        return '<tr><td>' + escapeText(step.name) + '</td><td>' +\n            escapeText(step.status) + '</td><td>' + escapeText(step.elapsedMs) + ' ms</td></tr>';\n    }).join('');\n    const data = measurements.map(function (m) {\n        return '<tr><td>' + escapeText(m.name) + '</td><td>' +\n            escapeText(m.value) + ' ' + escapeText(m.unit) + '</td><td>' +\n            escapeText(m.low) + ' – ' + escapeText(m.high) + '</td><td>' +\n            escapeText(m.status) + '</td></tr>';\n    }).join('');\n    ui.set('stationReport', '<div style=\"font-family:Segoe UI;color:#d9e8f4;font-size:12px\">' +\n        '<h2>Native Test Report</h2><p><b>Status:</b> ' + escapeText(s.state) +\n        ' &nbsp; <b>Configured deadline:</b> ' + escapeText(s.totalTimeoutMs) + ' ms' +\n        ' &nbsp; <b>Elapsed:</b> ' + escapeText(s.elapsedMs) + ' ms</p>' +\n        '<p><b>Execution ID:</b> ' + escapeText(r.executionId || 'Not yet started') + '</p>' +\n        '<p><b>Archive:</b> ' + escapeText(archiveText) + '</p>' +\n        '<h3>Run Information</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Field</th><th align=\"left\">Value</th></tr>' + metadata + '</table>' +\n        '<h3>Steps</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Step</th><th>Status</th><th>Elapsed</th></tr>' + rows + '</table>' +\n        '<h3>Measurements</h3><table width=\"100%\" cellpadding=\"4\"><tr><th align=\"left\">Measurement</th><th>Actual</th><th>Limits</th><th>Verdict</th></tr>' + data + '</table></div>');\n}\n\nfunction saveReport(format) {\n    const file = TestRunner.exportReport(format);\n    const message = file ? 'Saved ' + format.toUpperCase() + ': ' + file : 'Cannot export: ' + TestRunner.lastError;\n    ui.set('reportFooter', escapeText(message));\n    print(message);\n}\n// Designer event: reportRefresh / clicked -> refreshReport (assigned in Properties -> Events).\n// Designer event: select reportExportJson -> Properties -> Events -> clicked\nfunction onReportExportJsonClicked() {\n    saveReport('json');\n}\n// Designer event: select reportExportCsv -> Properties -> Events -> clicked\nfunction onReportExportCsvClicked() {\n    saveReport('csv');\n}\n\n\n// Page 06 demonstrates the project-owned pending model and two synchronized\n// form widgets. This is READ-ONLY JavaScript; it never configures or copies\n// UUT data. The C++ model owns both forms and the TestRunner start snapshot.\n// Designer event: select mirrorRead -> Properties -> Events -> clicked\nfunction onMirrorReadClicked() {\n    const pending = TestRunner.pendingRunInfo();\n    const mainView = ui.get('uutFields');\n    const mirrorView = ui.get('uutFieldsMirror');\n    const completed = TestRunner.runInfo();\n    const message = 'Pending UUT: ' + JSON.stringify(pending) +\n        '\\nPage 01 view: ' + JSON.stringify(mainView) +\n        '\\nPage 06 view: ' + JSON.stringify(mirrorView) +\n        '\\nFrozen executed UUT: ' + JSON.stringify(completed);\n    print(message);\n    ui.set('mirrorStatus', message);\n}\n\nTestRunner.onFinished(function () {\n    refreshReport();\n});\nrefreshReport(); // Reading state is safe; no test runs at Panel startup.\n",
   "libraries": [
     {
       "name": "TestSteps.mjs",
-      "source": "/**\n * TestSteps.mjs — the ONLY test implementation file.\n *\n * Each exported function does ONE thing and returns the measurement or result.\n * The editor owns order, timing, acceptance limits and cleanup policy.\n * Qt/C++ owns scheduling, comparisons, statuses, and the test report.\n * You can edit these functions without changing the operator Panel.\n */\n\nexport function verifyPositive() {\n    return 3.301;        // In hardware: read the actual supply voltage.\n}\n\nexport function verifyNegative() {\n    return -3.298;\n}\n\nexport function beginClock() {\n    print('Clock acquisition started');\n}\n\nexport function pollClock(stepElapsedMs) {\n    if (stepElapsedMs < 180) return undefined; // Still measuring.\n    return 999.8;      // Numeric result: C++ checks saved limits.\n}\n\nexport function endClock(status, elapsedMs) {\n    print('Clock verification:', status, elapsedMs + ' ms');\n}\n\nexport function verifyPwm() {\n    return 50.1;       // Change to 47.5 to demonstrate a real FAIL.\n}\n\nexport function finalize() {\n    print('All Main tests finished');\n    return true;\n}\n\nexport function restoreStation() {\n    print('Cleanup: restore instruments and release fixture');\n    return true;\n}\n"
+      "source": "// LEARNING TIP: to practice a FAIL, change verifyPwm() from 50.1 to 47.5 and rerun. The allowed limits and step order belong to Test Sequence.\n\n/**\n * TestSteps.mjs — the ONLY test implementation file.\n *\n * Each exported function does ONE thing and returns the measurement or result.\n * The editor owns order, timing, acceptance limits and cleanup policy.\n * Qt/C++ owns scheduling, comparisons, statuses, and the test report.\n * You can edit these functions without changing the operator Panel.\n */\n\nexport function verifyPositive() {\n    return 3.301;        // In hardware: read the actual supply voltage.\n}\n\nexport function verifyNegative() {\n    return -3.298;\n}\n\nexport function beginClock() {\n    print('Clock acquisition started');\n}\n\nexport function pollClock(stepElapsedMs) {\n    if (stepElapsedMs < 180) return undefined;\n    // Still measuring.\n    return 999.8;      // Numeric result: C++ checks saved limits.\n}\n\nexport function endClock(status, elapsedMs) {\n    print('Clock verification:', status, elapsedMs + ' ms');\n}\n\nexport function verifyPwm() {\n    return 50.1;       // Change to 47.5 to demonstrate a real FAIL.\n}\n\nexport function finalize() {\n    print('All Main tests finished');\n    return true;\n}\n\nexport function restoreStation() {\n    print('Cleanup: restore instruments and release fixture');\n    return true;\n}\n"
     }
   ],
   "testDefinition": {

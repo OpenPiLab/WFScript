@@ -1,0 +1,262 @@
+{
+  "format": "WFScriptPanel",
+  "version": 2,
+  "description": "Visual quality and theme/resize review of the original five widget types alongside newer instrument controls. No hardware output.",
+  "scriptName": "WidgetVisualQA.js",
+  "script": "// VISUAL QA PANEL: no JavaScript device calls or automatic output.\n// Compare small/large controls and switch the Panel Appearance theme.\n// Resize a control in Design mode to test responsive font sizing.\n",
+  "activePageId": "main",
+  "libraries": [],
+  "lifecycle": {
+    "initializeEnabled": false,
+    "shutdownEnabled": false
+  },
+  "appearance": {
+    "themeMode": "dark",
+    "background": "",
+    "showDesignGrid": false
+  },
+  "panelData": [],
+  "pages": [
+    {
+      "id": "main",
+      "name": "Visual QA",
+      "width": 1280,
+      "height": 770,
+      "controls": [
+        {
+          "id": "title",
+          "type": "label",
+          "text": "WFSCRIPT  |  WIDGET VISUAL QUALITY CHECK",
+          "x": 22,
+          "y": 12,
+          "width": 1220,
+          "height": 48,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "cornerRadius": 8,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "note",
+          "type": "label",
+          "text": "Resize the paired controls in Design mode; compare dark and light Page themes.  This Panel has no hardware commands.",
+          "x": 22,
+          "y": 65,
+          "width": 1220,
+          "height": 52,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "cornerRadius": 8,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "smallButton",
+          "type": "button",
+          "text": "RUN",
+          "x": 28,
+          "y": 139,
+          "width": 157,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "largeButton",
+          "type": "button",
+          "text": "RUN",
+          "x": 216,
+          "y": 123,
+          "width": 285,
+          "height": 83,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "smallToggle",
+          "type": "toggle",
+          "text": "ENABLE",
+          "x": 534,
+          "y": 139,
+          "width": 170,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "largeToggle",
+          "type": "toggle",
+          "text": "ENABLE",
+          "x": 746,
+          "y": 123,
+          "width": 333,
+          "height": 83,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "smallLabel",
+          "type": "label",
+          "text": "STATUS",
+          "x": 28,
+          "y": 241,
+          "width": 157,
+          "height": 42,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "cornerRadius": 8,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "largeLabel",
+          "type": "label",
+          "text": "STATUS",
+          "x": 216,
+          "y": 220,
+          "width": 320,
+          "height": 94,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "cornerRadius": 8,
+            "borderVisible": true
+          }
+        },
+        {
+          "id": "smallNumeric",
+          "type": "numeric",
+          "text": "",
+          "x": 577,
+          "y": 241,
+          "width": 152,
+          "height": 42,
+          "value": 12.34,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "largeNumeric",
+          "type": "numeric",
+          "text": "",
+          "x": 757,
+          "y": 220,
+          "width": 318,
+          "height": 94,
+          "value": 12.34,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "smallGauge",
+          "type": "gauge",
+          "text": "PRESSURE",
+          "x": 28,
+          "y": 368,
+          "width": 155,
+          "height": 140,
+          "value": 45,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "largeGauge",
+          "type": "gauge",
+          "text": "PRESSURE",
+          "x": 214,
+          "y": 340,
+          "width": 270,
+          "height": 212,
+          "value": 45,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "digitalReference",
+          "type": "digital_display",
+          "text": "DIGITAL DISPLAY",
+          "x": 511,
+          "y": 355,
+          "width": 264,
+          "height": 165,
+          "value": 12.34,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "unit": "V",
+            "decimals": 2
+          }
+        },
+        {
+          "id": "dialReference",
+          "type": "precision_dial",
+          "text": "PRECISION DIAL",
+          "x": 799,
+          "y": 340,
+          "width": 268,
+          "height": 252,
+          "value": 42,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {}
+        },
+        {
+          "id": "instructions",
+          "type": "label",
+          "text": "COMPARE: Button / Label / Numeric / Toggle should grow legible fonts with their control sizes. Numeric and Gauge should always show rounded borders and bright text on dark themes. Older labels can retain radius 0.",
+          "x": 28,
+          "y": 617,
+          "width": 1080,
+          "height": 100,
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "events": {},
+          "properties": {
+            "textFormat": "Plain Text",
+            "wordWrap": true,
+            "borderVisible": true,
+            "cornerRadius": 8
+          }
+        }
+      ]
+    }
+  ]
+}
