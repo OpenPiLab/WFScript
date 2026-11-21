@@ -27,8 +27,12 @@
 #include <QTreeWidgetItem>
 #include <QDebug>
 #include <functional>
+#include <cstdio>
 
 static int fail(const char* message) {
+    // Explicit stderr + console-subsystem target make failures visible in MSVC CI.
+    std::fprintf(stderr, "DOCK/WATCH FAIL: %s\n", message);
+    std::fflush(stderr);
     qCritical() << "DOCK/WATCH FAIL:" << message;
     return 1;
 }
@@ -109,16 +113,17 @@ int main(int argc,char** argv) {
     const auto savedSize=panel->panelSize();
     console->appendPlainText(QStringLiteral("[TEST] PRIOR-RUN-HISTORY-BOUNDARY"));
     panel->runRequested();
-    if(!until([&]{return operatorHeader->isVisible() || !panel->running();}))
-        return fail("simulation runtime enters operator view");
+    // runRequested() starts asynchronously; not-running is also the initial
+    // state, so it cannot be used as a condition for successful startup.
+    if(!until([&]{return operatorHeader->isVisible() && window.isFullScreen() && panel->running();}))
+        return fail("simulation runtime enters visible full-screen operator view");
     if(!window.isFullScreen() || !operatorHeader->isVisible())
         return fail("operator view full screen");
 
     const QString log=console->toPlainText();
     consoleToggle->click();
-    QCoreApplication::processEvents();
-    if(!consoleDock->isVisible() || consoleDock->isFloating() ||
-       window.dockWidgetArea(consoleDock)!=Qt::RightDockWidgetArea || console->isVisible())
+    if(!until([&]{return consoleDock->isVisible() && !consoleDock->isFloating() &&
+       window.dockWidgetArea(consoleDock)==Qt::RightDockWidgetArea && !console->isVisible();}))
         return fail("Console opens docked at the right without consuming Panel height");
     if(!consoleView->toPlainText().contains(QStringLiteral("[WFScript RUN #")) ||
        consoleView->toPlainText().contains(QStringLiteral("PRIOR-RUN-HISTORY-BOUNDARY")))
@@ -164,26 +169,23 @@ int main(int argc,char** argv) {
         return fail("returning to This Run preserves Console log font");
 
     consoleFloat->click();
-    QCoreApplication::processEvents();
-    if(!consoleDock->isFloating())return fail("Console can float and free Panel width");
+    if(!until([&]{return consoleDock->isFloating();}))return fail("Console can float and free Panel width");
     consoleFloat->click();
-    QCoreApplication::processEvents();
-    if(consoleDock->isFloating() || window.dockWidgetArea(consoleDock)!=Qt::RightDockWidgetArea)
+    if(!until([&]{return !consoleDock->isFloating() &&
+        window.dockWidgetArea(consoleDock)==Qt::RightDockWidgetArea;}))
         return fail("Console docks back to right-hand Diagnostics area");
     consoleDock->close();
-    QCoreApplication::processEvents();
-    if(consoleToggle->isChecked() || consoleDock->isVisible())
+    if(!until([&]{return !consoleToggle->isChecked() && !consoleDock->isVisible();}))
         return fail("closing the Console updates its toolbar action");
     consoleToggle->click();
     if(!consoleView->toPlainText().contains(QStringLiteral("diagnostic error")))
         return fail("reopened Console retains history and current filter");
 
     watchToggle->click();
-    QCoreApplication::processEvents();
-    if(!watchDock->isVisible() || watchDock->isFloating() ||
-       window.dockWidgetArea(watchDock)!=Qt::RightDockWidgetArea ||
-       !window.tabifiedDockWidgets(consoleDock).contains(watchDock) ||
-       watchTree->topLevelItemCount()!=7)
+    if(!until([&]{return watchDock->isVisible() && !watchDock->isFloating() &&
+       window.dockWidgetArea(watchDock)==Qt::RightDockWidgetArea &&
+       window.tabifiedDockWidgets(consoleDock).contains(watchDock) &&
+       watchTree->topLevelItemCount()==7;}))
         return fail("Watch tabs with Console on the right and exposes seven project variables");
     consoleDock->raise();
     QCoreApplication::processEvents();
@@ -228,27 +230,27 @@ int main(int argc,char** argv) {
     if(rpm->isHidden() || !ready->isHidden())
         return fail("Watch filter affects display only");
     watchFloat->click();
-    QCoreApplication::processEvents();
-    if(!watchDock->isFloating())return fail("Watch can float to a second monitor");
+    if(!until([&]{return watchDock->isFloating();}))return fail("Watch can float to a second monitor");
     watchFloat->click();
-    if(watchDock->isFloating() || window.dockWidgetArea(watchDock)!=Qt::RightDockWidgetArea ||
-       !window.tabifiedDockWidgets(consoleDock).contains(watchDock))
+    if(!until([&]{return !watchDock->isFloating() &&
+        window.dockWidgetArea(watchDock)==Qt::RightDockWidgetArea &&
+        window.tabifiedDockWidgets(consoleDock).contains(watchDock);}))
         return fail("Watch can rejoin the tabbed Diagnostics area");
 
     // F11 is strictly a view change: worker continues, Page is unchanged.
     f11->trigger();
-    QCoreApplication::processEvents();
-    if(window.isFullScreen() || !panel->running() || consoleDock->isVisible() || watchDock->isVisible())
+    if(!until([&]{return !window.isFullScreen() &&
+       !consoleDock->isVisible() && !watchDock->isVisible();}) || !panel->running())
         return fail("F11 restores editor but does not stop the Panel");
     f11->trigger();
-    QCoreApplication::processEvents();
-    if(!window.isFullScreen() || !consoleToggle->isChecked() || !watchToggle->isChecked() ||
-       !consoleDock->isVisible() && !watchDock->isVisible())
+    if(!until([&]{return window.isFullScreen() && consoleToggle->isChecked() &&
+       watchToggle->isChecked() && (consoleDock->isVisible() || watchDock->isVisible());}))
         return fail("F11 restores tabbed diagnostic tools during same run");
     stop->click();
     if(!until([&]{return !panel->running();},9500))
         return fail("Stop completes cleanup and restores Design mode");
-    if(window.isFullScreen() || consoleDock->isVisible() || watchDock->isVisible() ||
+    if(!until([&]{return !window.isFullScreen() &&
+       !consoleDock->isVisible() && !watchDock->isVisible();}) ||
        panel->canvas()->toJson()!=savedPanel || panel->panelSize()!=savedSize)
         return fail("Stopping preserves Page and hides operator tools");
     QSettings persisted(QStringLiteral("WFScript"),QStringLiteral("WFScript"));

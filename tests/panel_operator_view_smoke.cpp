@@ -89,8 +89,10 @@ int main(int argc,char** argv) {
     autoOnRun->setChecked(true);
     workspaces->setCurrentWidget(panel);
     runButton->click();
-    if(!until([&]{return bar->isVisible() || !panel->running();}))
-        return fail("runtime reaches operator view or terminates");
+    // The runtime starts asynchronously: !running() may still be true immediately
+    // after click(), so it must not count as successful startup.
+    if(!until([&]{return bar->isVisible() && window.isFullScreen() && panel->running();}))
+        return fail("runtime reaches visible full-screen operator view");
     if(!bar->isVisible() || !window.isFullScreen())
         return fail("successful Run enters full screen");
     if(editorToolbar->isVisible() || workspaces->tabBar()->isVisible())
@@ -102,12 +104,10 @@ int main(int argc,char** argv) {
     // Switching Pages in Run must update ONLY presentation, preserving
     // the same long-lived JavaScript runtime and current project state.
     pageTabs->setCurrentIndex(1);
-    QCoreApplication::processEvents();
-    if(title->text()!=QStringLiteral("Getting Started / Events Tutorial") || !panel->running())
+    if(!until([&]{return title->text()==QStringLiteral("Getting Started / Events Tutorial");}) || !panel->running())
         return fail("header follows current Page while shared runtime keeps running");
     pageTabs->setCurrentIndex(0);
-    QCoreApplication::processEvents();
-    if(title->text()!=QStringLiteral("Getting Started / Guide") || !panel->running())
+    if(!until([&]{return title->text()==QStringLiteral("Getting Started / Guide");}) || !panel->running())
         return fail("header restores original Page when switching back");
     if(panel->canvas()->toJson()!=before || panel->panelSize()!=beforeSize)
         return fail("operator entry must not alter persisted Panel geometry");
@@ -115,14 +115,12 @@ int main(int argc,char** argv) {
     // Full console output is retained and surfaced as a drawer.
     const QString savedText=console->toPlainText();
     consoleButton->click();
-    QCoreApplication::processEvents();
-    if(!consoleDock->isVisible() || consoleDock->isFloating() ||
-       window.dockWidgetArea(consoleDock)!=Qt::RightDockWidgetArea ||
-       console->isVisible() || operatorConsole->toPlainText().isEmpty())
+    if(!until([&]{return consoleDock->isVisible() && !consoleDock->isFloating() &&
+       window.dockWidgetArea(consoleDock)==Qt::RightDockWidgetArea &&
+       !console->isVisible() && !operatorConsole->toPlainText().isEmpty();}))
         return fail("right-docked Console preserves the current-run output");
     consoleButton->click();
-    QCoreApplication::processEvents();
-    if(consoleDock->isVisible() || console->toPlainText()!=savedText || !panel->running())
+    if(!until([&]{return !consoleDock->isVisible() && console->toPlainText()==savedText;}) || !panel->running())
         return fail("Console closes without losing output or stopping runtime");
     const bool firstFit=fitButton->isChecked();
     fitButton->click();
@@ -133,18 +131,17 @@ int main(int argc,char** argv) {
     // F11 exits presentation WITHOUT stopping the script. The original
     // user workspace, designer toolbar and console visibility must return.
     f11->trigger();
-    QCoreApplication::processEvents();
-    if(window.isFullScreen() || bar->isVisible() || !panel->running())
+    if(!until([&]{return !window.isFullScreen() && !bar->isVisible();}) || !panel->running())
         return fail("F11 returns to running editor, not Design mode");
     if(!editorToolbar->isVisible() || !workspaces->tabBar()->isVisible())
         return fail("editor controls restored");
     f11->trigger();
-    if(!bar->isVisible() || !window.isFullScreen())
+    if(!until([&]{return bar->isVisible() && window.isFullScreen();}))
         return fail("F11 can reenter same live Panel without restarting it");
     stopButton->click();
     if(!until([&]{return !panel->running();},9000))
         return fail("Stop returns to Design only after cleanup");
-    if(window.isFullScreen() || bar->isVisible() || panel->canvas()->toJson()!=before)
+    if(!until([&]{return !window.isFullScreen() && !bar->isVisible();}) || panel->canvas()->toJson()!=before)
         return fail("Stop restores editor and saved Panel geometry");
     qInfo() << "PASS: operator Panel/Page titles, live Page switching, console, F11, Stop";
     return 0;

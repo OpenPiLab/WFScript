@@ -867,6 +867,7 @@ if(WFSCRIPT_BUILD_TESTS)
     target_link_libraries(WFScriptOperatorViewSmoke PRIVATE Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
     add_test(NAME WFScriptOperatorViewSmoke COMMAND WFScriptOperatorViewSmoke)
     set_tests_properties(WFScriptOperatorViewSmoke PROPERTIES
+        RUN_SERIAL TRUE
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
         TIMEOUT 30)
 endif()
@@ -1523,9 +1524,11 @@ if(WFSCRIPT_BUILD_TESTS)
     target_include_directories(WFScriptOperatorDockWatchSmoke PRIVATE src)
     target_link_libraries(WFScriptOperatorDockWatchSmoke PRIVATE
         Qt6::Widgets Qt6::Qml Qt6::Sql Qt6::Network Qt6::SerialPort)
+    set_target_properties(WFScriptOperatorDockWatchSmoke PROPERTIES WIN32_EXECUTABLE FALSE)
     add_test(NAME WFScriptOperatorDockWatchSmoke COMMAND WFScriptOperatorDockWatchSmoke)
     set_tests_properties(WFScriptOperatorDockWatchSmoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        RUN_SERIAL TRUE
         TIMEOUT 35)
 endif()
 
