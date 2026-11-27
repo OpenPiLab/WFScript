@@ -25,7 +25,7 @@ communications demos, AD3 instruments, RC experiments, and automated testing.
 
 ## Try WFScript Web Studio
 
-[**Launch WFScript Web Studio**](https://openpilab.github.io/WFScript/WFScript_Web_Studio.html)
+[**Launch WFScript Web Studio**](https://openpilab.github.io/WFScript/WFScript_Web_Studio.html) ·\
 [**User Guides for Web version**](https://openpilab.github.io/WFScript/WFScript_Complete_Illustrated_User_Guide_Series.zip)
 
 Design graphical applications, write JavaScript, communicate with devices and internet services, and develop automated test sequences directly in your browser.
