@@ -23,6 +23,21 @@ communications demos, AD3 instruments, RC experiments, and automated testing.
 **[Browse the 41 example walkthroughs](docs/site/examples.html)**  ·\
 **[Read the v0.2 release notes](RELEASE_NOTES_v0.2.md)**
 
+## Try WFScript Web Studio
+
+[**Launch WFScript Web Studio**](https://openpilab.github.io/WFScript/WFScript_Web_Studio.html)
+[**User Guides for Web version**](https://openpilab.github.io/WFScript/WFScript_Complete_Illustrated_User_Guide_Series.zip)
+
+Design graphical applications, write JavaScript, communicate with devices and internet services, and develop automated test sequences directly in your browser.
+
+- No installation or account required.
+- 30 built-in executable example applications.
+- Visual application and Test Sequence Editors.
+- Portable `.wfpanel` application files.
+- Downloadable for offline development.
+
+Everything runs locally in your browser.
+
 ## Highlights
 
 | Capability | What it enables |
